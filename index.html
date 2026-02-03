@@ -1,217 +1,59 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mappa Interviste - Ricerca Completa</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    
-    <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
-        #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
+function caricaMarker() {
+    markers.clearLayers();
+    const searchName = document.getElementById('search-name').value.toLowerCase().trim();
+    const searchLoc = document.getElementById('search-location').value.toLowerCase().trim();
+    const regSel = document.getElementById('filtro-regione').value;
+    const dropdown = document.getElementById('search-dropdown');
+    let filtrati = [];
 
-        /* UI FILTRI */
-        #ui-wrapper { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 800px; }
-        #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
-        #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; color: #333; }
+    database.forEach((d, index) => {
+        // 1. Identifichiamo il valore della città (colonna D: città_nascita)
+        // Usiamo sia la chiave con 'à' che un fallback per sicurezza
+        const cittaNascita = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
+        const nominativo = (d.nominativo || "").toLowerCase();
+        const regione = (d.regione || "").toLowerCase();
 
-        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
-        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; }
-        .dropdown-item:hover { background: #f9f9f9; }
-
-        /* SCHEDA DETTAGLI */
-        #details-panel { 
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
-            width: 95%; max-width: 1000px; height: 75vh; background: transparent; z-index: 2000; 
-            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 25px; 
-            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
-        }
-        #details-panel.open { transform: translateX(-50%) translateY(0); }
-        #details-header { background: var(--navy); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
-
-        #details-content { display: flex; flex: 1; overflow: hidden; }
-        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
-        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .social-icon:hover { transform: scale(1.1); background: #f8f9fa; color: var(--blue-accent); }
-
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 25px; }
-
-        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
-        .rel-item { padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; transition: 0.2s; }
-        .rel-item:hover { background: white; transform: translateX(5px); border-color: var(--blue-accent); }
+        // 2. Logica dei filtri
+        const matchName = nominativo.includes(searchName);
         
-        @media (max-width: 768px) {
-            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
-            #details-content { flex-direction: column; overflow-y: auto; }
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; order: 2; background: rgba(255,255,255,0.8); border-right: none; }
-            .main-col { order: 1; overflow-y: visible; }
-            .side-col { width: 100%; order: 3; display: block; background: rgba(249,249,249,0.8); border-left: none; }
-            .rel-item { margin-bottom: 10px; width: 100%; }
-        }
-    </style>
-</head>
-<body>
+        // La ricerca per "Località" ora cerca specificamente in città_nascita
+        const matchLoc = cittaNascita.includes(searchLoc);
+        
+        const matchReg = !regSel || d.regione === regSel;
+        
+        // 3. Coordinate
+        let lat = parseFloat((d.lat || "").replace(',','.'));
+        let lon = parseFloat((d.lon || "").replace(',','.'));
 
-<div id="ui-wrapper">
-    <div id="filter-bar">
-        <input type="text" id="search-name" placeholder="Cerca nome..." oninput="caricaMarker()">
-        <input type="text" id="search-location" placeholder="Città..." oninput="caricaMarker()">
-        <select id="filtro-regione" onchange="caricaMarker()">
-            <option value="">Regione</option>
-            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
-        </select>
-        <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer;">↺</button>
-    </div>
-    <div id="search-dropdown"></div>
-</div>
-
-<div id="map"></div>
-
-<div id="details-panel">
-    <div id="details-header">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <div id="int-nome-header" style="font-weight:700; text-transform:uppercase;">NOME</div>
-            <div id="int-regione-pill">REGIONE</div>
-        </div>
-        <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:6px 12px; border-radius:6px; font-weight:800; font-size:10px; cursor:pointer;">CHIUDI X</button>
-    </div>
-    <div id="details-content">
-        <div class="social-col">
-            <a href="#" id="share-fb" target="_blank" class="social-icon">f</a>
-            <a href="#" id="share-wa" target="_blank" class="social-icon">w</a>
-            <div class="social-icon" onclick="copyLink()">🔗</div>
-        </div>
-        <div class="main-col">
-            <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-            <div class="bio-box">
-                <div id="label-nome" style="display:inline-block; background:var(--navy-light); color:white; padding:4px 10px; border-radius:4px; font-weight:700; margin-bottom:10px; font-size:12px;">...</div>
-                <div id="text-bio" style="font-family:'Lora', serif; font-size:17px; line-height:1.6; color:#333;"></div>
-            </div>
-        </div>
-        <div class="side-col">
-            <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:10px; text-transform:uppercase;">Storie Vicine</div>
-            <div id="box-correlati"></div>
-        </div>
-    </div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-<script>
-    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    map.on('click', closeDetails);
-
-    let markers = L.markerClusterGroup().addTo(map);
-    let database = [];
-
-    Papa.parse("progetto_mappa.csv", {
-        download: true, header: true, skipEmptyLines: true,
-        complete: function(res) {
-            database = res.data.map(row => {
-                let clean = {};
-                Object.keys(row).forEach(k => { clean[k.trim().toLowerCase()] = row[k].trim(); });
-                return clean;
+        if (matchName && matchLoc && matchReg && !isNaN(lat)) {
+            let m = L.marker([lat, lon]);
+            m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
+            m.on('click', (e) => { 
+                L.DomEvent.stopPropagation(e); 
+                openDetails(d); 
             });
-            caricaMarker();
+            markers.addLayer(m);
+            filtrati.push({d, index});
         }
     });
 
-    function caricaMarker() {
-        markers.clearLayers();
-        const searchName = document.getElementById('search-name').value.toLowerCase();
-        const searchLoc = document.getElementById('search-location').value.toLowerCase();
-        const regSel = document.getElementById('filtro-regione').value;
-        const dropdown = document.getElementById('search-dropdown');
-        let filtrati = [];
-
-        database.forEach((d, index) => {
-            const matchName = d.nominativo.toLowerCase().includes(searchName);
-            // Cerca nella colonna "regione" o "link" (o ovunque tu scriva la città nel CSV)
-            const matchLoc = d.regione.toLowerCase().includes(searchLoc) || (d.nominativo && d.nominativo.toLowerCase().includes(searchLoc));
-            const matchReg = !regSel || d.regione === regSel;
-            
-            let lat = parseFloat((d.lat || "").replace(',','.'));
-            let lon = parseFloat((d.lon || "").replace(',','.'));
-
-            if (matchName && matchLoc && matchReg && !isNaN(lat)) {
-                let m = L.marker([lat, lon]);
-                m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
-                m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
-                markers.addLayer(m);
-                filtrati.push({d, index});
-            }
-        });
-
-        // Mostra dropdown se scrivo qualcosa in uno dei due campi o filtro per regione
-        if (searchName.length > 1 || searchLoc.length > 1 || regSel !== "") {
+    // 4. Gestione Dropdown Risultati
+    if (searchName.length > 1 || searchLoc.length > 1) {
+        if (filtrati.length > 0) {
             dropdown.style.display = 'block';
-            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `
+            dropdown.innerHTML = filtrati.slice(0, 15).map(item => {
+                const luogo = item.d['città_nascita'] || item.d['citta_nascita'] || item.d.regione;
+                return `
                 <div class="dropdown-item" onclick="zoomToPartigiano(${item.index})">
-                    <strong>${item.d.nominativo}</strong> <small>(${item.d.regione})</small>
-                </div>
-            `).join('');
-        } else { dropdown.style.display = 'none'; }
+                    <strong>${item.d.nominativo}</strong> 
+                    <span style="font-size:11px; color:#666; margin-left:5px;">(${luogo})</span>
+                </div>`;
+            }).join('');
+        } else {
+            dropdown.innerHTML = '<div class="dropdown-item">Nessun risultato trovato</div>';
+            dropdown.style.display = 'block';
+        }
+    } else {
+        dropdown.style.display = 'none';
     }
-
-    function openDetails(d) {
-        document.getElementById('int-nome-header').innerText = d.nominativo;
-        document.getElementById('int-regione-pill').innerText = d.regione;
-        document.getElementById('label-nome').innerText = d.nominativo;
-        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
-        document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
-        
-        let latD = parseFloat(d.lat.replace(',','.'));
-        let lonD = parseFloat(d.lon.replace(',','.'));
-        let correlati = database.filter(item => item.nominativo !== d.nominativo && !isNaN(parseFloat(item.lat))).map(item => ({ ...item, dist: getDistance(latD, lonD, parseFloat(item.lat.replace(',','.')), parseFloat(item.lon.replace(',','.'))) })).sort((a,b) => a.dist - b.dist).slice(0, 8);
-        document.getElementById('box-correlati').innerHTML = correlati.map(item => {
-            const realIdx = database.findIndex(x => x.nominativo === item.nominativo);
-            return `<div class="rel-item" onclick="event.stopPropagation(); zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span style="font-weight:bold; color:var(--blue-accent);">${Math.round(item.dist)}km</span></div>`;
-        }).join('');
-
-        document.getElementById('details-panel').classList.add('open');
-    }
-
-    function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2-lat1) * Math.PI / 180;
-        const dLon = (lon2-lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    function zoomToPartigiano(i) {
-        const d = database[i];
-        document.getElementById('search-dropdown').style.display = 'none';
-        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 13);
-        openDetails(d);
-    }
-
-    function closeDetails() {
-        document.getElementById('details-panel').classList.remove('open');
-        setTimeout(() => { document.getElementById('video-iframe').src = ""; }, 500);
-    }
-
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href).then(() => { alert("Link copiato!"); });
-    }
-
-    function resetFiltri() {
-        document.getElementById('search-name').value = ''; 
-        document.getElementById('search-location').value = ''; 
-        document.getElementById('filtro-regione').value = '';
-        closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
-    }
-</script>
-</body>
-</html>
+}
