@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Mappa - Layout Compatto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Test Mappa - Ottimizzazione Mobile Pro</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,63 +16,75 @@
         
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 850px; }
-        #filter-bar { background: white; padding: 8px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 8px; align-items: center; border: 1px solid #ddd; }
+        /* UI WRAPPER */
+        #ui-wrapper { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 800px; }
+        #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
         #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; min-width: 0; }
-        #filter-bar select { border-left: 1px solid #eee; max-width: 120px; }
         
-        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 10px; max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; }
-        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 5px; max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); }
 
-        /* SCHEDA DETTAGLI - Altezza ridotta per meno fondo bianco */
+        /* SCHEDA DETTAGLI */
         #details-panel { 
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(120%); 
-            width: 95%; max-width: 1050px; 
-            max-height: 75vh; /* Altezza massima ridotta per evitare troppo vuoto */
-            background: transparent; z-index: 2000; 
-            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 25px; 
-            overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35); display: flex; flex-direction: column; border: 1px solid #ddd;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
+            width: 95%; max-width: 1000px; height: 75vh; background: white; z-index: 2000; 
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 20px; 
+            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
 
-        #details-header { background: var(--navy); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 10; flex-shrink: 0; }
-        .header-title-wrapper { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        #int-nome-header { font-family: 'Lora', serif; font-size: 18px; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+        #details-header { 
+            background: var(--navy); color: white; padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+        }
+        .header-title-wrapper { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+        #int-nome-header { font-family: 'Lora', serif; font-size: 16px; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 700; flex-shrink: 0; }
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
         
+        /* COLONNE DESKTOP */
         .social-col { 
-            width: 65px; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border-right: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; 
+            width: 60px; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; 
         }
-        .social-icon { 
-            width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--navy); 
-            text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease;
-        }
-        .social-icon:hover { transform: translateY(-2px); background: var(--navy); color: white; }
+        .social-icon { width: 36px; height: 36px; border-radius: 10px; background: white; border: 1px solid #ddd; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; }
 
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
+        .main-col { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: white; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        .bio-box { padding: 25px 30px; flex-grow: 1; } /* flex-grow permette al box di espandersi solo quanto serve */
-        .nome-soggetto-box { display: inline-block; background: var(--navy-light); color: white; padding: 5px 12px; border-radius: 4px; font-weight: 700; margin-bottom: 12px; font-size: 13px; }
-        .text-bio-content { font-family: 'Lora', serif; font-size: 17px; line-height: 1.6; color: #333; padding-bottom: 20px; }
+        .bio-box { padding: 20px 25px; }
+        .nome-soggetto-box { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 10px; font-size: 12px; }
+        .text-bio-content { font-family: 'Lora', serif; font-size: 16px; line-height: 1.6; color: #333; }
 
         .side-col { 
-            width: 300px; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            padding: 20px; border-left: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; 
+            width: 260px; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 15px; border-left: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto;
         }
-        .rel-item { padding: 12px; background: rgba(255, 255, 255, 0.85); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         
-        .btn-close { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .btn-close { background: var(--blue-accent); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: 800; }
 
+        /* --- OTTIMIZZAZIONE MOBILE --- */
         @media (max-width: 768px) {
+            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; }
             #details-content { flex-direction: column; overflow-y: auto; }
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 12px; justify-content: center; border-right: none; border-bottom: 1px solid #eee; order: 2; }
-            .main-col { order: 1; overflow-y: visible; }
-            .side-col { width: 100%; border-left: none; order: 3; background: rgba(255,255,255,0.6); }
-            #details-panel { height: 92vh; max-height: 92vh; bottom: 0; border-radius: 20px 20px 0 0; }
+            
+            .main-col { overflow-y: visible; order: 1; }
+            
+            .social-col { 
+                width: 100%; height: auto; flex-direction: row; padding: 10px; justify-content: center; 
+                border-right: none; border-bottom: 1px solid #eee; order: 2; background: white;
+            }
+            
+            .side-col { 
+                width: 100%; border-left: none; order: 3; background: #f9f9f9; 
+                display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px;
+            }
+            .rel-item { margin-bottom: 0; } /* Reset per la griglia */
+            .side-title { grid-column: span 2; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; color: #666; }
+            
+            #filter-bar { border-radius: 15px; flex-wrap: wrap; }
+            #filter-bar select { border-left: none; border-top: 1px solid #eee; flex: 1 1 100%; }
         }
     </style>
 </head>
@@ -96,8 +108,8 @@
 <div id="details-panel">
     <div id="details-header">
         <div class="header-title-wrapper">
-            <div id="int-nome-header">CARICAMENTO...</div>
-            <div id="int-regione-pill">---</div>
+            <div id="int-nome-header">NOME</div>
+            <div id="int-regione-pill">REGIONE</div>
         </div>
         <button class="btn-close" onclick="closeDetails()">CHIUDI X</button>
     </div>
@@ -114,9 +126,9 @@
                 <div id="text-bio" class="text-bio-content"></div>
             </div>
         </div>
-        <div class="side-col">
-            <span style="font-size:10px; font-weight:800; color:#444; text-transform:uppercase; margin-bottom:12px; display:block;">Storie nelle vicinanze</span>
-            <div id="box-correlati"></div>
+        <div class="side-col" id="box-correlati-container">
+            <div class="side-title">Nelle vicinanze</div>
+            <div id="box-correlati" style="display:contents;"></div>
         </div>
     </div>
 </div>
@@ -201,7 +213,7 @@
 
         if (searchName.length > 1 || regSel !== "" || geoFilter) {
             dropdown.style.display = 'block';
-            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `<div class="dropdown-item" onclick="zoomToPartigiano(${item.index})"><strong>${item.d.nominativo}</strong> <small>(${item.d.regione})</small></div>`).join('');
+            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `<div class="dropdown-item" onclick="zoomToPartigiano(${item.index})"><strong>${item.d.nominativo}</strong></div>`).join('');
         } else { dropdown.style.display = 'none'; }
     }
 
