@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Test Mappa - Ottimizzazione Mobile Pro</title>
+    <title>Test Mappa - Trasparenze e Mobile OK</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -20,15 +20,13 @@
         #ui-wrapper { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 800px; }
         #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
         #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; min-width: 0; }
-        
-        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 5px; max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); }
 
         /* SCHEDA DETTAGLI */
         #details-panel { 
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
-            width: 95%; max-width: 1000px; height: 75vh; background: white; z-index: 2000; 
-            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 20px; 
-            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column;
+            width: 95%; max-width: 1000px; height: 75vh; background: transparent; z-index: 2000; 
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 25px; 
+            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
 
@@ -43,45 +41,56 @@
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
         
-        /* COLONNE DESKTOP */
+        /* SOCIAL COLUMN (TRASPARENTE) */
         .social-col { 
-            width: 60px; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; 
+            width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; 
         }
-        .social-icon { width: 36px; height: 36px; border-radius: 10px; background: white; border: 1px solid #ddd; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; }
+        .social-icon { 
+            width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--navy); 
+            text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.2s;
+        }
+        .social-icon:hover { transform: translateY(-2px); background: var(--navy); color: white; }
 
-        .main-col { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: white; }
+        /* MAIN COLUMN */
+        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        .bio-box { padding: 20px 25px; }
+        .bio-box { padding: 25px; }
         .nome-soggetto-box { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 10px; font-size: 12px; }
-        .text-bio-content { font-family: 'Lora', serif; font-size: 16px; line-height: 1.6; color: #333; }
+        .text-bio-content { font-family: 'Lora', serif; font-size: 17px; line-height: 1.6; color: #333; }
 
+        /* SIDE COLUMN (TRASPARENTE) */
         .side-col { 
-            width: 260px; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            padding: 15px; border-left: 1px solid #eee; display: flex; flex-direction: column; overflow-y: auto;
+            width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow-y: auto;
         }
-        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .rel-item { 
+            padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; 
+            font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; 
+        }
+        .rel-item:hover { background: white; transform: translateX(5px); }
         
-        .btn-close { background: var(--blue-accent); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: 800; }
+        .btn-close { background: var(--blue-accent); border: none; color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: 800; }
 
-        /* --- OTTIMIZZAZIONE MOBILE --- */
+        /* --- REGOLE MOBILE --- */
         @media (max-width: 768px) {
-            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; }
+            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
             #details-content { flex-direction: column; overflow-y: auto; }
             
-            .main-col { overflow-y: visible; order: 1; }
+            .main-col { order: 1; overflow-y: visible; }
             
             .social-col { 
-                width: 100%; height: auto; flex-direction: row; padding: 10px; justify-content: center; 
-                border-right: none; border-bottom: 1px solid #eee; order: 2; background: white;
+                width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; 
+                border-right: none; border-bottom: 1px solid #eee; order: 2; background: rgba(255,255,255,0.8);
             }
             
             .side-col { 
-                width: 100%; border-left: none; order: 3; background: #f9f9f9; 
-                display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px;
+                width: 100%; border-left: none; order: 3; background: rgba(249,249,249,0.8); 
+                display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px;
             }
-            .rel-item { margin-bottom: 0; } /* Reset per la griglia */
-            .side-title { grid-column: span 2; font-size: 10px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; color: #666; }
+            .rel-item { margin-bottom: 0; }
+            .side-title { grid-column: span 2; font-size: 10px; font-weight: 800; margin-bottom: 10px; color: #666; text-transform: uppercase; }
             
             #filter-bar { border-radius: 15px; flex-wrap: wrap; }
             #filter-bar select { border-left: none; border-top: 1px solid #eee; flex: 1 1 100%; }
@@ -138,6 +147,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
+    /* LOGICA JS IDENTICA A PRIMA */
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     map.on('click', closeDetails);
