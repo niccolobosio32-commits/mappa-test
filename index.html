@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Test Mappa - Scheda Trascinabile</title>
+    <title>Mappa Interviste - Fix Totale</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,47 +16,28 @@
         
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI WRAPPER */
+        /* UI FILTRI */
         #ui-wrapper { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 800px; }
         #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
         #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; color: #333; }
 
-        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #eee; z-index: 1100; }
+        #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; }
 
-        /* SCHEDA DETTAGLI - TRASCINABILE */
+        /* SCHEDA DETTAGLI */
         #details-panel { 
-            position: absolute; 
-            bottom: 30px; 
-            left: 50%; 
-            transform: translateX(-50%) translateY(125%); 
-            width: 95%; 
-            max-width: 1000px; 
-            height: 75vh; 
-            background: transparent; 
-            z-index: 2000; 
-            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
-            border-radius: 25px; 
-            overflow: hidden; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
-            display: flex; 
-            flex-direction: column; 
-            border: 1px solid #ddd;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
+            width: 95%; max-width: 1000px; height: 75vh; background: transparent; z-index: 2000; 
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 25px; 
+            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
-        /* Quando l'utente trascina, rimuoviamo la transition per fluidità */
-        #details-panel.dragging { transition: none; }
+        #details-panel.dragging { transition: none !important; }
 
         #details-header { 
-            background: var(--navy); 
-            color: white; 
-            padding: 12px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            cursor: grab; /* Indica che si può trascinare */
-            user-select: none;
-            flex-shrink: 0;
+            background: var(--navy); color: white; padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            cursor: grab; flex-shrink: 0; user-select: none;
         }
         #details-header:active { cursor: grabbing; }
 
@@ -77,11 +58,12 @@
         @media (max-width: 768px) {
             #details-panel { height: 85vh; bottom: 0 !important; left: 50% !important; transform: translateX(-50%) translateY(125%) !important; border-radius: 20px 20px 0 0; background: white; }
             #details-panel.open { transform: translateX(-50%) translateY(0) !important; }
-            #details-header { cursor: default; } /* No drag su mobile */
+            #details-header { cursor: default; }
             #details-content { flex-direction: column; overflow-y: auto; }
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; order: 2; background: rgba(255,255,255,0.8); }
+            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; order: 2; background: rgba(255,255,255,0.8); border-right: none; border-bottom: 1px solid #eee; }
             .main-col { order: 1; overflow-y: visible; }
-            .side-col { width: 100%; order: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(249,249,249,0.8); }
+            .side-col { width: 100%; order: 3; display: block; background: rgba(249,249,249,0.8); border-left: none; }
+            .rel-item { margin-bottom: 10px; width: 100%; box-sizing: border-box; } /* Correlati uno sotto l'altro */
         }
     </style>
 </head>
@@ -103,12 +85,12 @@
 <div id="map"></div>
 
 <div id="details-panel">
-    <div id="details-header" id="drag-handle">
+    <div id="details-header">
         <div style="display:flex; align-items:center; gap:10px; pointer-events: none;">
             <div id="int-nome-header" style="font-weight:700; text-transform:uppercase;">NOME</div>
             <div id="int-regione-pill">REGIONE</div>
         </div>
-        <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:6px 12px; border-radius:6px; font-weight:800; font-size:10px; cursor:pointer; position:relative; z-index:10;">CHIUDI X</button>
+        <button id="close-btn-real" style="background:var(--blue-accent); border:none; color:white; padding:6px 12px; border-radius:6px; font-weight:800; font-size:10px; cursor:pointer; position:relative; z-index:3000;">CHIUDI X</button>
     </div>
     <div id="details-content">
         <div class="social-col">
@@ -124,8 +106,8 @@
             </div>
         </div>
         <div class="side-col">
-            <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:10px; text-transform:uppercase;">Vicine</div>
-            <div id="box-correlati" style="display:contents;"></div>
+            <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:10px; text-transform:uppercase;">Storie Vicine</div>
+            <div id="box-correlati"></div>
         </div>
     </div>
 </div>
@@ -135,19 +117,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    /* TRASCINAMENTO (DRAG & DROP) */
     const panel = document.getElementById("details-panel");
     const header = document.getElementById("details-header");
+    const closeBtn = document.getElementById("close-btn-real");
     let isDragging = false;
     let offset = { x: 0, y: 0 };
 
+    /* FIX CHIUSURA */
+    closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeDetails();
+    });
+
+    /* DRAG LOGIC CORRETTA */
     header.addEventListener("mousedown", (e) => {
-        if (window.innerWidth <= 768) return; // Disabilita su mobile
-        if (e.target.tagName === 'BUTTON') return; // Non trascinare se clicco CHIUDI
+        if (window.innerWidth <= 768 || e.target === closeBtn) return;
         isDragging = true;
         panel.classList.add("dragging");
-        
-        // Calcola l'offset tra il mouse e l'angolo del pannello
         const rect = panel.getBoundingClientRect();
         offset.x = e.clientX - rect.left;
         offset.y = e.clientY - rect.top;
@@ -155,11 +141,8 @@
 
     document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        
-        // Rimuoviamo il transform centering quando iniziamo a spostare
         panel.style.transform = "none"; 
         panel.style.bottom = "auto";
-        
         panel.style.left = (e.clientX - offset.x) + "px";
         panel.style.top = (e.clientY - offset.y) + "px";
     });
@@ -169,15 +152,16 @@
         panel.classList.remove("dragging");
     });
 
-    /* LOGICA MAPPA E DATI */
+    /* MAPPA */
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    map.on('click', closeDetails);
+    
+    // Fix clic mappa per chiudere
+    map.on('mousedown', () => { closeDetails(); });
 
     let markers = L.markerClusterGroup().addTo(map);
     let database = [];
     let geoFilter = null;
-    let searchTimeout;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -199,23 +183,6 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function debounceCercaLocalita() {
-        clearTimeout(searchTimeout);
-        const query = document.getElementById('search-location').value;
-        if (query.length < 3) { geoFilter = null; caricaMarker(); return; }
-        searchTimeout = setTimeout(async () => {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Italia")}&limit=1`);
-                const data = await res.json();
-                if (data.length > 0) {
-                    geoFilter = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                    map.flyTo([geoFilter.lat, geoFilter.lon], 10);
-                    caricaMarker();
-                }
-            } catch(e) {}
-        }, 600);
-    }
-
     function caricaMarker() {
         markers.clearLayers();
         const searchName = document.getElementById('search-name').value.toLowerCase();
@@ -228,24 +195,23 @@
             const matchReg = !regSel || d.regione === regSel;
             let lat = parseFloat((d.lat || "").replace(',','.'));
             let lon = parseFloat((d.lon || "").replace(',','.'));
-            let matchGeo = true;
-            if (geoFilter && !isNaN(lat)) {
-                if (getDistance(lat, lon, geoFilter.lat, geoFilter.lon) > 40) matchGeo = false;
-            }
 
-            if (matchName && matchReg && matchGeo && !isNaN(lat)) {
+            if (matchName && matchReg && !isNaN(lat)) {
                 let m = L.marker([lat, lon]);
-                m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
+                m.on('click', (e) => { 
+                    L.DomEvent.stopPropagation(e); 
+                    openDetails(d); 
+                });
                 markers.addLayer(m);
                 filtrati.push({d, index});
             }
         });
 
-        if (searchName.length > 1 || regSel !== "" || geoFilter) {
+        if (searchName.length > 1 || regSel !== "") {
             dropdown.style.display = 'block';
             dropdown.innerHTML = filtrati.slice(0, 15).map(item => `
                 <div class="dropdown-item" onclick="zoomToPartigiano(${item.index})">
-                    <strong>${item.d.nominativo}</strong> <small style="color:#888">(${item.d.regione})</small>
+                    <strong>${item.d.nominativo}</strong>
                 </div>
             `).join('');
         } else { dropdown.style.display = 'none'; }
@@ -266,14 +232,9 @@
             return `<div class="rel-item" onclick="event.stopPropagation(); zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span style="font-weight:bold; color:var(--blue-accent);">${Math.round(item.dist)}km</span></div>`;
         }).join('');
 
-        // Reset posizione al centro se riaperta dopo trascinamento
         if (window.innerWidth > 768) {
-            panel.style.left = "50%";
-            panel.style.top = "auto";
-            panel.style.bottom = "30px";
-            panel.style.transform = "translateX(-50%) translateY(0)";
+            panel.style.left = "50%"; panel.style.top = "auto"; panel.style.bottom = "30px"; panel.style.transform = "translateX(-50%) translateY(0)";
         }
-        
         panel.classList.add('open');
     }
 
@@ -286,12 +247,12 @@
 
     function closeDetails() {
         panel.classList.remove('open');
-        document.getElementById('video-iframe').src = "";
+        setTimeout(() => { document.getElementById('video-iframe').src = ""; }, 500);
     }
 
     function resetFiltri() {
-        document.getElementById('search-name').value = ''; document.getElementById('search-location').value = ''; document.getElementById('filtro-regione').value = '';
-        geoFilter = null; closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
+        document.getElementById('search-name').value = ''; document.getElementById('filtro-regione').value = '';
+        closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
     }
 </script>
 </body>
