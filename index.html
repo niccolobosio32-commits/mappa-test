@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Test Mappa - Trasparenze e Mobile OK</title>
+    <title>Test Mappa - Fix Ricerca Mobile</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -19,9 +19,35 @@
         /* UI WRAPPER */
         #ui-wrapper { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 800px; }
         #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
-        #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; min-width: 0; }
+        #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; min-width: 0; color: #333; }
 
-        /* SCHEDA DETTAGLI */
+        /* FIX RICERCA MOBILE E DESKTOP */
+        #search-dropdown { 
+            width: 100%; 
+            background: white; 
+            border-radius: 15px; 
+            margin-top: 8px; 
+            max-height: 250px; 
+            overflow-y: auto; 
+            display: none; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
+            border: 1px solid #eee;
+            z-index: 1100;
+        }
+        .dropdown-item { 
+            padding: 12px 20px; 
+            cursor: pointer; 
+            border-bottom: 1px solid #f5f5f5; 
+            font-size: 14px; 
+            color: #333; 
+            background: white;
+            transition: background 0.2s;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: #f9f9f9; }
+        .dropdown-item strong { color: var(--navy); }
+
+        /* SCHEDA DETTAGLI (Con Trasparenze) */
         #details-panel { 
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
             width: 95%; max-width: 1000px; height: 75vh; background: transparent; z-index: 2000; 
@@ -30,70 +56,29 @@
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
 
-        #details-header { 
-            background: var(--navy); color: white; padding: 12px 20px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            position: sticky; top: 0; z-index: 100; flex-shrink: 0;
-        }
-        .header-title-wrapper { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-        #int-nome-header { font-family: 'Lora', serif; font-size: 16px; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 700; flex-shrink: 0; }
+        #details-header { background: var(--navy); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
         
-        /* SOCIAL COLUMN (TRASPARENTE) */
-        .social-col { 
-            width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; 
-        }
-        .social-icon { 
-            width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--navy); 
-            text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.2s;
-        }
-        .social-icon:hover { transform: translateY(-2px); background: var(--navy); color: white; }
+        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
+        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; }
 
-        /* MAIN COLUMN */
         .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
         .bio-box { padding: 25px; }
-        .nome-soggetto-box { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 10px; font-size: 12px; }
-        .text-bio-content { font-family: 'Lora', serif; font-size: 17px; line-height: 1.6; color: #333; }
 
-        /* SIDE COLUMN (TRASPARENTE) */
-        .side-col { 
-            width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow-y: auto;
-        }
-        .rel-item { 
-            padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; 
-            font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; 
-        }
-        .rel-item:hover { background: white; transform: translateX(5px); }
+        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
+        .rel-item { padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
         
-        .btn-close { background: var(--blue-accent); border: none; color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: 800; }
-
-        /* --- REGOLE MOBILE --- */
         @media (max-width: 768px) {
             #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
             #details-content { flex-direction: column; overflow-y: auto; }
-            
+            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; order: 2; background: rgba(255,255,255,0.8); }
             .main-col { order: 1; overflow-y: visible; }
-            
-            .social-col { 
-                width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; 
-                border-right: none; border-bottom: 1px solid #eee; order: 2; background: rgba(255,255,255,0.8);
-            }
-            
-            .side-col { 
-                width: 100%; border-left: none; order: 3; background: rgba(249,249,249,0.8); 
-                display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px;
-            }
-            .rel-item { margin-bottom: 0; }
-            .side-title { grid-column: span 2; font-size: 10px; font-weight: 800; margin-bottom: 10px; color: #666; text-transform: uppercase; }
-            
+            .side-col { width: 100%; order: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(249,249,249,0.8); }
             #filter-bar { border-radius: 15px; flex-wrap: wrap; }
-            #filter-bar select { border-left: none; border-top: 1px solid #eee; flex: 1 1 100%; }
+            #filter-bar select { border-top: 1px solid #eee; flex: 1 1 100%; }
         }
     </style>
 </head>
@@ -101,7 +86,7 @@
 
 <div id="ui-wrapper">
     <div id="filter-bar">
-        <input type="text" id="search-name" placeholder="Nome..." oninput="caricaMarker()">
+        <input type="text" id="search-name" placeholder="Cerca nome..." oninput="caricaMarker()">
         <input type="text" id="search-location" placeholder="Città..." oninput="debounceCercaLocalita()">
         <select id="filtro-regione" onchange="caricaMarker()">
             <option value="">Regione</option>
@@ -116,11 +101,11 @@
 
 <div id="details-panel">
     <div id="details-header">
-        <div class="header-title-wrapper">
-            <div id="int-nome-header">NOME</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div id="int-nome-header" style="font-weight:700; text-transform:uppercase;">NOME</div>
             <div id="int-regione-pill">REGIONE</div>
         </div>
-        <button class="btn-close" onclick="closeDetails()">CHIUDI X</button>
+        <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:6px 12px; border-radius:6px; font-weight:800; font-size:10px; cursor:pointer;">CHIUDI X</button>
     </div>
     <div id="details-content">
         <div class="social-col">
@@ -131,12 +116,12 @@
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div class="nome-soggetto-box" id="label-nome">...</div>
-                <div id="text-bio" class="text-bio-content"></div>
+                <div id="label-nome" style="display:inline-block; background:var(--navy-light); color:white; padding:4px 10px; border-radius:4px; font-weight:700; margin-bottom:10px; font-size:12px;">...</div>
+                <div id="text-bio" style="font-family:'Lora', serif; font-size:17px; line-height:1.6; color:#333;"></div>
             </div>
         </div>
-        <div class="side-col" id="box-correlati-container">
-            <div class="side-title">Nelle vicinanze</div>
+        <div class="side-col">
+            <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:10px; text-transform:uppercase;">Vicine</div>
             <div id="box-correlati" style="display:contents;"></div>
         </div>
     </div>
@@ -147,7 +132,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    /* LOGICA JS IDENTICA A PRIMA */
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     map.on('click', closeDetails);
@@ -166,7 +150,6 @@
                 return clean;
             });
             caricaMarker();
-            checkDeepLink();
         }
     });
 
@@ -214,7 +197,6 @@
 
             if (matchName && matchReg && matchGeo && !isNaN(lat)) {
                 let m = L.marker([lat, lon]);
-                m.bindTooltip(d.nominativo);
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
                 filtrati.push({d, index});
@@ -223,7 +205,11 @@
 
         if (searchName.length > 1 || regSel !== "" || geoFilter) {
             dropdown.style.display = 'block';
-            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `<div class="dropdown-item" onclick="zoomToPartigiano(${item.index})"><strong>${item.d.nominativo}</strong></div>`).join('');
+            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `
+                <div class="dropdown-item" onclick="zoomToPartigiano(${item.index})">
+                    <strong>${item.d.nominativo}</strong> <small style="color:#888">(${item.d.regione})</small>
+                </div>
+            `).join('');
         } else { dropdown.style.display = 'none'; }
     }
 
@@ -231,16 +217,9 @@
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-pill').innerText = d.regione;
         document.getElementById('label-nome').innerText = d.nominativo;
-        let rawBio = d.scheda || "";
-        let bioPulita = rawBio.toLowerCase().startsWith(d.nominativo.toLowerCase()) ? rawBio.substring(d.nominativo.length).replace(/^[,.\s]+/, "") : rawBio;
-        document.getElementById('text-bio').innerHTML = bioPulita.split('. ').join('.<br>');
+        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('p', d.nominativo);
-        document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl.href)}`;
-        document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=Guarda%20${encodeURIComponent(currentUrl.href)}`;
-
         let latD = parseFloat(d.lat.replace(',','.'));
         let lonD = parseFloat(d.lon.replace(',','.'));
         let correlati = database.filter(item => item.nominativo !== d.nominativo && !isNaN(parseFloat(item.lat))).map(item => ({ ...item, dist: getDistance(latD, lonD, parseFloat(item.lat.replace(',','.')), parseFloat(item.lon.replace(',','.'))) })).sort((a,b) => a.dist - b.dist).slice(0, 8);
@@ -249,17 +228,6 @@
             return `<div class="rel-item" onclick="event.stopPropagation(); zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span style="font-weight:bold; color:var(--blue-accent);">${Math.round(item.dist)}km</span></div>`;
         }).join('');
         document.getElementById('details-panel').classList.add('open');
-    }
-
-    function checkDeepLink() {
-        const pName = new URLSearchParams(window.location.search).get('p');
-        if (pName) { const idx = database.findIndex(x => x.nominativo === pName); if (idx !== -1) zoomToPartigiano(idx); }
-    }
-
-    function copyLink() {
-        const url = new URL(window.location.href);
-        url.searchParams.set('p', document.getElementById('label-nome').innerText);
-        navigator.clipboard.writeText(url.href).then(() => alert("Link copiato!"));
     }
 
     function zoomToPartigiano(i) {
@@ -272,7 +240,6 @@
     function closeDetails() {
         document.getElementById('details-panel').classList.remove('open');
         document.getElementById('video-iframe').src = "";
-        const url = new URL(window.location.href); url.searchParams.delete('p'); window.history.pushState({}, '', url);
     }
 
     function resetFiltri() {
