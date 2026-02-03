@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mappa Interviste - Fix Definitivo</title>
+    <title>Mappa Interviste - Fix Interattività</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -21,8 +21,10 @@
         #filter-bar { background: white; padding: 5px 15px; border-radius: 50px; box-shadow: var(--shadow); display: flex; gap: 5px; align-items: center; border: 1px solid #ddd; }
         #filter-bar input, #filter-bar select { border: none; padding: 8px; font-size: 13px; outline: none; flex: 1; background: transparent; color: #333; }
 
+        /* RISULTATI RICERCA */
         #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
-        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; }
+        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; }
+        .dropdown-item:hover { background: #f9f9f9; }
 
         /* SCHEDA DETTAGLI */
         #details-panel { 
@@ -30,6 +32,7 @@
             width: 95%; max-width: 1000px; height: 75vh; background: white; z-index: 2000; 
             transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); border-radius: 25px; 
             overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
+            pointer-events: auto;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
         #details-panel.dragging { transition: none !important; }
@@ -37,24 +40,27 @@
         #details-header { 
             background: var(--navy); color: white; padding: 12px 20px; 
             display: flex; justify-content: space-between; align-items: center; 
-            cursor: grab; flex-shrink: 0; user-select: none; z-index: 2001;
+            cursor: grab; flex-shrink: 0; user-select: none; z-index: 2100;
         }
         #details-header:active { cursor: grabbing; }
 
         #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
 
-        #details-content { display: flex; flex: 1; overflow: hidden; position: relative; }
+        #details-content { display: flex; flex: 1; overflow: hidden; position: relative; background: white; }
         
-        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; z-index: 5; }
-        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; }
+        /* COLONNE E HOVER */
+        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; z-index: 10; }
+        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .social-icon:hover { background: var(--navy); color: white; transform: scale(1.1); }
 
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; z-index: 2; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; overflow: hidden; }
-        #video-iframe { width: 100%; height: 100%; border: none; }
+        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; z-index: 5; }
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
+        #video-iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
         .bio-box { padding: 25px; }
 
-        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; z-index: 5; }
-        .rel-item { padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
+        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; z-index: 10; }
+        .rel-item { padding: 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; transition: 0.2s; }
+        .rel-item:hover { background: white; border-color: var(--blue-accent); transform: translateX(5px); }
         
         @media (max-width: 768px) {
             #details-panel { height: 85vh; bottom: 0 !important; left: 50% !important; transform: translateX(-50%) translateY(125%) !important; border-radius: 20px 20px 0 0; }
@@ -86,12 +92,12 @@
 <div id="map"></div>
 
 <div id="details-panel">
-    <div id="details-header" onmousedown="startDragging(event)">
+    <div id="details-header" onmousedown="handleMouseDown(event)">
         <div style="display:flex; align-items:center; gap:10px; pointer-events: none;">
             <div id="int-nome-header" style="font-weight:700; text-transform:uppercase;">NOME</div>
             <div id="int-regione-pill">REGIONE</div>
         </div>
-        <button onclick="closeDetails(); event.stopPropagation();" style="background:var(--blue-accent); border:none; color:white; padding:6px 12px; border-radius:6px; font-weight:800; font-size:10px; cursor:pointer; position:relative; z-index:3000;">CHIUDI X</button>
+        <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:8px 15px; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer; position:relative; z-index:5000; pointer-events: auto;">CHIUDI X</button>
     </div>
     <div id="details-content">
         <div class="social-col">
@@ -124,19 +130,22 @@
     let isDragging = false;
     let offset = { x: 0, y: 0 };
 
-    /* GESTIONE DRAG */
-    function startDragging(e) {
-        if (window.innerWidth <= 768 || e.target.tagName === 'BUTTON') return;
+    /* GESTIONE TRASCINAMENTO OTTIMIZZATA */
+    function handleMouseDown(e) {
+        if (window.innerWidth <= 768) return;
+        if (e.target.tagName === 'BUTTON') return;
+        
         isDragging = true;
         panel.classList.add("dragging");
         const rect = panel.getBoundingClientRect();
         offset.x = e.clientX - rect.left;
         offset.y = e.clientY - rect.top;
-        document.addEventListener("mousemove", drag);
-        document.addEventListener("mouseup", stopDragging);
+        
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
     }
 
-    function drag(e) {
+    function handleMouseMove(e) {
         if (!isDragging) return;
         panel.style.transform = "none"; 
         panel.style.bottom = "auto";
@@ -144,20 +153,22 @@
         panel.style.top = (e.clientY - offset.y) + "px";
     }
 
-    function stopDragging() {
+    function handleMouseUp() {
         isDragging = false;
         panel.classList.remove("dragging");
-        document.removeEventListener("mousemove", drag);
-        document.removeEventListener("mouseup", stopDragging);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
     }
 
-    /* MAPPA */
+    /* INIZIALIZZAZIONE MAPPA */
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     
-    map.on('click', function(e) {
-        // Chiude solo se il clic è effettivamente sulla mappa e non sulla scheda
-        if (e.originalEvent.target.id === 'map') closeDetails();
+    // Chiusura al clic sulla mappa (ma non sulla scheda)
+    map.on('mousedown', function(e) {
+        if (e.originalEvent.target.id === 'map') {
+            closeDetails();
+        }
     });
 
     let markers = L.markerClusterGroup().addTo(map);
@@ -223,7 +234,6 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
         
-        // Caricamento video pulito
         const videoIframe = document.getElementById('video-iframe');
         videoIframe.src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
@@ -251,7 +261,6 @@
 
     function closeDetails() {
         panel.classList.remove('open');
-        // Reset video per fermare l'audio
         setTimeout(() => { document.getElementById('video-iframe').src = ""; }, 400);
     }
 
