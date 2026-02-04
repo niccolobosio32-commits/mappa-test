@@ -15,7 +15,7 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI FILTRI - SEMITRASPARENTE CORRETTA */
+        /* UI FILTRI - SEMITRASPARENTE */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
             background: rgba(255, 255, 255, 0.7) !important; 
@@ -30,13 +30,7 @@
             border: 1px solid rgba(255,255,255,0.4); 
         }
         #filter-bar input, #filter-bar select { 
-            border: none; 
-            padding: 10px; 
-            font-size: 15px; 
-            outline: none; 
-            flex: 1; 
-            background: transparent; 
-            color: #333; 
+            border: none; padding: 10px; font-size: 15px; outline: none; flex: 1; background: transparent; color: #333; 
         }
 
         #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
@@ -53,23 +47,11 @@
         #details-panel.open { transform: translateX(-50%) translateY(0); }
         
         #details-header { 
-            background: var(--navy); 
-            color: white; 
-            padding: 18px 25px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            flex-shrink: 0; 
+            background: var(--navy); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
         }
         #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         #int-regione-pill { 
-            background: var(--blue-accent); 
-            color: white; 
-            font-size: 11px; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-weight: 700; 
-            text-transform: uppercase; 
+            background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; 
         }
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
@@ -79,30 +61,16 @@
         .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
         
-        /* SPAZIATURA BIOGRAFIA COMPATTA */
+        /* BIOGRAFIA */
         .bio-box { padding: 25px; }
-        #text-bio { 
-            font-family: 'Lora', serif; 
-            font-size: 16px; 
-            line-height: 1.4; /* Interlinea minima */
-            color: #333; 
-        }
-        #text-bio br { content: ""; display: block; margin-bottom: 4px; } /* Spazio a capo minimo */
+        #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; }
+        #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.4; color: #333; }
+        #text-bio br { content: ""; display: block; margin-bottom: 4px; }
 
         .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
         
         .rel-item { 
-            padding: 10px 12px; 
-            background: rgba(255, 255, 255, 0.8); 
-            margin-bottom: 8px; 
-            border-radius: 12px; 
-            font-size: 12px; 
-            cursor: pointer; 
-            border: 1px solid #eee; 
-            display: flex; 
-            justify-content: flex-start; 
-            gap: 8px; 
-            transition: 0.2s; 
+            padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; transition: 0.2s; 
         }
         .rel-item span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rel-item span:last-child { flex-shrink: 0; font-weight: bold; color: var(--blue-accent); }
@@ -150,6 +118,7 @@
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
+                <div id="label-nome"></div>
                 <div id="text-bio"></div>
             </div>
         </div>
@@ -192,15 +161,30 @@
         const dropdown = document.getElementById('search-dropdown');
         let filtrati = [];
 
+        // Trova prima se c'è una città nel DB che corrisponde alla ricerca per calcolare le vicinanze
+        let centroRicerca = null;
+        if (searchLoc.length > 2) {
+            const cittaEsempi = database.find(d => (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase() === searchLoc);
+            if (cittaEsempi) {
+                centroRicerca = { lat: parseFloat(cittaEsempi.lat.replace(',','.')), lon: parseFloat(cittaEsempi.lon.replace(',','.')) };
+            }
+        }
+
         database.forEach((d, index) => {
-            const cittaNascita = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
+            const cittaVal = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
             const nominativo = (d.nominativo || "").toLowerCase();
+            const lat = parseFloat((d.lat || "").replace(',','.'));
+            const lon = parseFloat((d.lon || "").replace(',','.'));
+            
             const matchName = nominativo.includes(searchName);
-            const matchLoc = cittaNascita.includes(searchLoc);
             const matchReg = !regSel || d.regione === regSel;
             
-            let lat = parseFloat((d.lat || "").replace(',','.'));
-            let lon = parseFloat((d.lon || "").replace(',','.'));
+            // Logica Ricerca Città + 50km
+            let matchLoc = cittaVal.includes(searchLoc);
+            if (!matchLoc && centroRicerca && !isNaN(lat)) {
+                const dist = getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon);
+                if (dist <= 50) matchLoc = true; // Includi se entro 50km
+            }
 
             if (matchName && matchLoc && matchReg && !isNaN(lat)) {
                 let m = L.marker([lat, lon]);
@@ -226,7 +210,10 @@
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
         
-        // Inserimento bio senza ripetizione del nome
+        // Ripropristinato il riquadro nome
+        document.getElementById('label-nome').innerText = d.nominativo;
+        
+        // Testo biografia senza ripetizione manuale del nome (solo scheda)
         document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
         
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
