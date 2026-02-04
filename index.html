@@ -28,12 +28,11 @@
             background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
-        .res-item:hover { background: var(--blue); color: white; }
 
         /* SCHEDA BIOGRAFICA */
         #details-panel { 
             position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
-            width: 94%; max-width: 1100px; z-index: 4000; 
+            width: 94%; max-width: 1150px; z-index: 4000; 
             background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
@@ -43,37 +42,36 @@
         #details-panel.open { transform: translate(-50%, -50%); }
         #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         
-        #details-content { display: flex; overflow: hidden; flex: 1; }
-        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        #details-content { display: flex; overflow: hidden; flex: 1; width: 100%; }
         
+        /* COLONNA SOCIAL (DESKTOP) */
+        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; flex-shrink: 0; }
+        .social-btn { width: 38px; height: 38px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; color: #000; font-weight: 900; font-size: 18px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
+        .social-btn:hover { background: var(--blue); color: #fff; }
+
+        /* COLONNA CENTRALE (VIDEO E BIO) */
+        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
-        /* SOCIAL E COLONNA LATERALE */
-        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; }
-        .social-btn { width: 38px; height: 38px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; color: #000; font-weight: 900; font-size: 18px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
-        .social-btn:hover { background: var(--blue); color: #fff; transform: translateY(-3px); }
-
-        .side-rel { width: 300px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
+        /* COLONNA DESTRA (CORRELATI DESKTOP) */
+        .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; flex-shrink: 0; }
         #box-rel { display: flex; flex-direction: column; gap: 8px; }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
 
+        .mobile-socials { display: none; }
+
         /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
-            #details-panel { top: 60%; max-height: 85vh; } 
             #details-content { flex-direction: column; overflow-y: auto; }
             .side-social { display: none; }
-            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; }
+            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; padding: 15px; flex-shrink: 0; }
             #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
-            .rel-item { min-width: 140px; flex-shrink: 0; }
+            .rel-item { min-width: 140px; text-align: center; }
             .video-box { position: sticky; top: 0; z-index: 10; }
-            
-            /* Social orizzontali in fondo su mobile */
-            .mobile-socials { display: flex !important; justify-content: center; gap: 20px; padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); }
+            .mobile-socials { display: flex; justify-content: center; gap: 20px; padding: 15px; border-top: 1px solid rgba(0,0,0,0.05); }
         }
-
-        .mobile-socials { display: none; }
 
         /* MARKER */
         .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
@@ -112,6 +110,7 @@
             <a href="#" id="wa-share" class="social-btn" target="_blank">w</a>
             <a href="#" id="copy-link" class="social-btn" onclick="copyURL(event)">🔗</a>
         </div>
+        
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
@@ -123,10 +122,11 @@
                 <a href="#" id="wa-share-m" class="social-btn" target="_blank">w</a>
                 <a href="#" id="copy-link-m" class="social-btn" onclick="copyURL(event)">🔗</a>
             </div>
-            <div class="side-rel">
-                <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
-                <div id="box-rel"></div>
-            </div>
+        </div>
+
+        <div class="side-rel">
+            <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
+            <div id="box-rel"></div>
         </div>
     </div>
 </div>
@@ -148,7 +148,6 @@
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
-    let searchTimer;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -183,41 +182,6 @@
         if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
     }
 
-    async function filtra(tipo) {
-        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
-        const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { drop.style.display = 'none'; return; }
-
-        if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val)).slice(0, 15);
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
-        } else {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(async () => {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
-                try {
-                    const r = await fetch(url);
-                    const data = await r.json();
-                    if (data.length > 0) {
-                        const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
-                        let vicini = database.filter(d => {
-                            const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                            return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
-                        });
-                        if (vicini.length > 0) {
-                            drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                            drop.style.display = 'block';
-                            let b = L.latLngBounds();
-                            vicini.forEach(v => b.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
-                            map.flyToBounds(b, {padding: [100, 100], maxZoom: 10, duration: 1.5});
-                        }
-                    }
-                } catch (e) { console.error(e); }
-            }, 600);
-        }
-    }
-
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         const drop = document.getElementById('results-dropdown');
@@ -225,6 +189,17 @@
         caricaMarker(d => d.regione.toLowerCase() === reg.toLowerCase(), true);
         let filtrati = database.filter(d => d.regione.toLowerCase() === reg.toLowerCase());
         if (filtrati.length > 0) {
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+            drop.style.display = 'block';
+        }
+    }
+
+    async function filtra(tipo) {
+        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
+        const drop = document.getElementById('results-dropdown');
+        if (val.length < 3) { drop.style.display = 'none'; return; }
+        if (tipo === 'name') {
+            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         }
@@ -245,33 +220,20 @@
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
         
-        // Setup Social Links
         const pageURL = window.location.href;
-        const shareText = `Guarda la video intervista di ${d.nominativo} su Archivio Partigiani`;
-        const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageURL)}`;
-        const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + pageURL)}`;
-        
-        document.getElementById('fb-share').href = fbURL;
-        document.getElementById('wa-share').href = waURL;
-        document.getElementById('fb-share-m').href = fbURL;
-        document.getElementById('wa-share-m').href = waURL;
+        const shareText = `Guarda la video intervista di ${d.nominativo}`;
+        document.getElementById('fb-share').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageURL)}`;
+        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + pageURL)}`;
+        document.getElementById('fb-share-m').href = document.getElementById('fb-share').href;
+        document.getElementById('wa-share-m').href = document.getElementById('wa-share').href;
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function copyURL(e) {
-        e.preventDefault();
-        navigator.clipboard.writeText(window.location.href);
-        alert("Link copiato negli appunti!");
-    }
-
-    function closeDetails() {
-        document.getElementById('details-panel').classList.remove('open');
-        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
-    }
-
+    function copyURL(e) { e.preventDefault(); navigator.clipboard.writeText(window.location.href); alert("Link copiato!"); }
+    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); }
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
