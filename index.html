@@ -11,36 +11,33 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.75); }
+        :root { --navy: #1a2a3a; --blue: #3498db; --glass-white: rgba(255, 255, 255, 0.7); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
-        /* INTERFACCIA BARRA RICERCA */
+        /* BARRA RICERCA */
         #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             padding: 10px 20px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
             display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.3);
         }
         #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #111; }
         
-        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; transition: 0.3s; }
-        .btn-icon:hover { transform: scale(1.3); color: var(--blue); }
-
-        /* RISULTATI INTEGRATI SOTTO LA BARRA */
+        /* RISULTATI SOTTO BARRA */
         #results-dropdown { 
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
             display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #ddd;
         }
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
-        .res-item:hover { background: var(--blue); color: white; padding-left: 30px; }
+        .res-item:hover { background: var(--blue); color: white; }
 
-        /* SCHEDA TRASPARENTE */
+        /* SCHEDA CON TRASPARENZA */
         #details-panel { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1000px; z-index: 4000; 
-            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            background: var(--glass-white); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.6); 
             display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
@@ -48,25 +45,27 @@
         #details-panel.open { transform: translate(-50%, -50%); }
         
         #details-header { background: rgba(26, 42, 58, 0.9); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
-        .header-tag { background: var(--blue); padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-
+        
         #details-content { display: flex; height: 100%; max-height: 70vh; }
-        .main-col { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.2); }
+        .main-col { flex: 1; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
         
         .bio-box { padding: 15px 30px; line-height: 1.1; }
-        #label-nome { display: inline-block; background: #000; color: white; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
+
+        /* HOVER MARKER STELLA */
+        .stella svg { transition: all 0.3s ease; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .stella:hover svg { transform: scale(1.5); cursor: pointer; }
+        .stella:hover polygon { fill: #ffcc00; stroke: #000; }
 
         .social-col { width: 65px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px; }
         .social-btn { width: 42px; height: 42px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 18px; border: 1px solid #ddd; text-decoration: none; color: #333; }
         .social-btn:hover { background: var(--blue); color: white; transform: translateY(-5px); }
 
         .side-col { width: 280px; background: rgba(0,0,0,0.05); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); }
-        .rel-item { padding: 12px; background: white; margin-bottom: 10px; border-radius: 15px; font-size: 12px; cursor: pointer; border: 1px solid #eee; transition: 0.3s; font-weight: 600; }
-        .rel-item:hover { transform: translateX(10px); border-color: var(--blue); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; transition: 0.3s; }
+        .rel-item:hover { transform: translateX(8px); border-color: var(--blue); }
 
-        /* CLUSTER COLORATI */
         .marker-cluster-small div { background-color: rgba(52, 152, 219, 0.9); color: #fff; }
         .marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.9); color: #fff; }
         .marker-cluster-large div { background-color: rgba(231, 76, 60, 0.9); color: #fff; }
@@ -79,11 +78,11 @@
 <div id="ui-container">
     <div id="filter-bar">
         <button class="btn-icon" onclick="resetFiltri()">↺</button>
-        <input type="text" id="search-name" placeholder="Partigiano (Cognome)..." oninput="filtra('name')">
-        <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
-        <select id="filtro-regione" onchange="caricaMarker(); mostraRisultatiRegione()">
-            <option value="">Regione</option>
-            <option value="Piemonte">Piemonte</option><option value="Lombardia">Lombardia</option><option value="Veneto">Veneto</option><option value="Toscana">Toscana</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Lazio">Lazio</option><option value="Campania">Campania</option><option value="Sicilia">Sicilia</option>
+        <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
+        <input type="text" id="search-city" placeholder="Citta (50km)..." oninput="filtra('city')">
+        <select id="filtro-regione" onchange="filtraRegione()">
+            <option value="">Regione...</option>
+            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
     </div>
     <div id="results-dropdown"></div>
@@ -94,23 +93,23 @@
 <div id="details-panel">
     <div id="details-header">
         <div style="display:flex; align-items:center; gap:12px;">
-            <b id="h-nome">NOMINATIVO</b> <span id="h-reg" class="header-tag">REGIONE</span>
+            <b id="h-nome">NOMINATIVO</b> <span id="h-reg" style="background:var(--blue); padding:3px 10px; border-radius:20px; font-size:11px;">REGIONE</span>
         </div>
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
     </div>
     <div id="details-content">
         <div class="social-col">
-            <a href="#" class="social-btn">f</a><a href="#" class="social-btn">w</a><a href="#" class="social-btn">🔗</a>
+            <div class="social-btn">f</div><div class="social-btn">w</div><div class="social-btn">🔗</div>
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div id="label-nome">NOMINATIVO</div>
+                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:5px;">NOME COGNOME</div>
                 <p id="text-bio"></p>
             </div>
         </div>
         <div class="side-col">
-            <div style="font-size:10px; font-weight:800; opacity:0.4; margin-bottom:10px; letter-spacing:1px;">CORRELATI</div>
+            <div style="font-size:10px; font-weight:800; opacity:0.4; margin-bottom:8px;">CORRELATI</div>
             <div id="box-rel"></div>
         </div>
     </div>
@@ -147,19 +146,36 @@
         }
     });
 
-    function caricaMarker() {
-        const nameVal = document.getElementById('search-name').value.toLowerCase();
-        const regVal = document.getElementById('filtro-regione').value;
+    function caricaMarker(filtroFn = () => true) {
         markers.clearLayers();
+        let bounds = L.latLngBounds();
+        let count = 0;
         database.forEach(d => {
-            const lat = parseFloat(d.lat?.replace(',','.'));
-            const lon = parseFloat(d.lon?.replace(',','.'));
-            if (!isNaN(lat) && d.nominativo.toLowerCase().includes(nameVal) && (!regVal || d.regione === regVal)) {
-                let m = L.marker([lat, lon], { icon: stellaIcon });
-                m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
-                markers.addLayer(m);
+            if (filtroFn(d)) {
+                const lat = parseFloat(d.lat?.replace(',','.'));
+                const lon = parseFloat(d.lon?.replace(',','.'));
+                if (!isNaN(lat)) {
+                    let m = L.marker([lat, lon], { icon: stellaIcon });
+                    m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
+                    markers.addLayer(m);
+                    bounds.extend([lat, lon]);
+                    count++;
+                }
             }
         });
+        if (count > 0) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+    }
+
+    function filtraRegione() {
+        const reg = document.getElementById('filtro-regione').value;
+        const drop = document.getElementById('results-dropdown');
+        if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
+        
+        let filtrati = database.filter(d => d.regione === reg);
+        caricaMarker(d => d.regione === reg);
+        
+        drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+        drop.style.display = 'block';
     }
 
     async function filtra(tipo) {
@@ -168,38 +184,22 @@
         if (val.length < 2) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
-            // Logica Cognome: privilegia chi ha il termine cercato alla fine della stringa
             let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
-                .sort((a,b) => {
-                    const cogA = a.nominativo.toLowerCase().split(' ').pop().startsWith(val);
-                    const cogB = b.nominativo.toLowerCase().split(' ').pop().startsWith(val);
-                    return cogB - cogA;
-                }).slice(0, 15);
-            
+                .sort((a,b) => (b.nominativo.toLowerCase().split(' ').pop().startsWith(val) ? 1 : -1)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>${d.regione}</small></div>`).join('');
             drop.style.display = 'block';
-            caricaMarker();
         } else {
-            // Geocoding + Raggio 50km
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val}&countrycodes=it&limit=1`);
                 const data = await r.json();
                 if (data.length > 0) {
-                    const cLat = parseFloat(data[0].lat);
-                    const cLon = parseFloat(data[0].lon);
-                    
-                    // Trova partigiani entro 50km dalle coordinate trovate
+                    const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
                     let vicini = database.filter(d => {
-                        const pLat = parseFloat(d.lat?.replace(',','.'));
-                        const pLon = parseFloat(d.lon?.replace(',','.'));
-                        if (isNaN(pLat)) return false;
-                        const dist = map.distance([cLat, cLon], [pLat, pLon]) / 1000;
-                        return dist <= 50;
+                        const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                        return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) / 1000) <= 50;
                     });
-
-                    drop.innerHTML = `<div style="padding:10px; background:#f4f4f4; font-size:10px;">RISULTATI ENTRO 50KM DA ${data[0].display_name.split(',')[0].toUpperCase()}</div>`;
-                    drop.innerHTML += vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>${d.regione}</small></div>`).join('');
+                    drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
                     drop.style.display = 'block';
                     map.flyTo([cLat, cLon], 10);
                 }
@@ -214,7 +214,7 @@
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
         
-        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 6);
+        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 5);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
@@ -231,14 +231,9 @@
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
     }
 
-    function resetFiltri() {
-        location.reload();
-    }
+    function resetFiltri() { location.reload(); }
 
-    map.on('click', () => { 
-        closeDetails(); 
-        document.getElementById('results-dropdown').style.display = 'none'; 
-    });
+    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
