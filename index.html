@@ -26,6 +26,7 @@
 
         #search-dropdown { width: 100%; background: white; border-radius: 12px; margin-top: 5px; max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); z-index: 1100; }
         .dropdown-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .dropdown-item:hover { background: #f9f9f9; }
 
         /* PANNELLO DETTAGLI */
         #details-panel { 
@@ -49,7 +50,8 @@
         
         .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 20px 25px; } /* Ridotto padding */
+        /* MODIFICA SPAZIO BIOGRAFIA: Aumentato padding inferiore */
+        .bio-box { padding: 20px 25px; padding-bottom: 35px; }
         #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 3px 8px; border-radius: 3px; font-weight: 700; margin-bottom: 10px; font-size: 11px; text-transform: uppercase; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.5; color: #222; margin-bottom: 0; }
 
@@ -58,6 +60,7 @@
             padding: 15px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; 
         }
         .rel-item { padding: 8px 12px; background: rgba(255,255,255,0.7); margin-bottom: 6px; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
+        .rel-item:hover { background: white; }
 
         @media (max-width: 768px) {
             #filter-bar { border-radius: 15px; padding: 5px; flex-wrap: wrap; }
@@ -152,11 +155,9 @@
         const nameVal = document.getElementById('search-name').value.toLowerCase().trim();
         const locVal = document.getElementById('search-location').value.toLowerCase().trim();
         const regVal = document.getElementById('filtro-regione').value;
-        const dropdown = document.getElementById('search-dropdown');
         
         clearTimeout(timeoutRicerca);
 
-        // Se cerco una città, attivo la geolocalizzazione
         if (locVal.length > 3) {
             timeoutRicerca = setTimeout(async () => {
                 try {
@@ -183,11 +184,12 @@
             const matchName = (d.nominativo || "").toLowerCase().includes(nameVal);
             const matchReg = !regVal || d.regione === regVal;
             
-            // Filtro distanza se c'è una città cercata, altrimenti passa sempre
             let matchLoc = !centroRicerca || (centroRicerca && !isNaN(lat) && getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon) <= 50);
 
             if (matchName && matchReg && matchLoc && !isNaN(lat)) {
                 let m = L.marker([lat, lon], { icon: stellaIcon });
+                // MODIFICA HOVER: Aggiunto tooltip
+                m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
                 filtrati.push({d, index});
