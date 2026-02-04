@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Partigiani</title>
+    <title>Archivio Partigiani - Mappa Interattiva</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -28,6 +28,7 @@
             background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
+        .res-item:hover { background: var(--blue); color: white; }
 
         /* SCHEDA BIOGRAFICA */
         #details-panel { 
@@ -55,15 +56,17 @@
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
-        /* COLONNA DESTRA (CORRELATI DESKTOP) */
+        /* COLONNA DESTRA (CORRELATI) */
         .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; flex-shrink: 0; }
         #box-rel { display: flex; flex-direction: column; gap: 8px; }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
+        .rel-item:hover { background: rgba(255,255,255,0.7); }
 
         .mobile-socials { display: none; }
 
         /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
+            #details-panel { top: 60%; max-height: 85vh; }
             #details-content { flex-direction: column; overflow-y: auto; }
             .side-social { display: none; }
             .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; padding: 15px; flex-shrink: 0; }
@@ -76,8 +79,8 @@
         /* MARKER */
         .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
         .stella:hover svg { transform: scale(1.8); }
-        .stella:hover polygon { fill: #ffcc00; stroke: #000; }
-        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; padding: 5px 10px; font-size: 12px; }
+        .stella:hover polygon { fill: #e21118; stroke: #fff; }
+        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; padding: 5px 10px; font-size: 12px; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -108,9 +111,8 @@
         <div class="side-social">
             <a href="#" id="fb-share" class="social-btn" target="_blank">f</a>
             <a href="#" id="wa-share" class="social-btn" target="_blank">w</a>
-            <a href="#" id="copy-link" class="social-btn" onclick="copyURL(event)">🔗</a>
+            <a href="#" id="copy-link" class="social-btn">🔗</a>
         </div>
-        
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
@@ -120,10 +122,9 @@
             <div class="mobile-socials">
                 <a href="#" id="fb-share-m" class="social-btn" target="_blank">f</a>
                 <a href="#" id="wa-share-m" class="social-btn" target="_blank">w</a>
-                <a href="#" id="copy-link-m" class="social-btn" onclick="copyURL(event)">🔗</a>
+                <a href="#" id="copy-link-m" class="social-btn">🔗</a>
             </div>
         </div>
-
         <div class="side-rel">
             <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
             <div id="box-rel"></div>
@@ -148,6 +149,7 @@
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
+    let searchTimer;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -157,29 +159,17 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker():
-            complete: function(res) {
-    database = res.data.map(d => {
-        let clean = {};
-        Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
-        return clean;
-    });
-    caricaMarker(); 
+            caricaMarker(); 
 
-    // --- AGGIUNGI DA QUI: APERTURA DA LINK ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const partigianoDaAprire = urlParams.get('p');
-    if (partigianoDaAprire) {
-        const d = database.find(x => x.nominativo === decodeURIComponent(partigianoDaAprire));
-        if (d) {
-            setTimeout(() => {
-                apri(d.nominativo);
-            }, 1000); // Aspetta un secondo che la mappa sia pronta
+            // LOGICA APERTURA DA LINK ESTERNO
+            const urlParams = new URLSearchParams(window.location.search);
+            const pNome = urlParams.get('p');
+            if (pNome) {
+                const found = database.find(x => x.nominativo.toLowerCase() === decodeURIComponent(pNome).toLowerCase());
+                if (found) setTimeout(() => apri(found.nominativo), 1200);
+            }
         }
-    }
-    // ---------------------------------------
-}
-
+    });
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
@@ -199,7 +189,39 @@
                 }
             }
         });
-        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
+        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10});
+    }
+
+    async function filtra(tipo) {
+        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
+        const drop = document.getElementById('results-dropdown');
+        if (val.length < 3) { drop.style.display = 'none'; return; }
+
+        if (tipo === 'name') {
+            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val)).slice(0, 15);
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+            drop.style.display = 'block';
+        } else {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(async () => {
+                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`);
+                const data = await r.json();
+                if (data.length > 0) {
+                    const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                    let vicini = database.filter(d => {
+                        const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                        return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
+                    });
+                    if (vicini.length > 0) {
+                        drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+                        drop.style.display = 'block';
+                        let b = L.latLngBounds();
+                        vicini.forEach(v => b.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
+                        map.flyToBounds(b, {padding: [100, 100], maxZoom: 10});
+                    }
+                }
+            }, 600);
+        }
     }
 
     function filtraRegione() {
@@ -208,117 +230,50 @@
         if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
         caricaMarker(d => d.regione.toLowerCase() === reg.toLowerCase(), true);
         let filtrati = database.filter(d => d.regione.toLowerCase() === reg.toLowerCase());
-        if (filtrati.length > 0) {
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
-        }
+        drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+        drop.style.display = 'block';
     }
-
-   async function filtra(tipo) {
-    const valName = document.getElementById('search-name').value.toLowerCase().trim();
-    const valCity = document.getElementById('search-city').value.toLowerCase().trim();
-    const drop = document.getElementById('results-dropdown');
-
-    // Se il campo è vuoto, chiudi il dropdown
-    if (tipo === 'name' && valName.length < 3) { drop.style.display = 'none'; return; }
-    if (tipo === 'city' && valCity.length < 3) { drop.style.display = 'none'; return; }
-
-    if (tipo === 'name') {
-        // Ricerca per NOME
-        let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(valName)).slice(0, 15);
-        if (filtrati.length > 0) {
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
-        }
-    } else {
-        // Ricerca GEOGRAFICA (Città + 50km)
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(async () => {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valCity)}&countrycodes=it&limit=1`;
-            try {
-                const r = await fetch(url);
-                const data = await r.json();
-                if (data.length > 0) {
-                    const cLat = parseFloat(data[0].lat);
-                    const cLon = parseFloat(data[0].lon);
-                    
-                    // Filtra i partigiani entro 50km dalle coordinate trovate
-                    let vicini = database.filter(d => {
-                        const pLat = parseFloat(d.lat?.replace(',','.'));
-                        const pLon = parseFloat(d.lon?.replace(',','.'));
-                        if (isNaN(pLat) || isNaN(pLon)) return false;
-                        
-                        // Calcola distanza in metri tra centro città e punto
-                        const dist = map.distance([cLat, cLon], [pLat, pLon]);
-                        return dist <= 50000; // 50km
-                    });
-
-                    if (vicini.length > 0) {
-                        drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                        drop.style.display = 'block';
-                        
-                        // Zoom automatico per vedere tutti i risultati trovati nel raggio
-                        let b = L.latLngBounds();
-                        vicini.forEach(v => b.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
-                        map.flyToBounds(b, {padding: [100, 100], maxZoom: 10, duration: 1.5});
-                    } else {
-                        drop.innerHTML = '<div class="res-item">Nessun risultato nel raggio di 50km</div>';
-                        drop.style.display = 'block';
-                    }
-                }
-            } catch (e) { console.error("Errore geo:", e); }
-        }, 600);
-    }
-}
 
     function apri(nome) {
         const d = database.find(x => x.nominativo === nome);
         if(!d) return;
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
-        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14, {duration: 1.8});
+        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
     }
 
-   function openDetails(d) {
-    document.getElementById('h-nome').innerText = d.nominativo;
-    document.getElementById('h-reg').innerText = d.regione;
-    document.getElementById('label-nome').innerText = d.nominativo;
-    document.getElementById('text-bio').innerText = d.scheda || "";
-    document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-    
-  // --- LOGICA DI CONDIVISIONE DINAMICA ---
-const baseDir = window.location.origin + window.location.pathname;
-const shareURL = baseDir + "?p=" + encodeURIComponent(d.nominativo);
-const shareText = `Guarda la video intervista di ${d.nominativo}`;
+    function openDetails(d) {
+        document.getElementById('h-nome').innerText = d.nominativo;
+        document.getElementById('h-reg').innerText = d.regione;
+        document.getElementById('label-nome').innerText = d.nominativo;
+        document.getElementById('text-bio').innerText = d.scheda || "";
+        document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
+        
+        // CONDIVISIONE DINAMICA
+        const shareURL = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
+        const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
+        const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video intervista di " + d.nominativo + " " + shareURL)}`;
+        
+        document.getElementById('fb-share').href = fbURL;
+        document.getElementById('wa-share').href = waURL;
+        document.getElementById('fb-share-m').href = fbURL;
+        document.getElementById('wa-share-m').href = waURL;
 
-const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
-const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareURL)}`;
+        const copyFn = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Link copiato!"); };
+        document.getElementById('copy-link').onclick = copyFn;
+        document.getElementById('copy-link-m').onclick = copyFn;
 
-document.getElementById('fb-share').href = fbURL;
-document.getElementById('wa-share').href = waURL;
-document.getElementById('fb-share-m').href = fbURL;
-document.getElementById('wa-share-m').href = waURL;
+        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
+        document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
+        document.getElementById('details-panel').classList.add('open');
+    }
 
-// Aggiorna la funzione copia link
-const copyFn = (e) => { 
-    e.preventDefault(); 
-    navigator.clipboard.writeText(shareURL); 
-    alert("Link a " + d.nominativo + " copiato!"); 
-};
-document.getElementById('copy-link').onclick = copyFn;
-document.getElementById('copy-link-m').onclick = copyFn;
-// ---------------------------------------
+    function closeDetails() {
+        document.getElementById('details-panel').classList.remove('open');
+        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
+    }
 
-    const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
-    document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
-    document.getElementById('details-panel').classList.add('open');
-}
-
-    function copyURL(e) { e.preventDefault(); navigator.clipboard.writeText(window.location.href); alert("Link copiato!"); }
-    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); }
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
-
-
