@@ -18,7 +18,7 @@
         /* UI FILTRI */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.72) !important; 
+            background: rgba(255, 255, 255, 0.75) !important; 
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
             padding: 10px 20px; border-radius: 50px; box-shadow: var(--shadow); 
@@ -30,7 +30,6 @@
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; transition: 0.2s; }
         .dropdown-item:hover { background: #f9f9f9; color: var(--blue-accent); }
 
-        /* ICONA STELLA */
         .custom-marker-icon { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transition: transform 0.2s ease; }
 
         /* PANNELLO DETTAGLI */
@@ -41,23 +40,30 @@
             overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
+        
         #details-header { background: var(--navy); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         #int-regione-pill { background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
 
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
+        #details-content { display: flex; flex: 1; overflow: hidden; background: white; }
+        .social-col { width: 65px; background: #f8f9fa; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
+        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; }
+        
+        .main-col { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
         .bio-box { padding: 25px; }
         #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; }
-        #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.4; color: #333; }
-        #text-bio br { content: ""; display: block; margin-bottom: 4px; }
+        #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.5; color: #333; }
 
-        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
-        .rel-item { padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; }
+        .side-col { width: 280px; background: #fcfcfc; padding: 20px; border-left: 1px solid #eee; overflow-y: auto; }
+        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
 
         @media (max-width: 768px) {
-            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
-            .side-col { width: 100%; display: block; }
+            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; }
+            #details-content { flex-direction: column; overflow-y: auto; }
+            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; order: 2; border-right: none; border-top: 1px solid #eee; }
+            .main-col { order: 1; overflow-y: visible; }
+            .side-col { width: 100%; order: 3; border-left: none; background: #f9f9f9; }
         }
     </style>
 </head>
@@ -71,7 +77,7 @@
             <option value="">Regione</option>
             <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
-        <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:22px; padding: 0 10px;">↺</button>
+        <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:20px;">↺</button>
     </div>
     <div id="search-dropdown"></div>
 </div>
@@ -86,7 +92,12 @@
         </div>
         <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:8px 16px; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer;">CHIUDI X</button>
     </div>
-    <div id="details-content" style="display:flex; flex:1; overflow:hidden;">
+    <div id="details-content">
+        <div class="social-col">
+            <div class="social-icon" onclick="shareSocial('fb')">f</div>
+            <div class="social-icon" onclick="shareSocial('wa')">w</div>
+            <div class="social-icon" onclick="copyLink()">🔗</div>
+        </div>
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
@@ -108,6 +119,9 @@
 <script>
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    
+    // CHIUSURA SCHEDA AL CLICK SULLA MAPPA
+    map.on('click', function() { closeDetails(); });
 
     const stellaAnpiIcon = L.divIcon({
         className: 'custom-marker',
@@ -118,8 +132,9 @@
         iconSize: [30, 30], iconAnchor: [15, 15]
     });
 
-    // Raggruppamento con colori dinamici (Verde, Giallo, Arancio)
-    let markers = L.markerClusterGroup().addTo(map);
+    let markers = L.markerClusterGroup();
+    markers.on('clusterclick', function (a) { L.DomEvent.stopPropagation(a); }); // Impedisce chiusura scheda al click cluster
+    map.addLayer(markers);
 
     let database = [];
     let timeoutRicerca = null;
@@ -170,7 +185,6 @@
 
             if (matchName && matchLoc && matchReg && !isNaN(lat)) {
                 let m = L.marker([lat, lon], { icon: stellaAnpiIcon });
-                // RIPRISTINATO EFFETTO HOVER COL NOME
                 m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
@@ -191,9 +205,8 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         
         let biografia = d.scheda || "";
-        const nomeDaRimuovere = d.nominativo;
-        if (biografia.toLowerCase().startsWith(nomeDaRimuovere.toLowerCase())) {
-            biografia = biografia.substring(nomeDaRimuovere.length).replace(/^[,.\s]+/, "");
+        if (biografia.toLowerCase().startsWith(d.nominativo.toLowerCase())) {
+            biografia = biografia.substring(d.nominativo.length).replace(/^[,.\s]+/, "");
         }
         document.getElementById('text-bio').innerHTML = biografia.split('. ').join('.<br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
@@ -207,7 +220,7 @@
         
         document.getElementById('box-correlati').innerHTML = correlati.map(item => {
             const realIdx = database.findIndex(x => x.nominativo === item.nominativo);
-            return `<div class="rel-item" onclick="zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span>${Math.round(item.dist)}km</span></div>`;
+            return `<div class="rel-item" onclick="event.stopPropagation(); zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span style="font-weight:bold;color:var(--blue-accent)">${Math.round(item.dist)}km</span></div>`;
         }).join('');
         
         document.getElementById('details-panel').classList.add('open');
@@ -238,6 +251,16 @@
         document.getElementById('search-location').value = ''; 
         document.getElementById('filtro-regione').value = '';
         closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
+    }
+
+    function shareSocial(platform) {
+        const url = window.location.href;
+        if(platform === 'fb') window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`);
+        if(platform === 'wa') window.open(`https://api.whatsapp.com/send?text=${url}`);
+    }
+
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href).then(() => { alert("Link copiato!"); });
     }
 </script>
 </body>
