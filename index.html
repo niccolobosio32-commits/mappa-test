@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Partigiani - Mappa Interattiva</title>
+    <title>Archivio Partigiani</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -13,7 +13,7 @@
     <style>
         :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.4); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
-        #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #aad3df; }
+        #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
         /* UI RICERCA */
         #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 900px; }
@@ -25,67 +25,65 @@
         #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; }
         
         #results-dropdown { 
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
-            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; 
         }
-        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: 0.2s; }
-        .res-item:hover { background: var(--blue); color: white; }
+        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
 
-        /* SCHEDA BIOGRAFICA TRASPARENTE */
+        /* SCHEDA BIOGRAFICA */
         #details-panel { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, 160%); 
-            width: 94%; max-width: 1000px; z-index: 4000; 
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
+            width: 94%; max-width: 1100px; z-index: 4000; 
             background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
             display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
-            max-height: 85vh;
+            max-height: 80vh;
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         
-        #details-content { display: flex; overflow: hidden; flex: 1; background: transparent; }
-        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: transparent; }
+        #details-content { display: flex; overflow: hidden; flex: 1; }
+        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        .bio-box { padding: 15px 30px; line-height: 1.2; background: transparent; }
-        #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; font-weight: 500; }
+        .bio-box { padding: 15px 30px; line-height: 1.1; }
+        #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
-        /* SOCIAL E CORRELATI CON TRASPARENZA */
-        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px; flex-shrink: 0; }
-        .social-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.5); }
+        /* COLONNA LATERALE (DESKTOP) */
+        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; }
+        .side-rel { width: 300px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
         
-        .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
-        .rel-item { padding: 12px; background: rgba(255,255,255,0.3); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: 0.3s; color: #000; font-weight: 600; }
-        .rel-item:hover { background: rgba(255,255,255,0.8); transform: translateX(5px); border-color: var(--blue); }
+        /* ELEMENTI CORRELATI */
+        #box-rel { display: flex; flex-direction: column; gap: 8px; }
+        .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
+        .rel-item:hover { background: rgba(255,255,255,0.7); }
 
-        /* MOBILE */
+        /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
+            #details-panel { top: 60%; max-height: 85vh; } /* Abbassato per non toccare la ricerca */
+            #details-header { padding: 10px 20px; }
             #details-content { flex-direction: column; overflow-y: auto; }
             .side-social { display: none; }
-            .main-col { overflow-y: visible; }
-            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; padding-bottom: 50px; }
+            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; }
+            
+            /* Correlati in riga su mobile */
+            #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
+            .rel-item { min-width: 140px; flex-shrink: 0; text-align: center; }
             .video-box { position: sticky; top: 0; z-index: 10; }
-            .rel-item { background: rgba(255,255,255,0.5); }
         }
 
-        /* TOOLTIP E MARKER */
-        .stella svg { transition: all 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
+        /* MARKER */
+        .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
         .stella:hover svg { transform: scale(1.8); }
         .stella:hover polygon { fill: #ffcc00; stroke: #000; }
-        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-weight: 600; font-size: 12px; z-index: 6000; }
-
-        .marker-cluster-small div { background-color: rgba(52, 152, 219, 0.85); color: #fff; }
-        .marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.85); color: #fff; }
-        .marker-cluster-large div { background-color: rgba(231, 76, 60, 0.85); color: #fff; }
+        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; padding: 5px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div id="ui-container">
     <div id="filter-bar">
-        <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
+        <button onclick="location.reload()" style="background:none; border:none; cursor:pointer;">↺</button>
         <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
         <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
@@ -103,22 +101,23 @@
         <div style="display:flex; align-items:center; gap:12px;">
             <b id="h-nome">NOMINATIVO</b> <span id="h-reg" style="background:var(--blue); padding:3px 10px; border-radius:20px; font-size:11px;">REGIONE</span>
         </div>
-        <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
+        <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:35px; cursor:pointer; line-height:1;">&times;</button>
     </div>
     <div id="details-content">
         <div class="side-social">
-            <div class="social-btn">f</div><div class="social-btn">w</div><div class="social-btn">🔗</div>
+            <div style="width:35px; height:35px; background:rgba(255,255,255,0.3); border-radius:8px;"></div>
+            <div style="width:35px; height:35px; background:rgba(255,255,255,0.3); border-radius:8px;"></div>
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME COGNOME</div>
+                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME</div>
                 <p id="text-bio"></p>
             </div>
-            <div class="side-rel">
-                <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
-                <div id="box-rel"></div>
-            </div>
+        </div>
+        <div class="side-rel">
+            <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
+            <div id="box-rel"></div>
         </div>
     </div>
 </div>
@@ -157,7 +156,6 @@
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
-        let hasData = false;
         database.forEach(d => {
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
@@ -168,11 +166,10 @@
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
-                    hasData = true;
                 }
             }
         });
-        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
+        if (fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
     }
 
     async function filtra(tipo) {
