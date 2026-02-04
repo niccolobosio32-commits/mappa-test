@@ -50,25 +50,30 @@
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
-        /* COLONNA LATERALE (DESKTOP) */
+        /* SOCIAL E COLONNA LATERALE */
         .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; }
+        .social-btn { width: 38px; height: 38px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; color: #000; font-weight: 900; font-size: 18px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
+        .social-btn:hover { background: var(--blue); color: #fff; transform: translateY(-3px); }
+
         .side-rel { width: 300px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
-        
         #box-rel { display: flex; flex-direction: column; gap: 8px; }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
-        .rel-item:hover { background: rgba(255,255,255,0.7); }
 
         /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
             #details-panel { top: 60%; max-height: 85vh; } 
-            #details-header { padding: 10px 20px; }
             #details-content { flex-direction: column; overflow-y: auto; }
             .side-social { display: none; }
             .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; }
             #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
-            .rel-item { min-width: 140px; flex-shrink: 0; text-align: center; }
+            .rel-item { min-width: 140px; flex-shrink: 0; }
             .video-box { position: sticky; top: 0; z-index: 10; }
+            
+            /* Social orizzontali in fondo su mobile */
+            .mobile-socials { display: flex !important; justify-content: center; gap: 20px; padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); }
         }
+
+        .mobile-socials { display: none; }
 
         /* MARKER */
         .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
@@ -103,8 +108,9 @@
     </div>
     <div id="details-content">
         <div class="side-social">
-            <div style="width:35px; height:35px; background:rgba(255,255,255,0.3); border-radius:8px;"></div>
-            <div style="width:35px; height:35px; background:rgba(255,255,255,0.3); border-radius:8px;"></div>
+            <a href="#" id="fb-share" class="social-btn" target="_blank">f</a>
+            <a href="#" id="wa-share" class="social-btn" target="_blank">w</a>
+            <a href="#" id="copy-link" class="social-btn" onclick="copyURL(event)">🔗</a>
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
@@ -112,10 +118,15 @@
                 <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME</div>
                 <p id="text-bio"></p>
             </div>
-        </div>
-        <div class="side-rel">
-            <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
-            <div id="box-rel"></div>
+            <div class="mobile-socials">
+                <a href="#" id="fb-share-m" class="social-btn" target="_blank">f</a>
+                <a href="#" id="wa-share-m" class="social-btn" target="_blank">w</a>
+                <a href="#" id="copy-link-m" class="social-btn" onclick="copyURL(event)">🔗</a>
+            </div>
+            <div class="side-rel">
+                <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
+                <div id="box-rel"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -207,26 +218,15 @@
         }
     }
 
-    // MODIFICATO PER MOSTRARE ELENCO NOMI
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         const drop = document.getElementById('results-dropdown');
-        if(!reg) { 
-            drop.style.display = 'none';
-            caricaMarker(); 
-            return; 
-        }
-        
-        // Carica i marker sulla mappa
+        if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
         caricaMarker(d => d.regione.toLowerCase() === reg.toLowerCase(), true);
-        
-        // Genera e mostra l'elenco dei nomi nel menu a tendina
         let filtrati = database.filter(d => d.regione.toLowerCase() === reg.toLowerCase());
         if (filtrati.length > 0) {
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
-        } else {
-            drop.style.display = 'none';
         }
     }
 
@@ -244,9 +244,27 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
+        
+        // Setup Social Links
+        const pageURL = window.location.href;
+        const shareText = `Guarda la video intervista di ${d.nominativo} su Archivio Partigiani`;
+        const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageURL)}`;
+        const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + pageURL)}`;
+        
+        document.getElementById('fb-share').href = fbURL;
+        document.getElementById('wa-share').href = waURL;
+        document.getElementById('fb-share-m').href = fbURL;
+        document.getElementById('wa-share-m').href = waURL;
+
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
+    }
+
+    function copyURL(e) {
+        e.preventDefault();
+        navigator.clipboard.writeText(window.location.href);
+        alert("Link copiato negli appunti!");
     }
 
     function closeDetails() {
