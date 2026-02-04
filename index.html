@@ -25,9 +25,10 @@
         #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; }
         
         #results-dropdown { 
-            background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; 
+            background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
+        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
+        .res-item:hover { background: var(--blue); color: white; }
 
         /* SCHEDA BIOGRAFICA */
         #details-panel { 
@@ -53,20 +54,17 @@
         .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; }
         .side-rel { width: 300px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
         
-        /* ELEMENTI CORRELATI */
         #box-rel { display: flex; flex-direction: column; gap: 8px; }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
         .rel-item:hover { background: rgba(255,255,255,0.7); }
 
         /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
-            #details-panel { top: 60%; max-height: 85vh; } /* Abbassato per non toccare la ricerca */
+            #details-panel { top: 60%; max-height: 85vh; } 
             #details-header { padding: 10px 20px; }
             #details-content { flex-direction: column; overflow-y: auto; }
             .side-social { display: none; }
             .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; }
-            
-            /* Correlati in riga su mobile */
             #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 10px; }
             .rel-item { min-width: 140px; flex-shrink: 0; text-align: center; }
             .video-box { position: sticky; top: 0; z-index: 10; }
@@ -156,6 +154,7 @@
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
+        let hasData = false;
         database.forEach(d => {
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
@@ -166,10 +165,11 @@
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
+                    hasData = true;
                 }
             }
         });
-        if (fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
+        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
     }
 
     async function filtra(tipo) {
@@ -207,6 +207,29 @@
         }
     }
 
+    // MODIFICATO PER MOSTRARE ELENCO NOMI
+    function filtraRegione() {
+        const reg = document.getElementById('filtro-regione').value;
+        const drop = document.getElementById('results-dropdown');
+        if(!reg) { 
+            drop.style.display = 'none';
+            caricaMarker(); 
+            return; 
+        }
+        
+        // Carica i marker sulla mappa
+        caricaMarker(d => d.regione.toLowerCase() === reg.toLowerCase(), true);
+        
+        // Genera e mostra l'elenco dei nomi nel menu a tendina
+        let filtrati = database.filter(d => d.regione.toLowerCase() === reg.toLowerCase());
+        if (filtrati.length > 0) {
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+            drop.style.display = 'block';
+        } else {
+            drop.style.display = 'none';
+        }
+    }
+
     function apri(nome) {
         const d = database.find(x => x.nominativo === nome);
         if(!d) return;
@@ -221,7 +244,7 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 5);
+        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
@@ -229,12 +252,6 @@
     function closeDetails() {
         document.getElementById('details-panel').classList.remove('open');
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
-    }
-
-    function filtraRegione() {
-        const reg = document.getElementById('filtro-regione').value;
-        if(!reg) { caricaMarker(); return; }
-        caricaMarker(d => d.regione === reg, true);
     }
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
