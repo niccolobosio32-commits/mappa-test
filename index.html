@@ -11,31 +11,28 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --anpi-red: #e21118; --shadow: 0 10px 30px rgba(0,0,0,0.2); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* BARRA FILTRI - SEMITRASPARENTE E GRANDE */
+        /* BARRA FILTRI - SEMITRASPARENTE */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
             background: rgba(255, 255, 255, 0.72) !important; 
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
-            padding: 10px 20px; 
-            border-radius: 50px; 
-            box-shadow: var(--shadow); 
-            display: flex; 
-            gap: 10px; 
-            align-items: center; 
-            border: 1px solid rgba(255,255,255,0.4); 
+            padding: 10px 20px; border-radius: 50px; box-shadow: var(--shadow); 
+            display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.4); 
         }
-        #filter-bar input, #filter-bar select { 
-            border: none; padding: 10px; font-size: 15px; outline: none; flex: 1; background: transparent; color: #333; 
-        }
+        #filter-bar input, #filter-bar select { border: none; padding: 10px; font-size: 15px; outline: none; flex: 1; background: transparent; color: #333; }
 
         #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; transition: 0.2s; }
         .dropdown-item:hover { background: #f9f9f9; color: var(--blue-accent); }
+
+        /* ICONA STELLA ANPI */
+        .custom-marker-icon { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transition: transform 0.2s ease; }
+        .custom-marker-icon:hover { transform: scale(1.2); }
 
         /* PANNELLO DETTAGLI */
         #details-panel { 
@@ -46,13 +43,9 @@
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
         
-        #details-header { 
-            background: var(--navy); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
-        }
+        #details-header { background: var(--navy); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        #int-regione-pill { 
-            background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; 
-        }
+        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
         .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
@@ -69,9 +62,7 @@
 
         .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
         
-        .rel-item { 
-            padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; transition: 0.2s; 
-        }
+        .rel-item { padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; transition: 0.2s; }
         .rel-item span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rel-item span:last-child { flex-shrink: 0; font-weight: bold; color: var(--blue-accent); }
         
@@ -138,7 +129,25 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     map.on('click', closeDetails);
 
-    let markers = L.markerClusterGroup().addTo(map);
+    // Icona ANPI Personalizzata
+    const stellaAnpiIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<svg width="30" height="30" viewBox="0 0 100 100" class="custom-marker-icon">
+                <polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="2"/>
+                <rect x="30" y="85" width="13" height="8" fill="#009246" /><rect x="43" y="85" width="14" height="8" fill="#fff" /><rect x="57" y="85" width="13" height="8" fill="#ce2b37" />
+               </svg>`,
+        iconSize: [30, 30], iconAnchor: [15, 15]
+    });
+
+    let markers = L.markerClusterGroup({
+        iconCreateFunction: function(cluster) {
+            return L.divIcon({ 
+                html: '<div style="background:rgba(226,17,24,0.85); color:white; border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center; font-weight:700; border:2px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3);">' + cluster.getChildCount() + '</div>',
+                className: 'custom-cluster', iconSize: L.point(35, 35)
+            });
+        }
+    }).addTo(map);
+
     let database = [];
     let timeoutRicerca = null;
 
@@ -154,32 +163,23 @@
         }
     });
 
-    // GEOCODING: Funzione asincrona per cercare la città esternamente
     async function caricaMarker() {
         const searchName = document.getElementById('search-name').value.toLowerCase().trim();
         const searchLoc = document.getElementById('search-location').value.toLowerCase().trim();
         const regSel = document.getElementById('filtro-regione').value;
-        const dropdown = document.getElementById('search-dropdown');
-
         clearTimeout(timeoutRicerca);
 
-        // Se la città è lunga più di 3 caratteri, facciamo il geocoding
         if (searchLoc.length > 3) {
             timeoutRicerca = setTimeout(async () => {
                 try {
                     const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchLoc}&countrycodes=it&limit=1`);
                     const data = await resp.json();
-                    let centro = null;
-                    if (data.length > 0) {
-                        centro = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                        map.flyTo([centro.lat, centro.lon], 10);
-                    }
+                    let centro = data.length > 0 ? { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) } : null;
+                    if (centro) map.flyTo([centro.lat, centro.lon], 10);
                     renderizzaRisultati(searchName, searchLoc, regSel, centro);
                 } catch (e) { renderizzaRisultati(searchName, searchLoc, regSel, null); }
-            }, 500); // Ritardo per non intasare il server OSM
-        } else {
-            renderizzaRisultati(searchName, searchLoc, regSel, null);
-        }
+            }, 500);
+        } else { renderizzaRisultati(searchName, searchLoc, regSel, null); }
     }
 
     function renderizzaRisultati(searchName, searchLoc, regSel, centroRicerca) {
@@ -189,26 +189,14 @@
 
         database.forEach((d, index) => {
             const nominativo = (d.nominativo || "").toLowerCase();
-            const cittaVal = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
             const lat = parseFloat((d.lat || "").replace(',','.'));
             const lon = parseFloat((d.lon || "").replace(',','.'));
-            
             const matchName = nominativo.includes(searchName);
             const matchReg = !regSel || d.regione === regSel;
-            
-            let matchLoc = true;
-            if (searchLoc !== "") {
-                if (centroRicerca && !isNaN(lat)) {
-                    const dist = getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon);
-                    matchLoc = (dist <= 50); // Raggio 50km
-                } else {
-                    matchLoc = cittaVal.includes(searchLoc);
-                }
-            }
+            let matchLoc = searchLoc === "" || (centroRicerca && !isNaN(lat) ? getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon) <= 50 : (d['città_nascita'] || "").toLowerCase().includes(searchLoc));
 
             if (matchName && matchLoc && matchReg && !isNaN(lat)) {
-                let m = L.marker([lat, lon]);
-                m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
+                let m = L.marker([lat, lon], { icon: stellaAnpiIcon });
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
                 filtrati.push({d, index});
@@ -217,11 +205,7 @@
 
         if (searchName.length > 1 || searchLoc.length > 1 || regSel !== "") {
             dropdown.style.display = 'block';
-            dropdown.innerHTML = filtrati.slice(0, 30).map(item => `
-                <div class="dropdown-item" onclick="zoomToPartigiano(${item.index})">
-                    <strong>${item.d.nominativo}</strong> <small>(${item.d['città_nascita'] || item.d.regione})</small>
-                </div>
-            `).join('');
+            dropdown.innerHTML = filtrati.slice(0, 30).map(item => `<div class="dropdown-item" onclick="zoomToPartigiano(${item.index})"><strong>${item.d.nominativo}</strong> <small>(${item.d['città_nascita'] || item.d.regione})</small></div>`).join('');
             if(filtrati.length === 0) dropdown.style.display = 'none';
         } else { dropdown.style.display = 'none'; }
     }
@@ -230,17 +214,23 @@
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
         document.getElementById('label-nome').innerText = d.nominativo;
-        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
+        
+        // LOGICA DI PULIZIA: Rimuove il nome dall'inizio della biografia se presente
+        let biografia = d.scheda || "";
+        const nomeDaRimuovere = d.nominativo;
+        if (biografia.toLowerCase().startsWith(nomeDaRimuovere.toLowerCase())) {
+            biografia = biografia.substring(nomeDaRimuovere.length).replace(/^[,.\s]+/, "");
+        }
+        document.getElementById('text-bio').innerHTML = biografia.split('. ').join('.<br>');
+        
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         let latD = parseFloat(d.lat.replace(',','.'));
         let lonD = parseFloat(d.lon.replace(',','.'));
-        
         let correlati = database
             .filter(item => item.nominativo !== d.nominativo && !isNaN(parseFloat(item.lat)))
             .map(item => ({ ...item, dist: getDistance(latD, lonD, parseFloat(item.lat.replace(',','.')), parseFloat(item.lon.replace(',','.'))) }))
-            .sort((a,b) => a.dist - b.dist)
-            .slice(0, 8);
+            .sort((a,b) => a.dist - b.dist).slice(0, 8);
         
         document.getElementById('box-correlati').innerHTML = correlati.map(item => {
             const realIdx = database.findIndex(x => x.nominativo === item.nominativo);
