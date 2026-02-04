@@ -120,7 +120,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
+    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const stellaIcon = L.divIcon({
@@ -134,7 +134,7 @@
     let database = [];
     let searchTimeout;
 
-    Papa.parse("progetto_mappa.csv", {
+  Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
             database = res.data.map(d => {
@@ -142,16 +142,19 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker();
+            // Chiamata con fit automatico al primo caricamento
+            caricaMarker(null, true); 
         }
     });
 
-    function caricaMarker(filtroFn = () => true) {
+  function caricaMarker(filtroFn = null, autoFit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
         let count = 0;
+
         database.forEach(d => {
-            if (filtroFn(d)) {
+            // Se non c'è un filtro specifico, mostra tutti
+            if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
                 const lon = parseFloat(d.lon?.replace(',','.'));
                 if (!isNaN(lat)) {
@@ -163,9 +166,13 @@
                 }
             }
         });
-        if (count > 0) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
-    }
 
+        // Se richiesto (all'avvio o dopo ricerca), centra la mappa sui punti trovati
+        if (count > 0 && autoFit) {
+            map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        }
+    }
+    
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         const drop = document.getElementById('results-dropdown');
@@ -237,3 +244,4 @@
 </script>
 </body>
 </html>
+
