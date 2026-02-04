@@ -15,10 +15,10 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI FILTRI */
+        /* FILTRI - SEMITRASPARENTI */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.75) !important; 
+            background: rgba(255, 255, 255, 0.72) !important; 
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
             padding: 10px 20px; border-radius: 50px; box-shadow: var(--shadow); 
@@ -28,9 +28,6 @@
 
         #search-dropdown { width: 100%; background: white; border-radius: 15px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee; z-index: 1100; }
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; transition: 0.2s; }
-        .dropdown-item:hover { background: #f9f9f9; color: var(--blue-accent); }
-
-        .custom-marker-icon { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transition: transform 0.2s ease; }
 
         /* PANNELLO DETTAGLI */
         #details-panel { 
@@ -45,25 +42,39 @@
         #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         #int-regione-pill { background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
 
-        #details-content { display: flex; flex: 1; overflow: hidden; background: white; }
-        .social-col { width: 65px; background: #f8f9fa; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
+        #details-content { display: flex; flex: 1; overflow: hidden; background: transparent; }
+        
+        /* COLONNA SOCIAL - TRASPARENTE */
+        .social-col { 
+            width: 65px; 
+            background: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(15px); 
+            border-right: 1px solid rgba(0,0,0,0.05); 
+            display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; 
+        }
         .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; }
         
-        .main-col { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
         .bio-box { padding: 25px; }
         #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.5; color: #333; }
 
-        .side-col { width: 280px; background: #fcfcfc; padding: 20px; border-left: 1px solid #eee; overflow-y: auto; }
-        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
+        /* COLONNA CORRELATI - TRASPARENTE */
+        .side-col { 
+            width: 280px; 
+            background: rgba(255, 255, 255, 0.45); 
+            backdrop-filter: blur(15px); 
+            padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; 
+        }
+        .rel-item { padding: 10px; background: rgba(255,255,255,0.7); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; }
 
         @media (max-width: 768px) {
-            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; }
+            #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
             #details-content { flex-direction: column; overflow-y: auto; }
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; order: 2; border-right: none; border-top: 1px solid #eee; }
+            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; order: 2; border-right: none; background: rgba(255,255,255,0.6); }
             .main-col { order: 1; overflow-y: visible; }
-            .side-col { width: 100%; order: 3; border-left: none; background: #f9f9f9; }
+            .side-col { width: 100%; order: 3; border-left: none; background: rgba(245,245,245,0.7); }
         }
     </style>
 </head>
@@ -119,8 +130,6 @@
 <script>
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    
-    // CHIUSURA SCHEDA AL CLICK SULLA MAPPA
     map.on('click', function() { closeDetails(); });
 
     const stellaAnpiIcon = L.divIcon({
@@ -133,7 +142,7 @@
     });
 
     let markers = L.markerClusterGroup();
-    markers.on('clusterclick', function (a) { L.DomEvent.stopPropagation(a); }); // Impedisce chiusura scheda al click cluster
+    markers.on('clusterclick', function (a) { L.DomEvent.stopPropagation(a); });
     map.addLayer(markers);
 
     let database = [];
