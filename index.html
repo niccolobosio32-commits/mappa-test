@@ -11,89 +11,114 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 10px 40px rgba(0,0,0,0.4); }
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #f4f4f4; }
+        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 15px 50px rgba(0,0,0,0.35); }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #e0e5ec; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
-        /* FILTRI */
-        #ui-wrapper { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 96%; max-width: 850px; }
+        /* BARRA DI RICERCA (Più grande e trasparente) */
+        #ui-wrapper { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 94%; max-width: 850px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 4px 12px; border-radius: 50px; box-shadow: var(--shadow); 
-            display: flex; gap: 5px; align-items: center; border: 1px solid rgba(255,255,255,0.5); 
+            background: rgba(255, 255, 255, 0.9) !important; 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 10px 25px; /* Aumentato padding */
+            border-radius: 50px; 
+            box-shadow: var(--shadow); 
+            display: flex; gap: 10px; align-items: center; 
+            border: 1px solid rgba(255,255,255,0.6); 
+            height: 50px; /* Altezza fissa maggiore */
         }
-        #filter-bar input, #filter-bar select { border: none; padding: 6px; font-size: 13px; outline: none; flex: 1; background: transparent; }
+        #filter-bar input, #filter-bar select { 
+            border: none; padding: 5px; font-size: 16px; /* Testo più grande */
+            outline: none; flex: 1; background: transparent; color: #333; font-weight: 500;
+        }
 
-        #search-dropdown { width: 100%; background: white; border-radius: 12px; margin-top: 5px; max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); z-index: 1100; border: 1px solid #eee; }
-        .dropdown-item { padding: 8px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        #search-dropdown { width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 12px; margin-top: 8px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); z-index: 1100; border: 1px solid rgba(255,255,255,0.5); }
+        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 15px; }
 
-        /* PANNELLO ADATTIVO */
+        /* PANNELLO DETTAGLI (Trasparenza + Centrato + Titolo Grande) */
         #details-panel { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(130%); 
-            width: 96%; max-width: 1050px; 
-            /* ALTEZZA DINAMICA: Si adatta al contenuto fino all'82% dello schermo */
-            height: auto; max-height: 82vh; 
-            background: white; z-index: 2000; 
+            position: absolute; 
+            bottom: 40px; /* Più staccato dal fondo */
+            left: 50%; 
+            transform: translateX(-50%) translateY(130%); 
+            width: 92%; max-width: 900px; 
+            /* Altezza adattiva */
+            height: auto; max-height: 80vh; 
+            
+            /* EFFETTO VETRO RIPRISTINATO */
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            
+            z-index: 2000; 
             transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
-            border-radius: 20px; /* Arrotondato ovunque */
+            border-radius: 24px; 
             box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.5);
             display: flex; flex-direction: column; overflow: hidden;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); pointer-events: auto; }
         
-        #details-header { background: var(--navy); color: white; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        #int-nome-header { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+        /* HEADER PIÙ GRANDE */
+        #details-header { 
+            background: var(--navy); color: white; 
+            padding: 15px 25px; /* Spaziatura aumentata */
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
+        }
+        #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        #int-regione-pill { background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* Contenitore interno scrollabile */
         #details-content { display: flex; overflow-y: auto; overflow-x: hidden; }
         
         .social-col { 
-            width: 50px; background: #f8f9fa; border-right: 1px solid #eee;
-            display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 10px; 
+            width: 55px; background: rgba(245, 247, 250, 0.6); border-right: 1px solid rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 12px; 
         }
-        .social-icon { width: 32px; height: 32px; border-radius: 8px; background: white; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #555; }
+        .social-icon { width: 36px; height: 36px; border-radius: 10px; background: white; border: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .social-icon:hover { transform: scale(1.1); background: var(--blue-accent); color: white; border-color: var(--blue-accent); }
         
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; }
+        .main-col { flex: 1; display: flex; flex-direction: column; background: transparent; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
         
-        /* SPAZIATURA MINIMALE */
-        .bio-box { padding: 12px 15px 15px 15px; } 
-        #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 700; margin-bottom: 6px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
-        #text-bio { font-family: 'Lora', serif; font-size: 15px; line-height: 1.3; color: #111; margin: 0; }
+        /* SPAZIATURA TESTO MINIMALE (Richiesta utente) */
+        .bio-box { padding: 12px 18px 18px 18px; } 
+        #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 3px 8px; border-radius: 4px; font-weight: 700; margin-bottom: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.35; color: #1a1a1a; margin: 0; }
 
         .side-col { 
-            width: 240px; background: #fdfdfd; border-left: 1px solid #eee; padding: 12px; 
+            width: 250px; background: rgba(255,255,255,0.4); border-left: 1px solid rgba(0,0,0,0.05); padding: 15px; 
         }
-        .rel-item { padding: 6px 10px; background: white; margin-bottom: 5px; border-radius: 6px; font-size: 11px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .rel-item strong { font-weight: 700; color: #222; }
+        .rel-item { padding: 8px 12px; background: rgba(255,255,255,0.8); margin-bottom: 6px; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .rel-item:hover { background: white; transform: translateX(2px); }
 
         /* MOBILE FIXES */
         @media (max-width: 768px) {
+            #ui-wrapper { top: 10px; width: 96%; }
+            #filter-bar { padding: 8px 15px; height: auto; flex-wrap: wrap; }
+            #filter-bar input { font-size: 14px; width: 100%; margin-bottom: 5px; }
+            
             #details-panel { 
-                bottom: 15px; /* Staccato dal fondo */
-                width: 94%; 
-                max-height: 85vh; /* Altezza massima su mobile */
+                bottom: 15px; width: 94%; 
+                max-height: 82vh; 
             }
+            #details-header { padding: 12px 15px; }
             #details-content { flex-direction: column; }
             
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 8px; order: 2; border-right: none; border-top: 1px solid #eee; justify-content: center; background: white; }
+            .social-col { width: 100%; flex-direction: row; padding: 10px; order: 2; border-right: none; border-top: 1px solid rgba(0,0,0,0.05); justify-content: center; background: rgba(255,255,255,0.8); }
             .main-col { order: 1; }
             
-            /* BARRA CORRELATI MOBILE */
             .side-col { 
-                width: 100%; order: 3; border-left: none; padding: 10px 0; background: #f9f9f9;
-                border-top: 1px solid #eee;
+                width: 100%; order: 3; border-left: none; padding: 10px 0; background: rgba(240,240,240,0.5);
+                border-top: 1px solid rgba(0,0,0,0.05);
             }
-            .side-col-title { margin-left: 12px; font-size: 9px; opacity: 0.6; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; }
+            .side-col-title { margin-left: 12px; font-size: 10px; opacity: 0.7; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
             #box-correlati { 
-                display: flex; overflow-x: auto; gap: 8px; padding: 0 12px 5px 12px;
+                display: flex; overflow-x: auto; gap: 8px; padding: 0 12px 8px 12px;
                 -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory;
             }
             .rel-item { 
                 flex: 0 0 160px; margin-bottom: 0; scroll-snap-align: start; 
-                flex-direction: column; align-items: flex-start; gap: 3px; height: 50px; justify-content: center;
-                background: white; border: 1px solid #ddd;
+                flex-direction: column; align-items: flex-start; gap: 3px; height: 55px; justify-content: center;
+                background: white; border: 1px solid rgba(0,0,0,0.1);
             }
             #box-correlati::-webkit-scrollbar { display: none; }
         }
@@ -103,13 +128,13 @@
 
 <div id="ui-wrapper">
     <div id="filter-bar">
-        <input type="text" id="search-name" placeholder="Cerca nome..." oninput="caricaMarker()">
-        <input type="text" id="search-location" placeholder="Città..." oninput="caricaMarker()">
+        <input type="text" id="search-name" placeholder="Cerca partigiano..." oninput="caricaMarker()">
+        <input type="text" id="search-location" placeholder="Cerca città..." oninput="caricaMarker()">
         <select id="filtro-regione" onchange="caricaMarker()">
             <option value="">Tutte le Regioni</option>
             <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
-        <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:16px; opacity: 0.5;">↺</button>
+        <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:20px; opacity: 0.5; padding:0 5px;">↺</button>
     </div>
     <div id="search-dropdown"></div>
 </div>
@@ -118,17 +143,17 @@
 
 <div id="details-panel">
     <div id="details-header">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <div id="int-nome-header">NOME</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div id="int-nome-header">NOME COGNOME</div>
             <div id="int-regione-pill">REGIONE</div>
         </div>
-        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:4px 8px; border-radius:4px; font-weight:700; cursor:pointer; font-size:9px;">CHIUDI X</button>
+        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 14px; border-radius:6px; font-weight:700; cursor:pointer; font-size:10px; letter-spacing:1px; transition:0.2s;">CHIUDI</button>
     </div>
     <div id="details-content">
         <div class="social-col">
-            <div class="social-icon" onclick="shareSocial('fb')">Fb</div>
-            <div class="social-icon" onclick="shareSocial('wa')">Wa</div>
-            <div class="social-icon" onclick="copyLink()">🔗</div>
+            <div class="social-icon" onclick="shareSocial('fb')" title="Facebook">Fb</div>
+            <div class="social-icon" onclick="shareSocial('wa')" title="WhatsApp">Wa</div>
+            <div class="social-icon" onclick="copyLink()" title="Copia Link">🔗</div>
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
@@ -138,7 +163,7 @@
             </div>
         </div>
         <div class="side-col">
-            <div class="side-col-title">Storie Vicine</div>
+            <div class="side-col-title" style="font-size:11px; font-weight:700; color:var(--navy-light); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; opacity:0.6;">Storie Vicine</div>
             <div id="box-correlati"></div>
         </div>
     </div>
@@ -155,11 +180,11 @@
 
     const stellaIcon = L.divIcon({
         className: 'custom-marker',
-        html: `<svg width="30" height="30" viewBox="0 0 100 100" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3))"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="2"/><rect x="30" y="85" width="13" height="8" fill="#009246" /><rect x="43" y="85" width="14" height="8" fill="#fff" /><rect x="57" y="85" width="13" height="8" fill="#ce2b37" /></svg>`,
-        iconSize: [30, 30], iconAnchor: [15, 15]
+        html: `<svg width="30" height="30" viewBox="0 0 100 100" style="filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3))"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="2"/><rect x="30" y="85" width="13" height="8" fill="#009246" /><rect x="43" y="85" width="14" height="8" fill="#fff" /><rect x="57" y="85" width="13" height="8" fill="#ce2b37" /></svg>`,
+        iconSize: [34, 34], iconAnchor: [17, 17]
     });
 
-    let markers = L.markerClusterGroup();
+    let markers = L.markerClusterGroup({ showCoverageOnHover: false });
     map.addLayer(markers);
 
     let database = [];
