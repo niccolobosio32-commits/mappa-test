@@ -157,9 +157,29 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker(); 
-        }
+            caricaMarker():
+            complete: function(res) {
+    database = res.data.map(d => {
+        let clean = {};
+        Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
+        return clean;
     });
+    caricaMarker(); 
+
+    // --- AGGIUNGI DA QUI: APERTURA DA LINK ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const partigianoDaAprire = urlParams.get('p');
+    if (partigianoDaAprire) {
+        const d = database.find(x => x.nominativo === decodeURIComponent(partigianoDaAprire));
+        if (d) {
+            setTimeout(() => {
+                apri(d.nominativo);
+            }, 1000); // Aspetta un secondo che la mappa sia pronta
+        }
+    }
+    // ---------------------------------------
+}
+
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
@@ -266,29 +286,28 @@
     document.getElementById('text-bio').innerText = d.scheda || "";
     document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
     
-    // --- LOGICA DI CONDIVISIONE CORRETTA ---
-    // Crea un link specifico per questo partigiano (es: sito.it?p=Mario+Rossi)
-    const baseDir = window.location.origin + window.location.pathname;
-    const shareURL = baseDir + "?p=" + encodeURIComponent(d.nominativo);
-    const shareText = `Guarda la video intervista di ${d.nominativo}`;
-    
-    const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
-    const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareURL)}`;
-    
-    // Aggiorna tutti i tasti (Desktop e Mobile)
-    document.getElementById('fb-share').href = fbURL;
-    document.getElementById('wa-share').href = waURL;
-    document.getElementById('fb-share-m').href = fbURL;
-    document.getElementById('wa-share-m').href = waURL;
-    
-    // Aggiorna anche la funzione di copia link per copiare quello specifico del partigiano
-    document.getElementById('copy-link').onclick = (e) => { 
-        e.preventDefault(); 
-        navigator.clipboard.writeText(shareURL); 
-        alert("Link a " + d.nominativo + " copiato!"); 
-    };
-    document.getElementById('copy-link-m').onclick = document.getElementById('copy-link').onclick;
-    // ---------------------------------------
+  // --- LOGICA DI CONDIVISIONE DINAMICA ---
+const baseDir = window.location.origin + window.location.pathname;
+const shareURL = baseDir + "?p=" + encodeURIComponent(d.nominativo);
+const shareText = `Guarda la video intervista di ${d.nominativo}`;
+
+const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
+const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareURL)}`;
+
+document.getElementById('fb-share').href = fbURL;
+document.getElementById('wa-share').href = waURL;
+document.getElementById('fb-share-m').href = fbURL;
+document.getElementById('wa-share-m').href = waURL;
+
+// Aggiorna la funzione copia link
+const copyFn = (e) => { 
+    e.preventDefault(); 
+    navigator.clipboard.writeText(shareURL); 
+    alert("Link a " + d.nominativo + " copiato!"); 
+};
+document.getElementById('copy-link').onclick = copyFn;
+document.getElementById('copy-link-m').onclick = copyFn;
+// ---------------------------------------
 
     const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
     document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
@@ -301,4 +320,5 @@
 </script>
 </body>
 </html>
+
 
