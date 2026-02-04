@@ -15,10 +15,10 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI FILTRI - SEMITRASPARENTE */
+        /* BARRA FILTRI - SEMITRASPARENTE E GRANDE */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.7) !important; 
+            background: rgba(255, 255, 255, 0.72) !important; 
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
             padding: 10px 20px; 
@@ -37,7 +37,7 @@
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; transition: 0.2s; }
         .dropdown-item:hover { background: #f9f9f9; color: var(--blue-accent); }
 
-        /* SCHEDA DETTAGLI */
+        /* PANNELLO DETTAGLI */
         #details-panel { 
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(125%); 
             width: 95%; max-width: 1000px; height: 75vh; background: transparent; z-index: 2000; 
@@ -140,6 +140,7 @@
 
     let markers = L.markerClusterGroup().addTo(map);
     let database = [];
+    let timeoutRicerca = null;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -153,37 +154,56 @@
         }
     });
 
-    function caricaMarker() {
-        markers.clearLayers();
+    // GEOCODING: Funzione asincrona per cercare la città esternamente
+    async function caricaMarker() {
         const searchName = document.getElementById('search-name').value.toLowerCase().trim();
         const searchLoc = document.getElementById('search-location').value.toLowerCase().trim();
         const regSel = document.getElementById('filtro-regione').value;
         const dropdown = document.getElementById('search-dropdown');
+
+        clearTimeout(timeoutRicerca);
+
+        // Se la città è lunga più di 3 caratteri, facciamo il geocoding
+        if (searchLoc.length > 3) {
+            timeoutRicerca = setTimeout(async () => {
+                try {
+                    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchLoc}&countrycodes=it&limit=1`);
+                    const data = await resp.json();
+                    let centro = null;
+                    if (data.length > 0) {
+                        centro = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                        map.flyTo([centro.lat, centro.lon], 10);
+                    }
+                    renderizzaRisultati(searchName, searchLoc, regSel, centro);
+                } catch (e) { renderizzaRisultati(searchName, searchLoc, regSel, null); }
+            }, 500); // Ritardo per non intasare il server OSM
+        } else {
+            renderizzaRisultati(searchName, searchLoc, regSel, null);
+        }
+    }
+
+    function renderizzaRisultati(searchName, searchLoc, regSel, centroRicerca) {
+        markers.clearLayers();
+        const dropdown = document.getElementById('search-dropdown');
         let filtrati = [];
 
-        // Trova prima se c'è una città nel DB che corrisponde alla ricerca per calcolare le vicinanze
-        let centroRicerca = null;
-        if (searchLoc.length > 2) {
-            const cittaEsempi = database.find(d => (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase() === searchLoc);
-            if (cittaEsempi) {
-                centroRicerca = { lat: parseFloat(cittaEsempi.lat.replace(',','.')), lon: parseFloat(cittaEsempi.lon.replace(',','.')) };
-            }
-        }
-
         database.forEach((d, index) => {
-            const cittaVal = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
             const nominativo = (d.nominativo || "").toLowerCase();
+            const cittaVal = (d['città_nascita'] || d['citta_nascita'] || "").toLowerCase();
             const lat = parseFloat((d.lat || "").replace(',','.'));
             const lon = parseFloat((d.lon || "").replace(',','.'));
             
             const matchName = nominativo.includes(searchName);
             const matchReg = !regSel || d.regione === regSel;
             
-            // Logica Ricerca Città + 50km
-            let matchLoc = cittaVal.includes(searchLoc);
-            if (!matchLoc && centroRicerca && !isNaN(lat)) {
-                const dist = getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon);
-                if (dist <= 50) matchLoc = true; // Includi se entro 50km
+            let matchLoc = true;
+            if (searchLoc !== "") {
+                if (centroRicerca && !isNaN(lat)) {
+                    const dist = getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon);
+                    matchLoc = (dist <= 50); // Raggio 50km
+                } else {
+                    matchLoc = cittaVal.includes(searchLoc);
+                }
             }
 
             if (matchName && matchLoc && matchReg && !isNaN(lat)) {
@@ -209,13 +229,8 @@
     function openDetails(d) {
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
-        
-        // Ripropristinato il riquadro nome
         document.getElementById('label-nome').innerText = d.nominativo;
-        
-        // Testo biografia senza ripetizione manuale del nome (solo scheda)
         document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
-        
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         let latD = parseFloat(d.lat.replace(',','.'));
