@@ -11,74 +11,79 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 15px 45px rgba(0,0,0,0.3); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
-        /* BARRA DI RICERCA E RISULTATI */
-        #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 92%; max-width: 800px; }
+        /* BARRA DI RICERCA */
+        #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            padding: 8px 20px; border-radius: 50px; box-shadow: var(--shadow); 
-            display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4); 
+            background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 8px 18px; border-radius: 50px; box-shadow: var(--shadow); 
+            display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.4); 
         }
-        #filter-bar input, #filter-bar select { border: none; padding: 5px; font-size: 15px; outline: none; flex: 1; background: transparent; color: #111; }
+        #filter-bar input, #filter-bar select { border: none; padding: 6px; font-size: 14px; outline: none; flex: 1; background: transparent; color: #111; font-weight: 500; }
         
+        /* HOVER EFFETTI BARRA */
+        #filter-bar input:focus { border-bottom: 1px solid var(--blue-accent); }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { transform: scale(1.2); color: var(--blue-accent); }
+
+        /* RISULTATI RICERCA NOME */
         #search-results { 
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 15px; 
-            margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.96); border-radius: 15px; margin-top: 8px; 
+            max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee;
         }
-        .result-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; transition: background 0.2s; }
-        .result-item:hover { background: #f0f7ff; color: var(--blue-accent); }
+        .result-item { padding: 8px 20px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; transition: 0.2s; }
+        .result-item:hover { background: #f0f7ff; color: var(--blue-accent); padding-left: 25px; }
 
-        /* PULSANTE GEOLOCALIZZAZIONE */
-        #geo-btn { background: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: 0.3s; }
-        #geo-btn:hover { background: var(--blue-accent); color: white; transform: scale(1.1); }
-
-        /* PANNELLO CENTRATO E TRASPARENTE */
+        /* PANNELLO CENTRALE TRASPARENTE */
         #details-panel { 
-            position: absolute; 
-            top: 50%; left: 50%; /* Centratura assoluta */
-            transform: translate(-50%, 150%); /* Nascosto in basso */
-            width: 90%; max-width: 950px; height: auto; max-height: 80vh; 
-            background: rgba(255, 255, 255, 0.7) !important; 
-            backdrop-filter: blur(25px) saturate(160%); -webkit-backdrop-filter: blur(25px) saturate(160%);
-            z-index: 4000; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
-            border-radius: 25px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.3);
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, 150%); 
+            width: 92%; max-width: 1000px; height: auto; max-height: 82vh; 
+            background: rgba(255, 255, 255, 0.72) !important; 
+            backdrop-filter: blur(20px) saturate(170%); -webkit-backdrop-filter: blur(20px) saturate(170%);
+            z-index: 4000; transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
+            border-radius: 24px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.4);
             display: flex; flex-direction: column; overflow: hidden;
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         
-        #details-header { background: var(--navy); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
-        #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; }
+        /* HEADER: NOME E REGIONE */
+        #details-header { background: var(--navy); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+        #header-title-box { display: flex; align-items: center; gap: 12px; }
+        #int-nome-header { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        #int-regione-header { background: var(--blue-accent); color: white; font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 800; text-transform: uppercase; }
 
         #details-content { display: flex; overflow-y: auto; }
-        .social-col { width: 55px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 12px; border-right: 1px solid rgba(0,0,0,0.05); }
-        .social-icon { width: 35px; height: 35px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 14px; border: 1px solid #ddd; }
-        .social-icon:hover { transform: scale(1.1); background: var(--blue-accent); color: white; border-color: var(--blue-accent); }
+        
+        .social-col { width: 50px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 12px; border-right: 1px solid rgba(0,0,0,0.05); }
+        .social-icon { width: 34px; height: 34px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 14px; border: 1px solid #ddd; }
+        .social-icon:hover { transform: translateY(-3px); background: var(--blue-accent); color: white; border-color: var(--blue-accent); }
         
         .main-col { flex: 1; display: flex; flex-direction: column; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+        
+        /* BIOGRAFIA CON ETICHETTA */
         .bio-box { padding: 15px 20px; } 
+        #label-nome-bio { display: inline-block; background: var(--navy-light); color: white; padding: 3px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; }
         #text-bio { font-family: 'Lora', serif; font-size: 15px; line-height: 1.4; color: #111; margin: 0; }
 
-        .side-col { width: 250px; background: rgba(255,255,255,0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.05); }
+        .side-col { width: 240px; background: rgba(255,255,255,0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.05); }
         .rel-item { 
-            padding: 8px 12px; background: rgba(255,255,255,0.5); margin-bottom: 6px; border-radius: 8px; 
+            padding: 8px 10px; background: rgba(255,255,255,0.4); margin-bottom: 6px; border-radius: 10px; 
             font-size: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.3s;
-            display: flex; justify-content: space-between;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .rel-item:hover { transform: translateX(5px); background: white; border-color: var(--blue-accent); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-
-        /* RESET BUTTON HOVER */
-        #reset-btn:hover { transform: rotate(-180deg); transition: 0.5s; opacity: 1 !important; }
+        .rel-item:hover { transform: translateX(8px); background: white; border-color: var(--blue-accent); }
 
         @media (max-width: 768px) {
-            #details-panel { width: 95%; max-height: 85vh; top: 52%; }
+            #details-panel { width: 95%; max-height: 85vh; top: 50%; }
             #details-content { flex-direction: column; }
-            .side-col { width: 100%; border-left: none; border-top: 1px solid #eee; }
-            #box-correlati { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
-            .rel-item { flex: 0 0 160px; margin-bottom: 0; }
+            .side-col { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); }
+            #box-correlati { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+            .rel-item { flex: 0 0 150px; margin-bottom: 0; }
         }
     </style>
 </head>
@@ -86,13 +91,14 @@
 
 <div id="ui-wrapper">
     <div id="filter-bar">
-        <button id="geo-btn" onclick="geolocalizza()" title="Trovami">📍</button>
-        <input type="text" id="search-name" placeholder="Cognome e Nome..." oninput="cercaRealTime()">
+        <button class="btn-icon" onclick="geolocalizza()" title="Mia Posizione">📍</button>
+        <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="cercaRealTime()">
+        <input type="text" id="search-city" placeholder="Città..." oninput="cercaCitta()">
         <select id="filtro-regione" onchange="caricaMarker()">
-            <option value="">Tutte le Regioni</option>
+            <option value="">Regione</option>
             <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
-        <button id="reset-btn" onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:20px; opacity:0.5;">↺</button>
+        <button class="btn-icon" onclick="resetFiltri()" title="Reset">↺</button>
     </div>
     <div id="search-results"></div>
 </div>
@@ -101,8 +107,11 @@
 
 <div id="details-panel">
     <div id="details-header">
-        <div id="int-nome-header"></div>
-        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer; font-weight:700;">CHIUDI</button>
+        <div id="header-title-box">
+            <div id="int-nome-header">NOME COGNOME</div>
+            <div id="int-regione-header">REGIONE</div>
+        </div>
+        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 14px; border-radius:8px; cursor:pointer; font-weight:700; font-size:11px;">CHIUDI</button>
     </div>
     <div id="details-content">
         <div class="social-col">
@@ -113,11 +122,12 @@
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
+                <div id="label-nome-bio">NOME COGNOME</div>
                 <div id="text-bio"></div>
             </div>
         </div>
         <div class="side-col">
-            <div style="font-size:10px; font-weight:800; margin-bottom:10px; opacity:0.5; text-transform:uppercase;">Storie Vicine</div>
+            <div style="font-size:10px; font-weight:800; margin-bottom:10px; opacity:0.6; text-transform:uppercase; letter-spacing:1px;">Storie Vicine</div>
             <div id="box-correlati"></div>
         </div>
     </div>
@@ -141,6 +151,7 @@
     map.addLayer(markers);
 
     let database = [];
+    let searchTimeout = null;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -154,37 +165,43 @@
         }
     });
 
+    // LOGICA RICERCA NOME CON PRIORITÀ COGNOME
     function cercaRealTime() {
-        const val = document.getElementById('search-name').value.toLowerCase();
+        const val = document.getElementById('search-name').value.toLowerCase().trim();
         const resDiv = document.getElementById('search-results');
-        
         if (val.length < 2) { resDiv.style.display = 'none'; caricaMarker(); return; }
 
-        // Priorità Cognome: controlla se inizia con la stringa cercata
         let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
             .sort((a,b) => {
-                let startA = a.nominativo.toLowerCase().startsWith(val) ? 0 : 1;
-                let startB = b.nominativo.toLowerCase().startsWith(val) ? 0 : 1;
-                return startA - startB;
-            }).slice(0, 15);
+                // Estrai l'ultima parola (Cognome)
+                const cognomeA = a.nominativo.split(' ').pop().toLowerCase();
+                const cognomeB = b.nominativo.split(' ').pop().toLowerCase();
+                
+                const matchA = cognomeA.startsWith(val) ? 0 : 1;
+                const matchB = cognomeB.startsWith(val) ? 0 : 1;
+                return matchA - matchB;
+            }).slice(0, 12);
 
         if (filtrati.length > 0) {
             resDiv.style.display = 'block';
             resDiv.innerHTML = filtrati.map(d => `
-                <div class="result-item" onclick="selezionaDaRicerca(${d.dbIndex})">
-                    <strong>${d.nominativo}</strong> <small>(${d.regione})</small>
+                <div class="result-item" onclick="zoomTo(${d.dbIndex})">
+                    <strong>${d.nominativo}</strong> <small>— ${d.regione}</small>
                 </div>
             `).join('');
-        } else { resDiv.style.display = 'none'; }
-        
+        }
         caricaMarker();
     }
 
-    function selezionaDaRicerca(index) {
-        const d = database[index];
-        document.getElementById('search-results').style.display = 'none';
-        document.getElementById('search-name').value = d.nominativo;
-        zoomA(d);
+    function cercaCitta() {
+        const citta = document.getElementById('search-city').value;
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            if (citta.length < 3) return;
+            const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${citta}&countrycodes=it&limit=1`);
+            const d = await r.json();
+            if (d.length > 0) map.flyTo([d[0].lat, d[0].lon], 11);
+        }, 800);
     }
 
     function caricaMarker() {
@@ -192,31 +209,29 @@
         const regVal = document.getElementById('filtro-regione').value;
         markers.clearLayers();
         let bounds = L.latLngBounds();
-        let count = 0;
+        let found = false;
 
         database.forEach(d => {
             const lat = parseFloat(d.lat?.replace(',','.'));
             const lon = parseFloat(d.lon?.replace(',','.'));
             if (isNaN(lat)) return;
 
-            const matchN = d.nominativo.toLowerCase().includes(nameVal);
-            const matchR = !regVal || d.regione === regVal;
-
-            if (matchN && matchR) {
+            if (d.nominativo.toLowerCase().includes(nameVal) && (!regVal || d.regione === regVal)) {
                 let m = L.marker([lat, lon], { icon: stellaIcon });
                 m.on('click', () => openDetails(d));
                 markers.addLayer(m);
                 bounds.extend([lat, lon]);
-                count++;
+                found = true;
             }
         });
 
-        if (count > 0 && (nameVal || regVal)) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        if (found && (nameVal || regVal)) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
     }
 
     function openDetails(d) {
         document.getElementById('int-nome-header').innerText = d.nominativo;
-        // La biografia non ripete il nome: mostra solo il testo della scheda
+        document.getElementById('int-regione-header').innerText = d.regione;
+        document.getElementById('label-nome-bio').innerText = d.nominativo;
         document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br><br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
 
@@ -228,7 +243,7 @@
             .sort((a,b) => a.dist - b.dist).slice(0, 6);
 
         document.getElementById('box-correlati').innerHTML = vicini.map(v => `
-            <div class="rel-item" onclick="zoomA(${database.indexOf(v)})">
+            <div class="rel-item" onclick="zoomTo(${database.indexOf(v)})">
                 <span>${v.nominativo}</span> <b>${Math.round(v.dist)}km</b>
             </div>
         `).join('');
@@ -236,18 +251,18 @@
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function zoomA(dOrIndex) {
-        const d = typeof dOrIndex === 'number' ? database[dOrIndex] : dOrIndex;
+    function zoomTo(index) {
+        const d = database[index];
+        document.getElementById('search-results').style.display = 'none';
         map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 13);
         openDetails(d);
     }
 
     function geolocalizza() {
-        if (!navigator.geolocation) return alert("Geolocalizzazione non supportata");
-        navigator.geolocation.getCurrentPosition(pos => {
-            map.flyTo([pos.coords.latitude, pos.coords.longitude], 10);
-            L.circle([pos.coords.latitude, pos.coords.longitude], {radius: 1000, color: 'blue'}).addTo(map);
-        }, () => alert("Impossibile accedere alla posizione. Verifica i permessi del browser."));
+        if (!navigator.geolocation) return alert("Non supportata");
+        navigator.geolocation.getCurrentPosition(p => {
+            map.flyTo([p.coords.latitude, p.coords.longitude], 12);
+        }, () => alert("Permesso negato"));
     }
 
     function getDist(l1, o1, l2, o2) {
@@ -264,6 +279,7 @@
 
     function resetFiltri() {
         document.getElementById('search-name').value = '';
+        document.getElementById('search-city').value = '';
         document.getElementById('filtro-regione').value = '';
         document.getElementById('search-results').style.display = 'none';
         closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
