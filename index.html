@@ -11,11 +11,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --anpi-red: #e21118; --shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 10px 30px rgba(0,0,0,0.2); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* BARRA FILTRI - SEMITRASPARENTE */
+        /* UI FILTRI */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
             background: rgba(255, 255, 255, 0.72) !important; 
@@ -30,9 +30,8 @@
         .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; background: white; color: #333; transition: 0.2s; }
         .dropdown-item:hover { background: #f9f9f9; color: var(--blue-accent); }
 
-        /* ICONA STELLA ANPI */
+        /* ICONA STELLA */
         .custom-marker-icon { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transition: transform 0.2s ease; }
-        .custom-marker-icon:hover { transform: scale(1.2); }
 
         /* PANNELLO DETTAGLI */
         #details-panel { 
@@ -42,36 +41,23 @@
             overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; border: 1px solid #ddd;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
-        
         #details-header { background: var(--navy); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #int-nome-header { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         #int-regione-pill { background: var(--blue-accent); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
 
-        #details-content { display: flex; flex: 1; overflow: hidden; }
-        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
-        .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        
         .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        
-        /* BIOGRAFIA */
         .bio-box { padding: 25px; }
         #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.4; color: #333; }
         #text-bio br { content: ""; display: block; margin-bottom: 4px; }
 
         .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
-        
-        .rel-item { padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; transition: 0.2s; }
-        .rel-item span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .rel-item span:last-child { flex-shrink: 0; font-weight: bold; color: var(--blue-accent); }
-        
+        .rel-item { padding: 10px 12px; background: rgba(255, 255, 255, 0.8); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid #eee; display: flex; justify-content: flex-start; gap: 8px; }
+
         @media (max-width: 768px) {
             #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
-            #details-content { flex-direction: column; overflow-y: auto; }
-            .social-col { width: 100%; height: auto; flex-direction: row; padding: 15px; justify-content: center; order: 2; background: rgba(255,255,255,0.8); border-right: none; }
-            .main-col { order: 1; overflow-y: visible; }
-            .side-col { width: 100%; order: 3; display: block; background: rgba(249,249,249,0.8); border-left: none; }
+            .side-col { width: 100%; display: block; }
         }
     </style>
 </head>
@@ -100,12 +86,7 @@
         </div>
         <button onclick="closeDetails()" style="background:var(--blue-accent); border:none; color:white; padding:8px 16px; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer;">CHIUDI X</button>
     </div>
-    <div id="details-content">
-        <div class="social-col">
-            <a href="#" id="share-fb" target="_blank" class="social-icon">f</a>
-            <a href="#" id="share-wa" target="_blank" class="social-icon">w</a>
-            <div class="social-icon" onclick="copyLink()">🔗</div>
-        </div>
+    <div id="details-content" style="display:flex; flex:1; overflow:hidden;">
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
@@ -127,9 +108,7 @@
 <script>
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    map.on('click', closeDetails);
 
-    // Icona ANPI Personalizzata
     const stellaAnpiIcon = L.divIcon({
         className: 'custom-marker',
         html: `<svg width="30" height="30" viewBox="0 0 100 100" class="custom-marker-icon">
@@ -139,14 +118,8 @@
         iconSize: [30, 30], iconAnchor: [15, 15]
     });
 
-    let markers = L.markerClusterGroup({
-        iconCreateFunction: function(cluster) {
-            return L.divIcon({ 
-                html: '<div style="background:rgba(226,17,24,0.85); color:white; border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center; font-weight:700; border:2px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3);">' + cluster.getChildCount() + '</div>',
-                className: 'custom-cluster', iconSize: L.point(35, 35)
-            });
-        }
-    }).addTo(map);
+    // Raggruppamento con colori dinamici (Verde, Giallo, Arancio)
+    let markers = L.markerClusterGroup().addTo(map);
 
     let database = [];
     let timeoutRicerca = null;
@@ -197,6 +170,8 @@
 
             if (matchName && matchLoc && matchReg && !isNaN(lat)) {
                 let m = L.marker([lat, lon], { icon: stellaAnpiIcon });
+                // RIPRISTINATO EFFETTO HOVER COL NOME
+                m.bindTooltip(d.nominativo, { direction: 'top', offset: [0, -10] });
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
                 filtrati.push({d, index});
@@ -215,14 +190,12 @@
         document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
         document.getElementById('label-nome').innerText = d.nominativo;
         
-        // LOGICA DI PULIZIA: Rimuove il nome dall'inizio della biografia se presente
         let biografia = d.scheda || "";
         const nomeDaRimuovere = d.nominativo;
         if (biografia.toLowerCase().startsWith(nomeDaRimuovere.toLowerCase())) {
             biografia = biografia.substring(nomeDaRimuovere.length).replace(/^[,.\s]+/, "");
         }
         document.getElementById('text-bio').innerHTML = biografia.split('. ').join('.<br>');
-        
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         let latD = parseFloat(d.lat.replace(',','.'));
@@ -234,11 +207,10 @@
         
         document.getElementById('box-correlati').innerHTML = correlati.map(item => {
             const realIdx = database.findIndex(x => x.nominativo === item.nominativo);
-            return `<div class="rel-item" onclick="event.stopPropagation(); zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span>${Math.round(item.dist)}km</span></div>`;
+            return `<div class="rel-item" onclick="zoomToPartigiano(${realIdx})"><span>${item.nominativo}</span><span>${Math.round(item.dist)}km</span></div>`;
         }).join('');
         
         document.getElementById('details-panel').classList.add('open');
-        document.querySelector('.main-col').scrollTop = 0;
     }
 
     function getDistance(lat1, lon1, lat2, lon2) {
@@ -259,10 +231,6 @@
     function closeDetails() {
         document.getElementById('details-panel').classList.remove('open');
         setTimeout(() => { document.getElementById('video-iframe').src = ""; }, 500);
-    }
-
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href).then(() => { alert("Link copiato!"); });
     }
 
     function resetFiltri() {
