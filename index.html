@@ -15,19 +15,19 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI FILTRI - SEMITRASPARENTE */
+        /* UI FILTRI - SEMITRASPARENTE CORRETTA */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.85); /* Trasparenza */
-            backdrop-filter: blur(10px); /* Sfocatura */
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7) !important; 
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
             padding: 10px 20px; 
             border-radius: 50px; 
             box-shadow: var(--shadow); 
             display: flex; 
             gap: 10px; 
             align-items: center; 
-            border: 1px solid rgba(255,255,255,0.3); 
+            border: 1px solid rgba(255,255,255,0.4); 
         }
         #filter-bar input, #filter-bar select { 
             border: none; 
@@ -78,7 +78,16 @@
         
         .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        .bio-box { padding: 25px; padding-bottom: 50px; /* Ridotto spazio bianco finale */ }
+        
+        /* SPAZIATURA BIOGRAFIA COMPATTA */
+        .bio-box { padding: 25px; }
+        #text-bio { 
+            font-family: 'Lora', serif; 
+            font-size: 16px; 
+            line-height: 1.4; /* Interlinea minima */
+            color: #333; 
+        }
+        #text-bio br { content: ""; display: block; margin-bottom: 4px; } /* Spazio a capo minimo */
 
         .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
         
@@ -141,8 +150,7 @@
         <div class="main-col">
             <div class="video-box"><iframe id="video-iframe" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div id="label-nome" style="display:inline-block; background:var(--navy-light); color:white; padding:4px 10px; border-radius:4px; font-weight:700; margin-bottom:10px; font-size:12px;">...</div>
-                <div id="text-bio" style="font-family:'Lora', serif; font-size:17px; line-height:1.6; color:#333;"></div>
+                <div id="text-bio"></div>
             </div>
         </div>
         <div class="side-col">
@@ -203,7 +211,6 @@
             }
         });
 
-        // MODIFICA: Ora il dropdown appare anche se selezioni solo la regione
         if (searchName.length > 1 || searchLoc.length > 1 || regSel !== "") {
             dropdown.style.display = 'block';
             dropdown.innerHTML = filtrati.slice(0, 30).map(item => `
@@ -218,8 +225,10 @@
     function openDetails(d) {
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
-        document.getElementById('label-nome').innerText = d.nominativo;
-        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br><br>');
+        
+        // Inserimento bio senza ripetizione del nome
+        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
+        
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         let latD = parseFloat(d.lat.replace(',','.'));
@@ -237,7 +246,7 @@
         }).join('');
         
         document.getElementById('details-panel').classList.add('open');
-        document.querySelector('.main-col').scrollTop = 0; // Torna su all'apertura
+        document.querySelector('.main-col').scrollTop = 0;
     }
 
     function getDistance(lat1, lon1, lat2, lon2) {
