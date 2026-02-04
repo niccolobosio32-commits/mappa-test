@@ -15,17 +15,19 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top:0; left:0; z-index: 1; }
 
-        /* UI FILTRI - MODIFICATA: PIÙ GRANDE */
+        /* UI FILTRI - SEMITRASPARENTE */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: white; 
+            background: rgba(255, 255, 255, 0.85); /* Trasparenza */
+            backdrop-filter: blur(10px); /* Sfocatura */
+            -webkit-backdrop-filter: blur(10px);
             padding: 10px 20px; 
             border-radius: 50px; 
             box-shadow: var(--shadow); 
             display: flex; 
             gap: 10px; 
             align-items: center; 
-            border: 1px solid #ddd; 
+            border: 1px solid rgba(255,255,255,0.3); 
         }
         #filter-bar input, #filter-bar select { 
             border: none; 
@@ -50,7 +52,6 @@
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
         
-        /* HEADER - MODIFICATO: PIÙ GRANDE */
         #details-header { 
             background: var(--navy); 
             color: white; 
@@ -72,17 +73,15 @@
         }
 
         #details-content { display: flex; flex: 1; overflow: hidden; }
-        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
+        .social-col { width: 65px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 25px; gap: 15px; }
         .social-icon { width: 38px; height: 38px; border-radius: 10px; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: var(--navy); text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .social-icon:hover { transform: scale(1.1); background: #f8f9fa; color: var(--blue-accent); }
-
-        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 25px; }
-
-        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
         
-        /* CORRELATI - MODIFICATI: DISTANZA MINORE */
+        .main-col { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
+        .bio-box { padding: 25px; padding-bottom: 50px; /* Ridotto spazio bianco finale */ }
+
+        .side-col { width: 280px; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px); padding: 20px; border-left: 1px solid rgba(0,0,0,0.05); overflow-y: auto; }
+        
         .rel-item { 
             padding: 10px 12px; 
             background: rgba(255, 255, 255, 0.8); 
@@ -98,7 +97,6 @@
         }
         .rel-item span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rel-item span:last-child { flex-shrink: 0; font-weight: bold; color: var(--blue-accent); }
-        .rel-item:hover { background: white; transform: translateX(5px); border-color: var(--blue-accent); }
         
         @media (max-width: 768px) {
             #details-panel { height: 85vh; bottom: 0; border-radius: 20px 20px 0 0; background: white; }
@@ -205,21 +203,23 @@
             }
         });
 
-        if (searchName.length > 1 || searchLoc.length > 1) {
+        // MODIFICA: Ora il dropdown appare anche se selezioni solo la regione
+        if (searchName.length > 1 || searchLoc.length > 1 || regSel !== "") {
             dropdown.style.display = 'block';
-            dropdown.innerHTML = filtrati.slice(0, 15).map(item => `
+            dropdown.innerHTML = filtrati.slice(0, 30).map(item => `
                 <div class="dropdown-item" onclick="zoomToPartigiano(${item.index})">
                     <strong>${item.d.nominativo}</strong> <small>(${item.d['città_nascita'] || item.d.regione})</small>
                 </div>
             `).join('');
+            if(filtrati.length === 0) dropdown.style.display = 'none';
         } else { dropdown.style.display = 'none'; }
     }
 
     function openDetails(d) {
         document.getElementById('int-nome-header').innerText = d.nominativo;
-        document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase(); // Forza maiuscolo
+        document.getElementById('int-regione-pill').innerText = d.regione.toUpperCase();
         document.getElementById('label-nome').innerText = d.nominativo;
-        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
+        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br><br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         let latD = parseFloat(d.lat.replace(',','.'));
@@ -237,6 +237,7 @@
         }).join('');
         
         document.getElementById('details-panel').classList.add('open');
+        document.querySelector('.main-col').scrollTop = 0; // Torna su all'apertura
     }
 
     function getDistance(lat1, lon1, lat2, lon2) {
