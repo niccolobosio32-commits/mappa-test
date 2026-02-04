@@ -170,32 +170,56 @@
         drop.style.display = 'block';
     }
 
-    async function filtra(tipo) {
-        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
-        const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { drop.style.display = 'none'; return; }
+ async function filtra(tipo) {
+    const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
+    const drop = document.getElementById('results-dropdown');
+    
+    if (val.length < 3) { drop.style.display = 'none'; return; }
 
-        if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
-                .sort((a,b) => (b.nominativo.toLowerCase().split(' ').pop().startsWith(val) ? 1 : -1)).slice(0, 15);
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
-        } else {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
+    if (tipo === 'name') {
+        // Ricerca per nome (Privilegia cognome)
+        let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
+            .sort((a,b) => {
+                let cognomeA = a.nominativo.toLowerCase().split(' ').pop();
+                return cognomeA.startsWith(val) ? -1 : 1;
+            }).slice(0, 15);
+        drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+        drop.style.display = 'block';
+    } else {
+        // GEOLOCALIZZAZIONE PRECISA SUI PUNTI CSV
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
+        try {
             const r = await fetch(url);
             const data = await r.json();
             if (data.length > 0) {
-                const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                const cLat = parseFloat(data[0].lat);
+                const cLon = parseFloat(data[0].lon);
+                
                 let vicini = database.filter(d => {
-                    const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon])) <= 50000;
+                    const pLat = parseFloat(d.lat?.replace(',','.'));
+                    const pLon = parseFloat(d.lon?.replace(',','.'));
+                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
                 });
-                drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                drop.style.display = 'block';
-                map.flyTo([cLat, cLon], 10);
+
+                if (vicini.length > 0) {
+                    drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+                    drop.style.display = 'block';
+                    
+                    // Invece di saltare alle coordinate del server, 
+                    // creiamo un'area che contiene solo i partigiani vicini
+                    let viciniBounds = L.latLngBounds();
+                    vicini.forEach(v => viciniBounds.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
+                    
+                    // Zoomma solo sui partigiani reali, non sul centro città vuoto
+                    map.flyToBounds(viciniBounds, {padding: [100, 100], maxZoom: 10});
+                } else {
+                    drop.innerHTML = `<div class="res-item" style="color:red">Nessun partigiano nel raggio di 50km</div>`;
+                    drop.style.display = 'block';
+                }
             }
-        }
+        } catch (e) { console.error("Errore ricerca:", e); }
     }
+}
 
     function openDetails(d) {
         document.getElementById('h-nome').innerText = d.nominativo;
@@ -225,3 +249,4 @@
 </script>
 </body>
 </html>
+
