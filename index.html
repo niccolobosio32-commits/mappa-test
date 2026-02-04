@@ -42,13 +42,10 @@
             display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
         }
         #details-panel.open { transform: translate(-50%, -50%); }
-        
         #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
-        
         #details-content { display: flex; height: 100%; max-height: 70vh; }
         .main-col { flex: 1; overflow-y: auto; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; font-weight: 500; }
 
@@ -56,21 +53,15 @@
         .stella svg { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
         .stella:hover svg { transform: scale(1.8); cursor: pointer; }
         .stella:hover polygon { fill: #ffcc00; stroke: #000; }
+        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-weight: 600; font-size: 12px; }
 
-        /* TOOLTIP LEAFLET */
-        .leaflet-tooltip-custom {
-            background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px;
-            padding: 5px 10px; font-weight: 600; font-size: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        /* ELEMENTI HOVER SCHEDA */
+        /* HOVER SCHEDA */
         .social-btn { width: 42px; height: 42px; background: rgba(255,255,255,0.8); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid rgba(0,0,0,0.1); }
         .social-btn:hover { background: var(--blue); color: white; transform: scale(1.1); }
-
         .rel-item { padding: 10px; background: rgba(255,255,255,0.4); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
         .rel-item:hover { background: rgba(255,255,255,0.9); transform: translateX(8px); border-color: var(--blue); }
 
-        /* CLUSTER COLORATI */
+        /* CLUSTER */
         .marker-cluster-small div { background-color: rgba(52, 152, 219, 0.85); color: #fff; }
         .marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.85); color: #fff; }
         .marker-cluster-large div { background-color: rgba(231, 76, 60, 0.85); color: #fff; }
@@ -125,7 +116,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    // CENTRAGGIO FISSO SULL'ITALIA ALL'APERTURA
     let map = L.map('map', {zoomControl: false}).setView([42.2, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -147,32 +137,27 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker(); // Carica i punti senza cambiare lo zoom iniziale
+            caricaMarker();
         }
     });
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
-        let count = 0;
         database.forEach(d => {
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
                 const lon = parseFloat(d.lon?.replace(',','.'));
                 if (!isNaN(lat)) {
                     let m = L.marker([lat, lon], { icon: stellaIcon });
-                    
-                    // TOOLTIP AL PASSAGGIO DEL MOUSE
                     m.bindTooltip(d.nominativo, { className: 'leaflet-tooltip-custom', direction: 'top', offset: [0, -10] });
-                    
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
-                    count++;
                 }
             }
         });
-        if (count > 0 && fit) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        if (fit) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
     }
 
     function filtraRegione() {
@@ -188,7 +173,7 @@
     async function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
-        if (val.length < 2) { drop.style.display = 'none'; return; }
+        if (val.length < 3) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
             let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
@@ -196,13 +181,14 @@
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         } else {
-            const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val}&countrycodes=it&limit=1`);
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
+            const r = await fetch(url);
             const data = await r.json();
             if (data.length > 0) {
                 const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
                 let vicini = database.filter(d => {
                     const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) / 1000) <= 50;
+                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon])) <= 50000;
                 });
                 drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
                 drop.style.display = 'block';
@@ -217,7 +203,6 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 5);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
@@ -236,7 +221,6 @@
     }
 
     function resetFiltri() { location.reload(); }
-
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
