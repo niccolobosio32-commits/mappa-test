@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --blue: #3498db; --glass-white: rgba(255, 255, 255, 0.7); }
+        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.7); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
@@ -24,23 +24,22 @@
         }
         #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #111; }
         
-        /* RISULTATI SOTTO BARRA */
         #results-dropdown { 
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
             display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #ddd;
         }
-        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: 0.2s; }
         .res-item:hover { background: var(--blue); color: white; }
 
-        /* SCHEDA CON TRASPARENZA */
+        /* SCHEDA BIOGRAFICA CON HOVER E TRASPARENZA */
         #details-panel { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1000px; z-index: 4000; 
-            background: var(--glass-white); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            background: var(--glass); backdrop-filter: blur(25px) saturate(150%); -webkit-backdrop-filter: blur(25px) saturate(150%);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.6); 
-            display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+            display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.4);
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         
@@ -53,24 +52,24 @@
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
+        /* EFFETTO HOVER SULLA SCHEDA (ELEMENTI INTERNI) */
+        .social-btn { width: 42px; height: 42px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid #ddd; }
+        .social-btn:hover { background: var(--blue); color: white; transform: scale(1.1) translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        .rel-item { padding: 10px; background: rgba(255,255,255,0.6); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; transition: 0.3s; }
+        .rel-item:hover { background: white; transform: translateX(8px); border-color: var(--blue); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
         /* HOVER MARKER STELLA */
         .stella svg { transition: all 0.3s ease; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-        .stella:hover svg { transform: scale(1.5); cursor: pointer; }
+        .stella:hover svg { transform: scale(1.6); cursor: pointer; }
         .stella:hover polygon { fill: #ffcc00; stroke: #000; }
 
-        .social-col { width: 65px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px; }
-        .social-btn { width: 42px; height: 42px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 18px; border: 1px solid #ddd; text-decoration: none; color: #333; }
-        .social-btn:hover { background: var(--blue); color: white; transform: translateY(-5px); }
-
-        .side-col { width: 280px; background: rgba(0,0,0,0.05); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); }
-        .rel-item { padding: 10px; background: white; margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid #eee; transition: 0.3s; }
-        .rel-item:hover { transform: translateX(8px); border-color: var(--blue); }
-
+        /* CLUSTER */
         .marker-cluster-small div { background-color: rgba(52, 152, 219, 0.9); color: #fff; }
         .marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.9); color: #fff; }
         .marker-cluster-large div { background-color: rgba(231, 76, 60, 0.9); color: #fff; }
 
-        @media (max-width: 768px) { #details-content { flex-direction: column; } .side-col { width: 100%; } }
+        @media (max-width: 768px) { #details-content { flex-direction: column; } .side-col { width: 100%; border-left: none; } }
     </style>
 </head>
 <body>
@@ -79,7 +78,7 @@
     <div id="filter-bar">
         <button class="btn-icon" onclick="resetFiltri()">↺</button>
         <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
-        <input type="text" id="search-city" placeholder="Citta (50km)..." oninput="filtra('city')">
+        <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
             <option value="">Regione...</option>
             <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
@@ -98,7 +97,7 @@
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
     </div>
     <div id="details-content">
-        <div class="social-col">
+        <div style="width: 65px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px;">
             <div class="social-btn">f</div><div class="social-btn">w</div><div class="social-btn">🔗</div>
         </div>
         <div class="main-col">
@@ -108,7 +107,7 @@
                 <p id="text-bio"></p>
             </div>
         </div>
-        <div class="side-col">
+        <div style="width: 280px; background: rgba(0,0,0,0.05); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1);">
             <div style="font-size:10px; font-weight:800; opacity:0.4; margin-bottom:8px;">CORRELATI</div>
             <div id="box-rel"></div>
         </div>
@@ -120,7 +119,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 5);
+    // Forza il centraggio iniziale sull'Italia
+    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const stellaIcon = L.divIcon({
@@ -132,9 +132,8 @@
     let markers = L.markerClusterGroup();
     map.addLayer(markers);
     let database = [];
-    let searchTimeout;
 
-  Papa.parse("progetto_mappa.csv", {
+    Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
             database = res.data.map(d => {
@@ -142,18 +141,17 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            // Chiamata con fit automatico al primo caricamento
-            caricaMarker(null, true); 
+            // Carica e centra automaticamente al completamento
+            caricaMarker(null, true);
+            setTimeout(() => { map.invalidateSize(); }, 500);
         }
     });
 
-  function caricaMarker(filtroFn = null, autoFit = false) {
+    function caricaMarker(filtroFn = null, autoFit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
         let count = 0;
-
         database.forEach(d => {
-            // Se non c'è un filtro specifico, mostra tutti
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
                 const lon = parseFloat(d.lon?.replace(',','.'));
@@ -166,21 +164,15 @@
                 }
             }
         });
-
-        // Se richiesto (all'avvio o dopo ricerca), centra la mappa sui punti trovati
-        if (count > 0 && autoFit) {
-            map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
-        }
+        if (count > 0 && autoFit) map.fitBounds(bounds, {padding: [50,50], maxZoom: 10});
     }
-    
+
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         const drop = document.getElementById('results-dropdown');
-        if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
-        
+        if(!reg) { drop.style.display = 'none'; caricaMarker(null, true); return; }
+        caricaMarker(d => d.regione === reg, true);
         let filtrati = database.filter(d => d.regione === reg);
-        caricaMarker(d => d.regione === reg);
-        
         drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
         drop.style.display = 'block';
     }
@@ -193,24 +185,21 @@
         if (tipo === 'name') {
             let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
                 .sort((a,b) => (b.nominativo.toLowerCase().split(' ').pop().startsWith(val) ? 1 : -1)).slice(0, 15);
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>${d.regione}</small></div>`).join('');
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         } else {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(async () => {
-                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val}&countrycodes=it&limit=1`);
-                const data = await r.json();
-                if (data.length > 0) {
-                    const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
-                    let vicini = database.filter(d => {
-                        const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                        return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) / 1000) <= 50;
-                    });
-                    drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                    drop.style.display = 'block';
-                    map.flyTo([cLat, cLon], 10);
-                }
-            }, 600);
+            const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val}&countrycodes=it&limit=1`);
+            const data = await r.json();
+            if (data.length > 0) {
+                const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                let vicini = database.filter(d => {
+                    const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) / 1000) <= 50;
+                });
+                drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+                drop.style.display = 'block';
+                map.flyTo([cLat, cLon], 10);
+            }
         }
     }
 
@@ -244,4 +233,3 @@
 </script>
 </body>
 </html>
-
