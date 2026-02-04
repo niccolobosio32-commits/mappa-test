@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Partigiani</title>
+    <title>Archivio Partigiani - Mappa Interattiva</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,7 +15,7 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #aad3df; }
 
-        /* BARRA RICERCA */
+        /* UI RICERCA */
         #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 900px; }
         #filter-bar { 
             background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -25,14 +25,14 @@
         #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; }
         
         #results-dropdown { 
-            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
             display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #ddd;
         }
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: 0.2s; }
         .res-item:hover { background: var(--blue); color: white; }
 
-        /* SCHEDA BIOGRAFICA - TRASPARENZA MASSIMA */
+        /* SCHEDA BIOGRAFICA TRASPARENTE */
         #details-panel { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1000px; z-index: 4000; 
@@ -49,13 +49,13 @@
         .bio-box { padding: 15px 30px; line-height: 1.1; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; font-weight: 500; }
 
-        /* HOVER MARKER STELLA E TOOLTIP */
+        /* MARKER E TOOLTIP */
         .stella svg { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
         .stella:hover svg { transform: scale(1.8); cursor: pointer; }
         .stella:hover polygon { fill: #ffcc00; stroke: #000; }
-        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-weight: 600; font-size: 12px; }
+        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-weight: 600; font-size: 12px; z-index: 6000; }
 
-        /* HOVER SCHEDA */
+        /* SOCIAL E RELATIVI HOVER */
         .social-btn { width: 42px; height: 42px; background: rgba(255,255,255,0.8); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid rgba(0,0,0,0.1); }
         .social-btn:hover { background: var(--blue); color: white; transform: scale(1.1); }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.4); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
@@ -73,7 +73,7 @@
 
 <div id="ui-container">
     <div id="filter-bar">
-        <button class="btn-icon" onclick="resetFiltri()">↺</button>
+        <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
         <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
         <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
@@ -116,6 +116,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
+    // 1. Inizializzazione centrata sull'Italia
     let map = L.map('map', {zoomControl: false}).setView([42.2, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -128,7 +129,9 @@
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
+    let searchTimer;
 
+    // 2. Caricamento Dati
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
@@ -137,13 +140,14 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker();
+            caricaMarker(); 
         }
     });
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
+        let hasData = false;
         database.forEach(d => {
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
@@ -154,72 +158,61 @@
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
+                    hasData = true;
                 }
             }
         });
-        if (fit) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
     }
 
-    function filtraRegione() {
-        const reg = document.getElementById('filtro-regione').value;
+    // 3. Ricerca con FlyTo Intelligente
+    async function filtra(tipo) {
+        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
-        if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
-        caricaMarker(d => d.regione === reg, true);
-        let filtrati = database.filter(d => d.regione === reg);
-        drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-        drop.style.display = 'block';
+        if (val.length < 3) { drop.style.display = 'none'; return; }
+
+        if (tipo === 'name') {
+            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
+                .sort((a,b) => (b.nominativo.toLowerCase().split(' ').pop().startsWith(val) ? 1 : -1)).slice(0, 15);
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+            drop.style.display = 'block';
+        } else {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(async () => {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
+                try {
+                    const r = await fetch(url);
+                    const data = await r.json();
+                    if (data.length > 0) {
+                        const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                        let vicini = database.filter(d => {
+                            const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                            return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
+                        });
+                        if (vicini.length > 0) {
+                            drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+                            drop.style.display = 'block';
+                            let b = L.latLngBounds();
+                            vicini.forEach(v => b.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
+                            map.flyToBounds(b, {padding: [100, 100], maxZoom: 10, duration: 1.5});
+                        } else {
+                            drop.innerHTML = `<div class="res-item" style="color:red">Nessun partigiano in zona</div>`;
+                            drop.style.display = 'block';
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            }, 600);
+        }
     }
 
- async function filtra(tipo) {
-    const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
-    const drop = document.getElementById('results-dropdown');
-    
-    if (val.length < 3) { drop.style.display = 'none'; return; }
-
-    if (tipo === 'name') {
-        // Ricerca per nome (Privilegia cognome)
-        let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
-            .sort((a,b) => {
-                let cognomeA = a.nominativo.toLowerCase().split(' ').pop();
-                return cognomeA.startsWith(val) ? -1 : 1;
-            }).slice(0, 15);
-        drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-        drop.style.display = 'block';
-    } else {
-        // GEOLOCALIZZAZIONE PRECISA SUI PUNTI CSV
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`;
-        try {
-            const r = await fetch(url);
-            const data = await r.json();
-            if (data.length > 0) {
-                const cLat = parseFloat(data[0].lat);
-                const cLon = parseFloat(data[0].lon);
-                
-                let vicini = database.filter(d => {
-                    const pLat = parseFloat(d.lat?.replace(',','.'));
-                    const pLon = parseFloat(d.lon?.replace(',','.'));
-                    return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
-                });
-
-                if (vicini.length > 0) {
-                    drop.innerHTML = vicini.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                    drop.style.display = 'block';
-                    
-                    // Invece di saltare alle coordinate del server, 
-                    // creiamo un'area che contiene solo i partigiani vicini
-                    let viciniBounds = L.latLngBounds();
-                    vicini.forEach(v => viciniBounds.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
-                    
-                    // Zoomma solo sui partigiani reali, non sul centro città vuoto
-                    map.flyToBounds(viciniBounds, {padding: [100, 100], maxZoom: 10});
-                } else {
-                    drop.innerHTML = `<div class="res-item" style="color:red">Nessun partigiano nel raggio di 50km</div>`;
-                    drop.style.display = 'block';
-                }
-            }
-        } catch (e) { console.error("Errore ricerca:", e); }
+    // 4. Gestione Scheda e Navigazione
+    function apri(nome) {
+        const d = database.find(x => x.nominativo === nome);
+        if(!d) return;
+        document.getElementById('results-dropdown').style.display = 'none';
+        openDetails(d);
+        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14, {duration: 1.8});
     }
-}
 
     function openDetails(d) {
         document.getElementById('h-nome').innerText = d.nominativo;
@@ -232,21 +225,18 @@
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function apri(nome) {
-        const d = database.find(x => x.nominativo === nome);
-        document.getElementById('results-dropdown').style.display = 'none';
-        openDetails(d);
-        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
-    }
-
     function closeDetails() {
         document.getElementById('details-panel').classList.remove('open');
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
     }
 
-    function resetFiltri() { location.reload(); }
+    function filtraRegione() {
+        const reg = document.getElementById('filtro-regione').value;
+        if(!reg) { document.getElementById('results-dropdown').style.display = 'none'; caricaMarker(); return; }
+        caricaMarker(d => d.regione === reg, true);
+    }
+
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
-
