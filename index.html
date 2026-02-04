@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --blue: #3498db; --glass-max: rgba(255, 255, 255, 0.5); }
+        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.4); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #aad3df; }
 
@@ -36,37 +36,49 @@
         #details-panel { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1000px; z-index: 4000; 
-            background: var(--glass-max); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
+            background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
             display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+            max-height: 85vh;
         }
         #details-panel.open { transform: translate(-50%, -50%); }
-        #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
-        #details-content { display: flex; height: 100%; max-height: 70vh; }
-        .main-col { flex: 1; overflow-y: auto; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 15px 30px; line-height: 1.1; }
+        #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        
+        #details-content { display: flex; overflow: hidden; flex: 1; background: transparent; }
+        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: transparent; }
+        
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
+        .bio-box { padding: 15px 30px; line-height: 1.2; background: transparent; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; font-weight: 500; }
 
-        /* MARKER E TOOLTIP */
-        .stella svg { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
-        .stella:hover svg { transform: scale(1.8); cursor: pointer; }
+        /* SOCIAL E CORRELATI CON TRASPARENZA */
+        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px; flex-shrink: 0; }
+        .social-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.5); }
+        
+        .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
+        .rel-item { padding: 12px; background: rgba(255,255,255,0.3); margin-bottom: 8px; border-radius: 12px; font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: 0.3s; color: #000; font-weight: 600; }
+        .rel-item:hover { background: rgba(255,255,255,0.8); transform: translateX(5px); border-color: var(--blue); }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            #details-content { flex-direction: column; overflow-y: auto; }
+            .side-social { display: none; }
+            .main-col { overflow-y: visible; }
+            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); background: transparent; padding-bottom: 50px; }
+            .video-box { position: sticky; top: 0; z-index: 10; }
+            .rel-item { background: rgba(255,255,255,0.5); }
+        }
+
+        /* TOOLTIP E MARKER */
+        .stella svg { transition: all 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
+        .stella:hover svg { transform: scale(1.8); }
         .stella:hover polygon { fill: #ffcc00; stroke: #000; }
         .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-weight: 600; font-size: 12px; z-index: 6000; }
 
-        /* SOCIAL E RELATIVI HOVER */
-        .social-btn { width: 42px; height: 42px; background: rgba(255,255,255,0.8); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; border: 1px solid rgba(0,0,0,0.1); }
-        .social-btn:hover { background: var(--blue); color: white; transform: scale(1.1); }
-        .rel-item { padding: 10px; background: rgba(255,255,255,0.4); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
-        .rel-item:hover { background: rgba(255,255,255,0.9); transform: translateX(8px); border-color: var(--blue); }
-
-        /* CLUSTER */
         .marker-cluster-small div { background-color: rgba(52, 152, 219, 0.85); color: #fff; }
         .marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.85); color: #fff; }
         .marker-cluster-large div { background-color: rgba(231, 76, 60, 0.85); color: #fff; }
-
-        @media (max-width: 768px) { #details-content { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -94,19 +106,19 @@
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
     </div>
     <div id="details-content">
-        <div style="width: 65px; border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 18px;">
+        <div class="side-social">
             <div class="social-btn">f</div><div class="social-btn">w</div><div class="social-btn">🔗</div>
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:5px;">NOME COGNOME</div>
+                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME COGNOME</div>
                 <p id="text-bio"></p>
             </div>
-        </div>
-        <div style="width: 280px; background: rgba(0,0,0,0.03); padding: 15px; border-left: 1px solid rgba(0,0,0,0.05);">
-            <div style="font-size:10px; font-weight:800; opacity:0.5; margin-bottom:8px;">CORRELATI</div>
-            <div id="box-rel"></div>
+            <div class="side-rel">
+                <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:10px; color:#000; letter-spacing:1px;">CORRELATI</div>
+                <div id="box-rel"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -116,7 +128,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    // 1. Inizializzazione centrata sull'Italia
     let map = L.map('map', {zoomControl: false}).setView([42.2, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -131,7 +142,6 @@
     let database = [];
     let searchTimer;
 
-    // 2. Caricamento Dati
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
@@ -165,15 +175,13 @@
         if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10, duration: 1.5});
     }
 
-    // 3. Ricerca con FlyTo Intelligente
     async function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
         if (val.length < 3) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
-                .sort((a,b) => (b.nominativo.toLowerCase().split(' ').pop().startsWith(val) ? 1 : -1)).slice(0, 15);
+            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         } else {
@@ -195,9 +203,6 @@
                             let b = L.latLngBounds();
                             vicini.forEach(v => b.extend([parseFloat(v.lat.replace(',','.')), parseFloat(v.lon.replace(',','.'))]));
                             map.flyToBounds(b, {padding: [100, 100], maxZoom: 10, duration: 1.5});
-                        } else {
-                            drop.innerHTML = `<div class="res-item" style="color:red">Nessun partigiano in zona</div>`;
-                            drop.style.display = 'block';
                         }
                     }
                 } catch (e) { console.error(e); }
@@ -205,7 +210,6 @@
         }
     }
 
-    // 4. Gestione Scheda e Navigazione
     function apri(nome) {
         const d = database.find(x => x.nominativo === nome);
         if(!d) return;
@@ -232,7 +236,7 @@
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
-        if(!reg) { document.getElementById('results-dropdown').style.display = 'none'; caricaMarker(); return; }
+        if(!reg) { caricaMarker(); return; }
         caricaMarker(d => d.regione === reg, true);
     }
 
