@@ -25,59 +25,44 @@
         }
         #filter-bar input, #filter-bar select { border: none; padding: 5px; font-size: 16px; outline: none; flex: 1; background: transparent; color: #111; font-weight: 500; }
 
+        #search-dropdown { 
+            width: 90%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); 
+            border-radius: 15px; margin: 8px auto 0; max-height: 250px; overflow-y: auto; 
+            display: none; box-shadow: var(--shadow); z-index: 1100; border: 1px solid #ddd;
+        }
+        .dropdown-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
+        .dropdown-item:hover { background: #f8f9fa; }
+
         /* PANNELLO TRASPARENTE */
         #details-panel { 
-            position: absolute; 
-            bottom: 12%; 
-            left: 50%; 
+            position: absolute; bottom: 12%; left: 50%; 
             transform: translateX(-50%) translateY(150%); 
-            width: 90%; max-width: 1000px; 
-            height: auto; max-height: 75vh; 
-            
-            /* TRASPARENZA VETRO */
-            background: rgba(255, 255, 255, 0.65) !important; 
+            width: 90%; max-width: 1000px; height: auto; max-height: 75vh; 
+            background: rgba(255, 255, 255, 0.7) !important; 
             backdrop-filter: blur(25px) saturate(180%); 
             -webkit-backdrop-filter: blur(25px) saturate(180%);
-            
-            z-index: 2000; 
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
-            border-radius: 28px; 
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.3);
+            z-index: 2000; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+            border-radius: 28px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.3);
             display: flex; flex-direction: column; overflow: hidden;
         }
         #details-panel.open { transform: translateX(-50%) translateY(0); }
         
-        #details-header { 
-            background: rgba(26, 42, 58, 0.95); 
-            color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
-        }
+        #details-header { background: rgba(26, 42, 58, 0.95); color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #int-nome-header { font-size: 20px; font-weight: 700; text-transform: uppercase; }
         #int-regione-pill { background: var(--blue-accent); color: white; font-size: 10px; padding: 4px 12px; border-radius: 20px; font-weight: 800; }
 
         #details-content { display: flex; overflow-y: auto; background: transparent; }
-        
-        .social-col { 
-            width: 60px; background: rgba(255, 255, 255, 0.1); border-right: 1px solid rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; 
-        }
+        .social-col { width: 60px; background: rgba(255, 255, 255, 0.1); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; }
         .social-icon { width: 38px; height: 38px; border-radius: 12px; background: white; border: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
         .main-col { flex: 1; display: flex; flex-direction: column; background: transparent; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        
-        .bio-box { padding: 12px 20px; background: transparent; } 
+        .bio-box { padding: 12px 20px; } 
         #label-nome { display: inline-block; background: var(--navy-light); color: white; padding: 3px 8px; border-radius: 4px; font-weight: 700; margin-bottom: 5px; font-size: 10px; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; line-height: 1.35; color: #000; margin: 0; }
 
-        .side-col { 
-            width: 260px; background: rgba(255,255,255,0.15); border-left: 1px solid rgba(0,0,0,0.05); padding: 15px; 
-        }
-        .rel-item { 
-            padding: 10px; background: rgba(255,255,255,0.5); margin-bottom: 8px; border-radius: 10px; 
-            font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); 
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        .side-col { width: 260px; background: rgba(255,255,255,0.15); border-left: 1px solid rgba(0,0,0,0.05); padding: 15px; }
+        .rel-item { padding: 10px; background: rgba(255,255,255,0.5); margin-bottom: 8px; border-radius: 10px; font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); display: flex; justify-content: space-between; align-items: center; }
 
         @media (max-width: 768px) {
             #details-panel { bottom: 5%; width: 94%; max-height: 80vh; }
@@ -94,7 +79,7 @@
 
 <div id="ui-wrapper">
     <div id="filter-bar">
-        <input type="text" id="search-name" placeholder="Cerca partigiano..." oninput="caricaMarker()">
+        <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="caricaMarker()">
         <input type="text" id="search-location" placeholder="Città..." oninput="caricaMarker()">
         <select id="filtro-regione" onchange="caricaMarker()">
             <option value="">Tutte le Regioni</option>
@@ -102,6 +87,7 @@
         </select>
         <button onclick="resetFiltri()" style="background:none; border:none; cursor:pointer; font-size:22px; opacity:0.6;">↺</button>
     </div>
+    <div id="search-dropdown"></div>
 </div>
 
 <div id="map"></div>
@@ -158,8 +144,8 @@
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
-            database = res.data.map(row => {
-                let clean = {};
+            database = res.data.map((row, index) => {
+                let clean = { dbIndex: index };
                 Object.keys(row).forEach(k => { clean[k.trim().toLowerCase()] = row[k].trim(); });
                 return clean;
             });
@@ -171,32 +157,57 @@
         const nameVal = document.getElementById('search-name').value.toLowerCase().trim();
         const locVal = document.getElementById('search-location').value.toLowerCase().trim();
         const regVal = document.getElementById('filtro-regione').value;
+        const dropdown = document.getElementById('search-dropdown');
         
         clearTimeout(timeoutRicerca);
 
+        // LOGICA RICERCA CON PRIORITÀ AL COGNOME
+        let filtrati = [];
+        if (nameVal.length > 1 || regVal !== "" || locVal.length > 3) {
+            filtrati = database.filter(d => {
+                const matchName = d.nominativo.toLowerCase().includes(nameVal);
+                const matchReg = !regVal || d.regione === regVal;
+                return matchName && matchReg;
+            });
+
+            // ORDINAMENTO: Chi INIZIA con la stringa cercata (Cognome) va sopra
+            filtrati.sort((a, b) => {
+                let startsA = a.nominativo.toLowerCase().startsWith(nameVal) ? 0 : 1;
+                let startsB = b.nominativo.toLowerCase().startsWith(nameVal) ? 0 : 1;
+                return startsA - startsB;
+            });
+        }
+
+        // Dropdown
+        if (nameVal.length > 1) {
+            dropdown.style.display = 'block';
+            dropdown.innerHTML = filtrati.slice(0, 10).map(item => `
+                <div class="dropdown-item" onclick="zoomToPartigiano(${item.dbIndex})">
+                    <strong>${item.nominativo}</strong> (${item.regione})
+                </div>
+            `).join('');
+        } else { dropdown.style.display = 'none'; }
+
+        // Gestione Marker
         if (locVal.length > 3) {
             timeoutRicerca = setTimeout(async () => {
                 const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${locVal}&countrycodes=it&limit=1`);
                 const data = await resp.json();
                 let centro = data.length > 0 ? { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) } : null;
                 if (centro) map.flyTo([centro.lat, centro.lon], 11);
-                eseguiFiltro(nameVal, regVal, centro);
+                eseguiRenderMarker(filtrati, centro);
             }, 600);
         } else {
-            eseguiFiltro(nameVal, regVal, null);
+            eseguiRenderMarker(filtrati, null);
         }
     }
 
-    function eseguiFiltro(nameVal, regVal, centroRicerca) {
+    function eseguiRenderMarker(lista, centroRicerca) {
         markers.clearLayers();
-        database.forEach((d) => {
+        lista.forEach(d => {
             const lat = parseFloat((d.lat || "").replace(',','.'));
             const lon = parseFloat((d.lon || "").replace(',','.'));
-            const matchName = (d.nominativo || "").toLowerCase().includes(nameVal);
-            const matchReg = !regVal || d.regione === regVal;
-            let matchLoc = !centroRicerca || (centroRicerca && !isNaN(lat) && getDistance(centroRicerca.lat, centroRicerca.lon, lat, lon) <= 50);
-
-            if (matchName && matchReg && matchLoc && !isNaN(lat)) {
+            if (!isNaN(lat)) {
                 let m = L.marker([lat, lon], { icon: stellaIcon });
                 m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                 markers.addLayer(m);
@@ -211,20 +222,16 @@
         document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br><br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
 
-        // CALCOLO CORRELATI
-        let latD = parseFloat(d.lat.replace(',','.'));
-        let lonD = parseFloat(d.lon.replace(',','.'));
+        // CORRELATI
+        const latD = parseFloat(d.lat.replace(',','.'));
+        const lonD = parseFloat(d.lon.replace(',','.'));
         let correlati = database
             .filter(item => item.nominativo !== d.nominativo && item.lat)
-            .map(item => ({ 
-                ...item, 
-                dist: getDistance(latD, lonD, parseFloat(item.lat.replace(',','.')), parseFloat(item.lon.replace(',','.'))) 
-            }))
-            .sort((a,b) => a.dist - b.dist)
-            .slice(0, 8);
+            .map(item => ({ ...item, dist: getDistance(latD, lonD, parseFloat(item.lat.replace(',','.')), parseFloat(item.lon.replace(',','.'))) }))
+            .sort((a,b) => a.dist - b.dist).slice(0, 8);
         
         document.getElementById('box-correlati').innerHTML = correlati.map(item => `
-            <div class="rel-item" onclick="openDetailsByNome('${item.nominativo.replace(/'/g, "\\'")}')">
+            <div class="rel-item" onclick="zoomToPartigiano(${item.dbIndex})">
                 <strong>${item.nominativo}</strong>
                 <span style="color:var(--blue-accent); font-weight:bold;">${Math.round(item.dist)} km</span>
             </div>
@@ -233,12 +240,13 @@
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function openDetailsByNome(nome) {
-        const d = database.find(x => x.nominativo === nome);
-        if(d) {
-            map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 12);
-            openDetails(d);
-        }
+    function zoomToPartigiano(index) {
+        const d = database[index];
+        const lat = parseFloat(d.lat.replace(',','.'));
+        const lon = parseFloat(d.lon.replace(',','.'));
+        document.getElementById('search-dropdown').style.display = 'none';
+        map.flyTo([lat, lon], 13);
+        openDetails(d);
     }
 
     function closeDetails() {
@@ -258,7 +266,7 @@
         document.getElementById('search-name').value = ''; 
         document.getElementById('search-location').value = ''; 
         document.getElementById('filtro-regione').value = '';
-        closeDetails(); caricaMarker();
+        closeDetails(); caricaMarker(); map.setView([42.0, 12.5], 6);
     }
 </script>
 </body>
