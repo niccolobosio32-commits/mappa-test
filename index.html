@@ -11,79 +11,83 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 15px 45px rgba(0,0,0,0.3); }
+        :root { --navy: #1a2a3a; --navy-light: #2c3e50; --blue-accent: #3498db; --shadow: 0 15px 45px rgba(0,0,0,0.4); }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
         /* BARRA DI RICERCA */
         #ui-wrapper { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 3000; width: 95%; max-width: 900px; }
         #filter-bar { 
-            background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             padding: 8px 18px; border-radius: 50px; box-shadow: var(--shadow); 
-            display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.4); 
+            display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.5); 
         }
         #filter-bar input, #filter-bar select { border: none; padding: 6px; font-size: 14px; outline: none; flex: 1; background: transparent; color: #111; font-weight: 500; }
         
-        /* HOVER EFFETTI BARRA */
-        #filter-bar input:focus { border-bottom: 1px solid var(--blue-accent); }
-        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
-        .btn-icon:hover { transform: scale(1.2); color: var(--blue-accent); }
+        /* HOVER ELEMENTI BARRA */
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { transform: scale(1.25); color: var(--blue-accent); }
 
         /* RISULTATI RICERCA NOME */
         #search-results { 
-            background: rgba(255, 255, 255, 0.96); border-radius: 15px; margin-top: 8px; 
-            max-height: 200px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #eee;
+            background: white; border-radius: 15px; margin-top: 8px; 
+            max-height: 250px; overflow-y: auto; display: none; box-shadow: var(--shadow); border: 1px solid #ddd;
         }
-        .result-item { padding: 8px 20px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; transition: 0.2s; }
-        .result-item:hover { background: #f0f7ff; color: var(--blue-accent); padding-left: 25px; }
+        .result-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; transition: all 0.2s; }
+        .result-item:hover { background: #f0f7ff; color: var(--blue-accent); padding-left: 28px; }
 
         /* PANNELLO CENTRALE TRASPARENTE */
         #details-panel { 
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, 150%); 
-            width: 92%; max-width: 1000px; height: auto; max-height: 82vh; 
-            background: rgba(255, 255, 255, 0.72) !important; 
-            backdrop-filter: blur(20px) saturate(170%); -webkit-backdrop-filter: blur(20px) saturate(170%);
-            z-index: 4000; transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
-            border-radius: 24px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.4);
+            width: 92%; max-width: 950px; height: auto; max-height: 82vh; 
+            background: rgba(255, 255, 255, 0.75) !important; 
+            backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%);
+            z-index: 4000; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+            border-radius: 28px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.4);
             display: flex; flex-direction: column; overflow: hidden;
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         
-        /* HEADER: NOME E REGIONE */
-        #details-header { background: var(--navy); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-        #header-title-box { display: flex; align-items: center; gap: 12px; }
-        #int-nome-header { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        #details-header { background: var(--navy); color: white; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; }
+        #header-title-box { display: flex; align-items: center; gap: 15px; }
+        #int-nome-header { font-size: 17px; font-weight: 700; text-transform: uppercase; }
         #int-regione-header { background: var(--blue-accent); color: white; font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 800; text-transform: uppercase; }
 
         #details-content { display: flex; overflow-y: auto; }
         
-        .social-col { width: 50px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 12px; border-right: 1px solid rgba(0,0,0,0.05); }
-        .social-icon { width: 34px; height: 34px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 14px; border: 1px solid #ddd; }
-        .social-icon:hover { transform: translateY(-3px); background: var(--blue-accent); color: white; border-color: var(--blue-accent); }
+        /* HOVER SOCIAL */
+        .social-col { width: 55px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 15px; border-right: 1px solid rgba(0,0,0,0.05); }
+        .social-icon { width: 36px; height: 36px; border-radius: 12px; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-size: 14px; border: 1px solid #eee; }
+        .social-icon:hover { transform: translateY(-4px) scale(1.1); background: var(--blue-accent); color: white; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4); }
         
         .main-col { flex: 1; display: flex; flex-direction: column; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
         
-        /* BIOGRAFIA CON ETICHETTA */
-        .bio-box { padding: 15px 20px; } 
-        #label-nome-bio { display: inline-block; background: var(--navy-light); color: white; padding: 3px 10px; border-radius: 4px; font-weight: 700; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; }
-        #text-bio { font-family: 'Lora', serif; font-size: 15px; line-height: 1.4; color: #111; margin: 0; }
+        /* SPAZIATURA MINIMALE TESTO */
+        .bio-box { padding: 12px 20px; } 
+        #label-nome-bio { display: inline-block; background: var(--navy-light); color: white; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; }
+        #text-bio { 
+            font-family: 'Lora', serif; 
+            font-size: 15px; 
+            line-height: 1.2; /* Spaziatura minima richiesta */
+            color: #000; margin: 0; 
+        }
 
-        .side-col { width: 240px; background: rgba(255,255,255,0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.05); }
+        .side-col { width: 250px; background: rgba(255,255,255,0.15); padding: 15px; border-left: 1px solid rgba(0,0,0,0.05); }
         .rel-item { 
-            padding: 8px 10px; background: rgba(255,255,255,0.4); margin-bottom: 6px; border-radius: 10px; 
-            font-size: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.3s;
+            padding: 8px 12px; background: rgba(255,255,255,0.5); margin-bottom: 8px; border-radius: 10px; 
+            font-size: 12px; cursor: pointer; border: 1px solid transparent; transition: all 0.3s ease;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .rel-item:hover { transform: translateX(8px); background: white; border-color: var(--blue-accent); }
+        .rel-item:hover { transform: translateX(10px); background: white; border-color: var(--blue-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
         @media (max-width: 768px) {
-            #details-panel { width: 95%; max-height: 85vh; top: 50%; }
+            #details-panel { width: 96%; top: 50%; }
             #details-content { flex-direction: column; }
             .side-col { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); }
-            #box-correlati { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
-            .rel-item { flex: 0 0 150px; margin-bottom: 0; }
+            #box-correlati { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+            .rel-item { flex: 0 0 160px; margin-bottom: 0; }
         }
     </style>
 </head>
@@ -111,7 +115,7 @@
             <div id="int-nome-header">NOME COGNOME</div>
             <div id="int-regione-header">REGIONE</div>
         </div>
-        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 14px; border-radius:8px; cursor:pointer; font-weight:700; font-size:11px;">CHIUDI</button>
+        <button onclick="closeDetails()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:7px 15px; border-radius:10px; cursor:pointer; font-weight:700; font-size:11px;">CHIUDI</button>
     </div>
     <div id="details-content">
         <div class="social-col">
@@ -127,7 +131,7 @@
             </div>
         </div>
         <div class="side-col">
-            <div style="font-size:10px; font-weight:800; margin-bottom:10px; opacity:0.6; text-transform:uppercase; letter-spacing:1px;">Storie Vicine</div>
+            <div style="font-size:10px; font-weight:800; margin-bottom:12px; opacity:0.6; text-transform:uppercase; letter-spacing:1px;">Storie Vicine</div>
             <div id="box-correlati"></div>
         </div>
     </div>
@@ -165,7 +169,7 @@
         }
     });
 
-    // LOGICA RICERCA NOME CON PRIORITÀ COGNOME
+    // LOGICA RICERCA: Priorità all'ultima parola (Cognome)
     function cercaRealTime() {
         const val = document.getElementById('search-name').value.toLowerCase().trim();
         const resDiv = document.getElementById('search-results');
@@ -173,20 +177,22 @@
 
         let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val))
             .sort((a,b) => {
-                // Estrai l'ultima parola (Cognome)
-                const cognomeA = a.nominativo.split(' ').pop().toLowerCase();
-                const cognomeB = b.nominativo.split(' ').pop().toLowerCase();
+                const paroleA = a.nominativo.toLowerCase().split(' ');
+                const paroleB = b.nominativo.toLowerCase().split(' ');
+                const cognomeA = paroleA[paroleA.length - 1];
+                const cognomeB = paroleB[paroleB.length - 1];
                 
+                // Se il cognome inizia con la ricerca, ha priorità 0
                 const matchA = cognomeA.startsWith(val) ? 0 : 1;
                 const matchB = cognomeB.startsWith(val) ? 0 : 1;
                 return matchA - matchB;
-            }).slice(0, 12);
+            }).slice(0, 15);
 
         if (filtrati.length > 0) {
             resDiv.style.display = 'block';
             resDiv.innerHTML = filtrati.map(d => `
                 <div class="result-item" onclick="zoomTo(${d.dbIndex})">
-                    <strong>${d.nominativo}</strong> <small>— ${d.regione}</small>
+                    <strong>${d.nominativo}</strong> <small>(${d.regione})</small>
                 </div>
             `).join('');
         }
@@ -200,47 +206,53 @@
             if (citta.length < 3) return;
             const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${citta}&countrycodes=it&limit=1`);
             const d = await r.json();
-            if (d.length > 0) map.flyTo([d[0].lat, d[0].lon], 11);
+            if (d.length > 0) map.flyTo([d[0].lat, d[0].lon], 12);
         }, 800);
     }
 
+    // MOSTRA TUTTI I RISULTATI DELLA REGIONE E FA ZOOM
     function caricaMarker() {
         const nameVal = document.getElementById('search-name').value.toLowerCase();
         const regVal = document.getElementById('filtro-regione').value;
         markers.clearLayers();
         let bounds = L.latLngBounds();
-        let found = false;
+        let trovato = false;
 
         database.forEach(d => {
             const lat = parseFloat(d.lat?.replace(',','.'));
             const lon = parseFloat(d.lon?.replace(',','.'));
             if (isNaN(lat)) return;
 
-            if (d.nominativo.toLowerCase().includes(nameVal) && (!regVal || d.regione === regVal)) {
+            const matchNome = d.nominativo.toLowerCase().includes(nameVal);
+            const matchReg = !regVal || d.regione === regVal;
+
+            if (matchNome && matchReg) {
                 let m = L.marker([lat, lon], { icon: stellaIcon });
                 m.on('click', () => openDetails(d));
                 markers.addLayer(m);
                 bounds.extend([lat, lon]);
-                found = true;
+                trovato = true;
             }
         });
 
-        if (found && (nameVal || regVal)) map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        if (trovato && (nameVal || regVal)) {
+            map.fitBounds(bounds, {padding: [50,50], maxZoom: 12});
+        }
     }
 
     function openDetails(d) {
         document.getElementById('int-nome-header').innerText = d.nominativo;
         document.getElementById('int-regione-header').innerText = d.regione;
         document.getElementById('label-nome-bio').innerText = d.nominativo;
-        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br><br>');
+        // Spaziatura minima nel testo della scheda
+        document.getElementById('text-bio').innerHTML = (d.scheda || "").split('. ').join('.<br>');
         document.getElementById('video-iframe').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
 
-        // Correlati
         const latD = parseFloat(d.lat.replace(',','.'));
         const lonD = parseFloat(d.lon.replace(',','.'));
         let vicini = database.filter(x => x.nominativo !== d.nominativo && x.lat)
             .map(x => ({ ...x, dist: getDist(latD, lonD, parseFloat(x.lat.replace(',','.')), parseFloat(x.lon.replace(',','.'))) }))
-            .sort((a,b) => a.dist - b.dist).slice(0, 6);
+            .sort((a,b) => a.dist - b.dist).slice(0, 8);
 
         document.getElementById('box-correlati').innerHTML = vicini.map(v => `
             <div class="rel-item" onclick="zoomTo(${database.indexOf(v)})">
