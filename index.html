@@ -212,7 +212,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contestStr} \n\nDOMANDA: "${userText}" \n\nREGOLE: 1. Elenco puntato. 2. Nome in doppie quadre [[Nome]]. 3. Vai a capo tra i nomi. 4. Niente grassetti.` }] }] 
+                    contents: [{ 
+                        parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contestStr} \n\nDOMANDA: "${userText}" \n\nREGOLE: 1. Rispondi in modo discorsivo. 2. Nomi tra doppie quadre [[Nome Cognome]]. 3. Vai a capo dopo ogni descrizione. 4. Niente grassetti.` }] 
+                    }] 
                 })
             });
 
@@ -267,7 +269,15 @@
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
+        const drop = document.getElementById('results-dropdown');
         caricaMarker(reg ? d => d.regione === reg : null, !!reg);
+        if (reg) {
+            let filtrati = database.filter(d => d.regione === reg).slice(0, 40);
+            updateDropdown(filtrati);
+            drop.style.display = 'block';
+        } else {
+            drop.style.display = 'none';
+        }
     }
 
     function apri(nome) {
@@ -290,11 +300,14 @@
     }
 
     function closeDetails() { document.getElementById('details-panel').classList.remove('open'); }
+    
     function toggleAIChat() { 
         const win = document.getElementById('ai-chat-window');
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
+    
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
