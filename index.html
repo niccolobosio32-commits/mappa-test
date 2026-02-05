@@ -267,8 +267,13 @@ border: 1px solid rgba(0,0,0,0.1);
     function filtraRegione() { MotoreFiltri.esegui('regione'); }
 
     /* --- FUNZIONI MAPPA E DETTAGLI --- */
-    function flyDolce(target, zoom = 12) { map.flyTo(target, zoom, { duration: 2.5, easeLinearity: 0.1 }); }
-
+    function flyDolce(target, zoom = 12) { 
+    map.flyTo(target, zoom, { 
+        duration: 3.5,     // Più lento (da 2.5 a 3.5 secondi)
+        easeLinearity: 0.1, // Movimento più fluido all'inizio e alla fine
+        noMoveStart: true
+    }); 
+}
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
@@ -377,6 +382,7 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
+
 
 
 
