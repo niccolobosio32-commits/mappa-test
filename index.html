@@ -124,6 +124,53 @@
         
         .social-btn svg { width: 18px; height: 18px; fill: #1a2a3a; }
         .social-btn:hover svg { fill: white; }
+       
+       /* --- OTTIMIZZAZIONE MOBILE (Solo per schermi sotto i 768px) --- */
+    @media screen and (max-width: 768px) {
+    #details-panel {
+        width: 100% !important; /* Occupa tutta la larghezza */
+        height: 80vh; /* Copre l'80% dell'altezza dello schermo */
+        top: 100%; /* Parte dal fondo */
+        left: 0;
+        right: 0;
+        border-radius: 20px 20px 0 0; /* Arrotonda solo gli angoli in alto */
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+    }
+
+    #details-panel.open {
+        transform: translateY(-80vh); /* Sale su quando si apre */
+    }
+
+    /* Rende il contenuto interno scorrevole e ordinato */
+    .side-content {
+        flex-direction: column !important; /* Stack verticale: video sopra, testo sotto */
+        overflow-y: auto;
+    }
+
+    .side-main {
+        width: 100% !important;
+        padding: 10px;
+    }
+
+    .side-rel {
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        padding: 15px;
+    }
+
+    /* Sistema le icone social su mobile per essere ben cliccabili */
+    .social-box {
+        flex-direction: row !important;
+        justify-content: space-around;
+        padding-bottom: 30px; /* Spazio extra per non coprire i tasti del telefono */
+    }
+
+    /* Nasconde la scheda "blank" iniziale se non è attiva */
+    #details-panel:not(.open) {
+        visibility: hidden;
+    }
+}
     </style>
 </head>
 <body>
@@ -153,7 +200,7 @@
 
 <div id="map"></div>
 
-<div id="details-panel">
+<div id="details-panel" class="">
     <div id="details-header">
         <div><b id="h-nome">NOMINATIVO</b> <span id="h-reg" style="background:var(--blue); padding:2px 8px; border-radius:10px; font-size:10px; margin-left:10px;">REGIONE</span></div>
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
@@ -470,6 +517,7 @@
 </script>
 </body>
 </html>
+
 
 
 
