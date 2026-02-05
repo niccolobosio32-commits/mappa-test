@@ -138,7 +138,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    const GEMINI_API_KEY = "AIzaSyAOgQB_JwQFhAH-kyTSmU0tFd8B7fndZZk";
+   // Questo NON scrive la chiave nel file, così i bot di Google non la leggono.
+// La incollerai tu la prima volta che apri la mappa e il browser la ricorderà.
+const GEMINI_API_KEY = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key:");
+if (GEMINI_API_KEY) localStorage.setItem('gemini_key', GEMINI_API_KEY);
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -308,5 +311,6 @@
 </script>
 </body>
 </html>
+
 
 
