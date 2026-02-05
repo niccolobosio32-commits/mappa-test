@@ -469,53 +469,84 @@
 }
 
     async function sendAIMessage() {
-        const key = localStorage.getItem('gemini_key') || prompt("API Key:");
-        if (!key) return; localStorage.setItem('gemini_key', key);
-        const input = document.getElementById('ai-chat-input');
-        const box = document.getElementById('ai-chat-messages');
-        const userText = input.value.trim();
-        if (!userText) return;
+    // 1. Recupero chiave e input
+    const key = localStorage.getItem('gemini_key') || prompt("API Key:");
+    if (!key) return; 
+    localStorage.setItem('gemini_key', key);
 
-        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
-        input.value = "";
-        const aiMsgId = "ai-" + Date.now();
-        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai"></div>`;
-        const aiMsgElement = document.getElementById(aiMsgId);
-        aiMsgElement.innerText = "...";
+    const input = document.getElementById('ai-chat-input');
+    const box = document.getElementById('ai-chat-messages');
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    // 2. Visualizzazione messaggio utente
+    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+    input.value = "";
+    const aiMsgId = "ai-" + Date.now();
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">...</div>`;
+    const aiMsgElement = document.getElementById(aiMsgId);
+    box.scrollTop = box.scrollHeight;
+
+    try {
+        // 3. LOGICA DI RICERCA INTELLIGENTE (Sinonimi e Tag)
+        const queryLower = userText.toLowerCase();
+        let searchTerms = [queryLower];
+        
+        // Espansione termini per trovare schede rilevanti anche senza parole esatte
+        if (queryLower.includes("donne") || queryLower.includes("femm")) searchTerms.push("staffetta", "partigiana", "sorella", "madre", "f");
+        if (queryLower.includes("montagna")) searchTerms.push("baita", "appennino", "alpi", "distaccamento");
+        if (queryLower.includes("città") || queryLower.includes("urbana")) searchTerms.push("gap", "sap", "cln");
+
+        let selezione = database.filter(d => {
+            const testoCompleto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita} ${d.sesso}`.toLowerCase();
+            return searchTerms.some(term => testoCompleto.includes(term));
+        }).slice(0, 80); // 80 profili bastano per dare ottima qualità senza sforare i limiti
+
+        if (selezione.length === 0) {
+            // Se non trova nulla di specifico, prende un campione casuale per dare comunque contesto storico
+            selezione = database.slice(0, 30);
+        }
+
+        const contestStr = selezione.map(d => 
+            `[NOME: ${d.nominativo} | REG: ${d.regione} | SESSO: ${d.sesso} | BIO: ${d.scheda.substring(0, 500)}]`
+        ).join("\n");
+
+        // 4. CHIAMATA A GEMINI 2.5 FLASH
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ 
+                        text: `Agisci come Archivista Storico esperto della Resistenza Italiana. 
+                        Rispondi alla domanda: "${userText}". 
+                        
+                        ISTRUZIONI:
+                        1. Se l'utente chiede statistiche (es. quante donne), analizza il campo SESSO (M/F) dei dati forniti.
+                        2. Cita sempre almeno 2 o 3 nominativi tra doppi brackets, es: [[Nome Cognome]].
+                        3. Se i dati non contengono la risposta esatta, specifica che l'archivio attuale è limitato ma integra con la tua conoscenza storica generale.
+                        4. Usa uno stile solenne, sobrio ed elegante.
+                        
+                        DATI DA ANALIZZARE:
+                        ${contestStr}` 
+                    }] 
+                }] 
+            })
+        });
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        
+        // 5. Output finale
+        aiMsgElement.innerText = text;
+        aiMsgElement.classList.add('finished');
         box.scrollTop = box.scrollHeight;
 
-        try {
-            let selezione = database.filter(d => {
-                const testoCompleto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
-                const ricercaUtente = userText.toLowerCase();
-                const paroleChiave = ricercaUtente.split(' ').filter(t => t.length > 3);
-                return testoCompleto.includes(ricercaUtente) || paroleChiave.some(t => testoCompleto.includes(t));
-            }).slice(0, 100);
-
-            if (selezione.length === 0) {
-                aiMsgElement.innerText = "Nessun risultato trovato nell'archivio.";
-                return;
-            }
-
-            const contestStr = selezione.map(d => `[PARTIGIANO: ${d.nominativo} | BIO: ${d.scheda.substring(0, 700)}]`).join("\n");
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ 
-                            text: `Agisci come Archivista Storico. Rispondi a: "${userText}". 
-                            FORMATTAZIONE ELEGANTE:
-                            1. Usa il grassetto per concetti chiave.
-                            2. Organizza in brevi paragrafi o punti elenco puliti.
-                            3. Per ogni partigiano citato, scrivi SEMPRE il nome tra doppi brackets, es: [[Nome Cognome]].
-                            4. Non usare titoli eccessivi, mantieni uno stile sobrio e accademico.
-                            DATI: ${contestStr}` 
-                        }] 
-                    }] 
-                })
-            });
+    } catch (err) {
+        aiMsgElement.innerText = "Errore di connessione con l'Archivio Centrale. Verifica la tua API Key.";
+        console.error(err);
+    }
+}
 
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
@@ -567,6 +598,7 @@
 </script>
 </body>
 </html>
+
 
 
 
