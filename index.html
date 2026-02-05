@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Partigiani - Mappa Interattiva</title>
+    <title>Archivio Partigiani - Mappa AI</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,24 +16,23 @@
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
         /* UI RICERCA */
-        #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 900px; }
+        #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1000px; }
         #filter-bar { 
-            background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 10px 20px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-            display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+            display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
         }
-        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; min-width: 50px; }
-        
+        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 80px; }
         #results-dropdown { 
-            background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
+        .res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
         .res-item:hover { background: var(--blue); color: white; }
 
         /* SCHEDA BIOGRAFICA */
         #details-panel { 
             position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
-            width: 94%; max-width: 1150px; z-index: 4000; 
+            width: 94%; max-width: 1100px; z-index: 4000; 
             background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
             transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
             border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
@@ -41,66 +40,31 @@
             max-height: 80vh;
         }
         #details-panel.open { transform: translate(-50%, -50%); }
-        #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        #details-content { display: flex; overflow: hidden; flex: 1; width: 100%; }
-        
-        .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; flex-shrink: 0; }
-        .social-btn { width: 38px; height: 38px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; color: #000; font-weight: 900; font-size: 18px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
-        .social-btn:hover { background: var(--blue); color: #fff; }
+        #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; }
+        #details-content { display: flex; overflow: hidden; flex: 1; }
+        .main-col { flex: 1; overflow-y: auto; }
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+        .bio-box { padding: 15px 25px; line-height: 1.2; text-align: justify; }
+        #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; }
 
-        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-        
-        .bio-box { padding: 10px 30px; line-height: 1.2; text-align: justify; }
-        #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
-
-        .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; flex-shrink: 0; }
-        #box-rel { display: flex; flex-direction: column; gap: 8px; }
-        .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
-        .rel-item:hover { background: rgba(255,255,255,0.7); }
-
-        .mobile-socials { display: none; }
-
-        @media (max-width: 768px) {
-            #details-panel { top: 60%; max-height: 85vh; }
-            #details-content { flex-direction: column; overflow-y: auto; }
-            .side-social { display: none; }
-            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); padding: 10px 15px; order: 2; }
-            #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 8px; }
-            .rel-item { min-width: 130px; text-align: center; }
-            .mobile-socials { display: flex !important; justify-content: center; gap: 15px; padding: 10px; order: 3; }
-            .video-box { position: sticky; top: 0; z-index: 10; }
-        }
-
-        .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
-        .stella:hover svg { transform: scale(1.8); }
-        .stella:hover polygon { fill: #e21118; stroke: #fff; }
-        .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; padding: 5px 10px; font-size: 12px; border-radius: 5px; }
+        /* SOCIAL & CORRELATI */
+        .side-social { width: 55px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 12px; }
+        .social-btn { width: 35px; height: 35px; background: rgba(255,255,255,0.6); border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; color: #000; font-weight: 900; border: 1px solid rgba(0,0,0,0.1); }
+        .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
+        .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; }
 
         /* CHAT AI */
-        #ai-chat-toggle {
-            position: absolute; bottom: 25px; right: 25px; z-index: 6000;
-            width: 60px; height: 60px; background: #1a2a3a; color: white;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.2);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        #ai-chat-window {
-            position: absolute; bottom: 95px; right: 25px; z-index: 6000;
-            width: 350px; height: 450px; background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            display: none; flex-direction: column; overflow: hidden;
-        }
-        #ai-chat-header { background: #1a2a3a; color: white; padding: 15px; font-weight: 700; display: flex; justify-content: space-between; }
-        #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #000; }
-        .msg { padding: 8px 12px; border-radius: 12px; max-width: 80%; line-height: 1.4; }
-        .msg-ai { background: #e1e1e1; align-self: flex-start; }
-        .msg-user { background: #3498db; align-self: flex-end; color: white; }
-        #ai-chat-input-area { padding: 10px; border-top: 1px solid rgba(0,0,0,0.1); display: flex; gap: 8px; }
-        #ai-chat-input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 8px 15px; outline: none; font-size: 13px; }
-        #ai-send-btn { background: #1a2a3a; color: white; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; }
+        #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
+        #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
+        .msg-ai { background: #f0f0f0; align-self: flex-start; }
+        .msg-user { background: var(--blue); color: white; align-self: flex-end; }
+
+        /* MARKER */
+        .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: 0.3s; }
+        .stella:hover svg { transform: scale(1.5); }
+        .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -108,15 +72,12 @@
 <div id="ui-container">
     <div id="filter-bar">
         <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
-        <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
-        <span style="color: rgba(0,0,0,0.1);">|</span>
-        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtraTematico()" style="color: #e67e22 !important;">
-        <span style="color: rgba(0,0,0,0.1);">|</span>
-        <input type="text" id="search-city" placeholder="Città..." oninput="filtra('city')">
+        <input type="text" id="search-name" placeholder="Cognome..." oninput="filtra('name')">
+        <input type="text" id="search-theme" placeholder="Temi (es: Resistenza)..." oninput="filtraTematico()" style="color:#e67e22;">
+        <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
             <option value="">Regione...</option>
-            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
-        </select>
+            <option value="Piemonte">Piemonte</option><option value="Lombardia">Lombardia</option><option value="Toscana">Toscana</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Lazio">Lazio</option> </select>
     </div>
     <div id="results-dropdown"></div>
 </div>
@@ -125,10 +86,8 @@
 
 <div id="details-panel">
     <div id="details-header">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <b id="h-nome">NOMINATIVO</b> <span id="h-reg" style="background:var(--blue); padding:3px 10px; border-radius:20px; font-size:11px;">REGIONE</span>
-        </div>
-        <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:35px; cursor:pointer; line-height:1;">&times;</button>
+        <div><b id="h-nome">NOMINATIVO</b> <span id="h-reg" style="background:var(--blue); padding:2px 8px; border-radius:10px; font-size:10px; margin-left:10px;">REGIONE</span></div>
+        <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
     </div>
     <div id="details-content">
         <div class="side-social">
@@ -139,32 +98,29 @@
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
             <div class="bio-box">
-                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME</div>
                 <p id="text-bio"></p>
             </div>
         </div>
         <div class="side-rel">
-            <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:8px; color:#000; letter-spacing:1px;">CORRELATI</div>
+            <div style="font-size:9px; font-weight:800; opacity:0.5; margin-bottom:10px;">CORRELATI</div>
             <div id="box-rel"></div>
         </div>
     </div>
 </div>
 
 <div id="ai-chat-toggle" onclick="toggleAIChat()">
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
 </div>
 
 <div id="ai-chat-window">
-    <div id="ai-chat-header">
-        <span>Assistente AI Archivio</span>
-        <button onclick="toggleAIChat()" style="background:none; border:none; color:white; cursor:pointer; font-size:20px;">&times;</button>
+    <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between;">
+        Assistente Archivio <span onclick="toggleAIChat()" style="cursor:pointer;">&times;</span>
     </div>
     <div id="ai-chat-messages">
-        <div class="msg msg-ai">Ciao! Sono l'intelligenza dell'Archivio. Come posso aiutarti nella ricerca?</div>
+        <div class="msg msg-ai">Ciao! Chiedimi pure dei temi trattati nelle interviste.</div>
     </div>
-    <div id="ai-chat-input-area">
-        <input type="text" id="ai-chat-input" placeholder="Scrivi qui..." onkeypress="if(event.key==='Enter') sendAIMessage()">
-        <button id="ai-send-btn" onclick="sendAIMessage()">></button>
+    <div style="padding:10px; border-top:1px solid #eee; display:flex;">
+        <input type="text" id="ai-chat-input" placeholder="Scrivi..." style="flex:1; border:1px solid #ddd; border-radius:20px; padding:5px 12px;" onkeypress="if(event.key==='Enter') sendAIMessage()">
     </div>
 </div>
 
@@ -173,21 +129,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    // INCOLLA QUI SOTTO LA TUA CHIAVE NUOVA
     const GEMINI_API_KEY = "AIzaSyCb_dFRcNBDK5QYWNC_qlGuZmNI_pn_NMI";
-    
-    let map = L.map('map', {zoomControl: false}).setView([42.2, 12.5], 6);
+    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const stellaIcon = L.divIcon({
         className: 'stella',
-        html: `<svg width="30" height="30" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`,
-        iconSize: [30, 30], iconAnchor: [15, 15]
+        html: `<svg width="24" height="24" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`,
+        iconSize: [24, 24], iconAnchor: [12, 12]
     });
 
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
+    let searchTimer;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -197,7 +152,7 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            caricaMarker(); 
+            caricaMarker();
         }
     });
 
@@ -219,51 +174,43 @@
                 }
             }
         });
-        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10});
+        if (hasData && fit) map.flyToBounds(bounds, {padding: [50,50], maxZoom: 12});
     }
 
     async function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { drop.style.display = 'none'; if(tipo==='city' || tipo==='name') caricaMarker(); return; }
-        
+        if (val.length < 3) { drop.style.display = 'none'; return; }
+
         if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
+            let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 10);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
-        }
-
-        if (tipo === 'city') {
-            try {
-                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val},Italy`);
+        } else if (tipo === 'city') {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(async () => {
+                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`);
                 const data = await r.json();
                 if (data.length > 0) {
                     const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
-                    const dist = (l1, o1, l2, o2) => {
-                        const R = 6371;
-                        const dL = (l2-l1)*Math.PI/180, dO = (o2-o1)*Math.PI/180;
-                        const a = Math.sin(dL/2)**2 + Math.cos(l1*Math.PI/180)*Math.cos(l2*Math.PI/180)*Math.sin(dO/2)**2;
-                        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    };
-                    caricaMarker(d => {
+                    let vicini = database.filter(d => {
                         const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                        return !isNaN(pLat) && dist(cLat, cLon, pLat, pLon) <= 50;
-                    }, true);
+                        return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
+                    });
+                    if (vicini.length > 0) {
+                        caricaMarker(d => vicini.includes(d), true);
+                        drop.innerHTML = vicini.slice(0,10).map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
+                        drop.style.display = 'block';
+                    }
                 }
-            } catch(e) { console.error("Errore Geo:", e); }
+            }, 800);
         }
     }
 
     function filtraTematico() {
         const val = document.getElementById('search-theme').value.toLowerCase().trim();
-        const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { drop.style.display = 'none'; caricaMarker(); return; }
-        let filtrati = database.filter(d => (d.scheda || "").toLowerCase().includes(val)).slice(0, 20);
-        if (filtrati.length > 0) {
-            caricaMarker(d => (d.scheda || "").toLowerCase().includes(val), true);
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>(${d.regione})</small></div>`).join('');
-            drop.style.display = 'block';
-        }
+        if (val.length < 3) { caricaMarker(); return; }
+        caricaMarker(d => (d.scheda || "").toLowerCase().includes(val), true);
     }
 
     function filtraRegione() {
@@ -278,16 +225,22 @@
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
         const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
-        if(!isNaN(lat)) map.flyTo([lat, lon], 14);
+        map.flyTo([lat, lon], 14);
     }
 
     function openDetails(d) {
         document.getElementById('h-nome').innerText = d.nominativo;
         document.getElementById('h-reg').innerText = d.regione;
-        document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
+        
+        // Sharing
+        const shareURL = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
+        document.getElementById('fb-share').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
+        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent("Intervista di " + d.nominativo + ": " + shareURL)}`;
+        document.getElementById('copy-link').onclick = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Link copiato!"); };
+
+        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 8);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
@@ -297,11 +250,8 @@
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
     }
 
-    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
-
     function toggleAIChat() {
         const win = document.getElementById('ai-chat-window');
-        if(!win) return;
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
 
@@ -313,37 +263,27 @@
 
         box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
         input.value = "";
+        
+        const loadingId = "load-" + Date.now();
+        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
         box.scrollTop = box.scrollHeight;
 
-        const loadingId = "loading-" + Date.now();
-        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
-
-        const contestData = database.slice(0, 50).map(d => `${d.nominativo} (${d.regione})`).join(", ");
+        const contest = database.slice(0, 80).map(d => `${d.nominativo} (${d.regione})`).join(", ");
 
         try {
-            // USIAMO GEMINI-1.5-FLASH
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const response = await fetch(url, {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contestData}. Rispondi a: ${userText}` }] }]
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contest}. Rispondi brevemente a: ${userText}` }] }] })
             });
-            const data = await response.json();
-            if (data.error) {
-                document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
-            } else if (data.candidates && data.candidates[0].content) {
-                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-            }
-        } catch (e) {
-            document.getElementById(loadingId).innerText = "Errore di connessione.";
-        }
+            const data = await r.json();
+            const responseText = data.candidates[0].content.parts[0].text;
+            document.getElementById(loadingId).innerText = responseText;
+        } catch (e) { document.getElementById(loadingId).innerText = "Errore di connessione."; }
         box.scrollTop = box.scrollHeight;
     }
+
+    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
-
-
-
