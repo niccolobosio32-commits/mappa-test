@@ -185,6 +185,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
+    // 1. INCOLLA LA TUA VARIABILE PROPRIO QUI, ALL'INIZIO:
+    const GEMINI_API_KEY = "AIzaSyBXDK8OjIBny37SkACMGx0rvp5wgJD51Do";
     let map = L.map('map', {zoomControl: false}).setView([42.2, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -333,28 +335,66 @@
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
     // FUNZIONI CHAT AI
+    // La tua chiave corretta: AIzaSyBXDK8OjIBny37SkACMGx0rvp5wgJD51Do
+    const GEMINI_API_KEY = "AIzaSyBXDK8OjIBny37SkACMGx0rvp5wgJD51Do"; 
+
     function toggleAIChat() {
         const win = document.getElementById('ai-chat-window');
         if(!win) return;
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
 
-    function sendAIMessage() {
+    async function sendAIMessage() {
         const input = document.getElementById('ai-chat-input');
         const box = document.getElementById('ai-chat-messages');
         if (!input || !input.value.trim()) return;
 
-        box.innerHTML += `<div class="msg msg-user">${input.value}</div>`;
         const userText = input.value;
+        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
         input.value = "";
         box.scrollTop = box.scrollHeight;
 
-        setTimeout(() => {
-            box.innerHTML += `<div class="msg msg-ai">Sto analizzando l'archivio per aiutarti con "${userText}"...</div>`;
+        const loadingId = "loading-" + Date.now();
+        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
+
+        // Passiamo i dati del database all'AI (nomi e regioni)
+        const contestData = database.slice(0, 500).map(d => `${d.nominativo} (${d.regione})`).join(", ");
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `Sei l'assistente virtuale dell'Archivio Partigiani. 
+                            Dati disponibili nell'archivio: ${contestData}. 
+                            Istruzioni: Rispondi in modo molto breve, massimo 2 frasi. 
+                            Se l'utente chiede di una persona o di una regione presente nei dati, confermalo.
+                            Domanda utente: ${userText}`
+                        }]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0]) {
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                document.getElementById(loadingId).innerText = aiResponse;
+            } else {
+                document.getElementById(loadingId).innerText = "Spiacente, Gemini non può rispondere in questo momento.";
+                console.error("Dettagli errore:", data);
+            }
             box.scrollTop = box.scrollHeight;
-        }, 600);
+
+        } catch (error) {
+            document.getElementById(loadingId).innerText = "Errore tecnico di connessione.";
+            console.error(error);
+        }
     }
 </script>
 </body>
 </html>
+
 
