@@ -61,6 +61,7 @@
         .msg-ai { background: #f0f0f0; align-self: flex-start; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
 
+        /* MARKER */
         .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: 0.3s; }
         .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
     </style>
@@ -71,10 +72,20 @@
     <div id="filter-bar">
         <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
         <input type="text" id="search-name" placeholder="Cognome..." oninput="filtra('name')">
-        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtraTematico()" style="color:#e67e22;">
+        <input type="text" id="search-theme" placeholder="Temi (es: prigionia)..." oninput="filtra('theme')">
         <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
             <option value="">Regione...</option>
+            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option>
+            <option value="Calabria">Calabria</option><option value="Campania">Campania</option>
+            <option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option>
+            <option value="Lazio">Lazio</option><option value="Liguria">Liguria</option>
+            <option value="Lombardia">Lombardia</option><option value="Marche">Marche</option>
+            <option value="Molise">Molise</option><option value="Piemonte">Piemonte</option>
+            <option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option>
+            <option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option>
+            <option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option>
+            <option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
     </div>
     <div id="results-dropdown"></div>
@@ -95,7 +106,9 @@
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-            <div class="bio-box"><p id="text-bio"></p></div>
+            <div class="bio-box">
+                <p id="text-bio"></p>
+            </div>
         </div>
         <div class="side-rel">
             <div style="font-size:9px; font-weight:800; opacity:0.5; margin-bottom:10px;">CORRELATI</div>
@@ -148,20 +161,9 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
-            popolaRegioni();
             caricaMarker();
         }
     });
-
-    function popolaRegioni() {
-        const select = document.getElementById('filtro-regione');
-        const regioni = [...new Set(database.map(d => d.regione))].filter(r => r).sort();
-        regioni.forEach(r => {
-            let opt = document.createElement('option');
-            opt.value = r; opt.innerText = r;
-            select.appendChild(opt);
-        });
-    }
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
@@ -185,27 +187,33 @@
     }
 
     async function filtra(tipo) {
-        const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
+        const val = document.getElementById(tipo === 'name' ? 'search-name' : tipo === 'theme' ? 'search-theme' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
         if (val.length < 3) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
             let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
             updateDropdown(filtrati);
+        } else if (tipo === 'theme') {
+            let filtrati = database.filter(d => d.scheda?.toLowerCase().includes(val)).slice(0, 15);
+            updateDropdown(filtrati);
+            caricaMarker(d => d.scheda?.toLowerCase().includes(val), true);
         } else if (tipo === 'city') {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(async () => {
-                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`);
-                const data = await r.json();
-                if (data.length > 0) {
-                    const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
-                    let vicini = database.filter(d => {
-                        const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
-                        return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
-                    });
-                    updateDropdown(vicini.slice(0, 20));
-                    caricaMarker(d => vicini.includes(d), true);
-                }
+                try {
+                    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=it&limit=1`);
+                    const data = await r.json();
+                    if (data.length > 0) {
+                        const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                        let vicini = database.filter(d => {
+                            const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                            return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
+                        });
+                        updateDropdown(vicini.slice(0, 20));
+                        caricaMarker(d => vicini.includes(d), true);
+                    }
+                } catch(e) { console.error(e); }
             }, 800);
         }
     }
@@ -213,15 +221,9 @@
     function updateDropdown(lista) {
         const drop = document.getElementById('results-dropdown');
         if (lista.length > 0) {
-            drop.innerHTML = lista.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>(${d.regione})</small></div>`).join('');
+            drop.innerHTML = lista.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small style="opacity:0.6">(${d.regione})</small></div>`).join('');
             drop.style.display = 'block';
         } else { drop.style.display = 'none'; }
-    }
-
-    function filtraTematico() {
-        const val = document.getElementById('search-theme').value.toLowerCase().trim();
-        if (val.length < 3) { caricaMarker(); return; }
-        caricaMarker(d => (d.scheda || "").toLowerCase().includes(val), true);
     }
 
     function filtraRegione() {
@@ -242,12 +244,10 @@
         document.getElementById('h-reg').innerText = d.regione;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        
         const shareURL = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
         document.getElementById('fb-share').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
-        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video di " + d.nominativo + ": " + shareURL)}`;
-        document.getElementById('copy-link').onclick = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Link copiato!"); };
-
+        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent("Intervista: " + shareURL)}`;
+        document.getElementById('copy-link').onclick = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Copiato!"); };
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 8);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
@@ -275,18 +275,22 @@
         box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
         box.scrollTop = box.scrollHeight;
 
-        const contest = database.slice(0, 60).map(d => `${d.nominativo} (${d.regione})`).join(", ");
-
         try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in max 2 righe a: ${userText}` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Dati: ${contest}. Rispondi breve a: ${userText}` }] }] })
             });
-            const data = await r.json();
-            document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-        } catch (e) { 
-            document.getElementById(loadingId).innerText = "Errore di connessione. Verifica API Key."; 
+            const data = await response.json();
+            if(data.error) {
+                document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
+            } else {
+                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
+            }
+        } catch (e) {
+            document.getElementById(loadingId).innerText = "Errore di connessione.";
         }
         box.scrollTop = box.scrollHeight;
     }
