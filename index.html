@@ -42,24 +42,19 @@
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; }
-        #details-content { display: flex; overflow: hidden; flex: 1; height: 100%; }
+        #details-content { display: flex; overflow: hidden; flex: 1; height: 100%; position: relative; }
         
-        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        
-        /* SOCIAL NELLA SCHEDA */
-        .social-share-box { 
-            padding: 10px 25px; 
-            display: flex; 
-            gap: 15px; 
-            background: rgba(255,255,255,0.2); 
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            align-items: center;
+        /* SOCIAL LATERALE ALLA SCHEDA */
+        #side-social {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 12px; z-index: 10;
+            background: rgba(255,255,255,0.3); padding: 10px; border-radius: 20px; backdrop-filter: blur(5px);
         }
-        .social-share-box span { font-size: 11px; font-weight: 800; opacity: 0.6; }
-        .social-share-box a { color: var(--navy); font-size: 16px; transition: 0.2s; }
-        .social-share-box a:hover { color: var(--blue); transform: scale(1.1); }
+        #side-social a, #side-social button { background: none; border: none; color: var(--navy); font-size: 18px; cursor: pointer; transition: 0.2s; opacity: 0.7; }
+        #side-social a:hover, #side-social button:hover { opacity: 1; transform: scale(1.2); color: var(--blue); }
 
+        .main-col { flex: 1; overflow-y: auto; padding-left: 50px; } /* Spazio per social side */
+        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
         .bio-box { padding: 15px 25px; line-height: 1.3; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; padding-bottom: 30px; }
 
@@ -67,11 +62,6 @@
         .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .rel-item:hover { background: var(--blue); color: white; }
 
-        /* MARKER STELLA */
-        .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: all 0.3s ease; cursor: pointer; }
-        .stella:hover svg polygon { fill: var(--yellow) !important; stroke: #000 !important; }
-        .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
-        
         /* CHAT AI */
         #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
         #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
@@ -79,6 +69,9 @@
         .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
         .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-line; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
+        
+        /* MARKER */
+        .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
     </style>
 </head>
 <body>
@@ -105,16 +98,15 @@
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
     </div>
     <div id="details-content">
+        <div id="side-social">
+            <a id="share-fb" href="#" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a id="share-tw" href="#" target="_blank" title="Twitter"><i class="fab fa-x-twitter"></i></a>
+            <a id="share-wa" href="#" target="_blank" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            <button onclick="copyLink()" title="Copia Link"><i class="fas fa-link"></i></button>
+        </div>
+
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-            
-            <div class="social-share-box">
-                <span>CONDIVIDI TESTIMONIANZA:</span>
-                <a id="share-fb" href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                <a id="share-tw" href="#" target="_blank"><i class="fab fa-x-twitter"></i></a>
-                <a id="share-wa" href="#" target="_blank"><i class="fab fa-whatsapp"></i></a>
-            </div>
-
             <div class="bio-box"><p id="text-bio"></p></div>
         </div>
         <div class="side-rel">
@@ -144,9 +136,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    // ... (Logica Mappa e Database identica a prima) ...
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // Chiusura scheda cliccando sulla mappa
+    map.on('click', function() {
+        closeDetails();
+        document.getElementById('results-dropdown').style.display = 'none';
+    });
+
     const stellaIcon = L.divIcon({ className: 'stella', html: `<svg width="32" height="32" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`, iconSize: [32, 32], iconAnchor: [16, 16] });
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
@@ -167,67 +165,132 @@
     function openDetails(d) {
         document.getElementById('h-nome').innerText = d.nominativo;
         document.getElementById('h-reg').innerText = d.regione;
-        document.getElementById('text-bio').innerText = d.scheda || "Nessuna biografia disponibile.";
+        document.getElementById('text-bio').innerText = d.scheda || "Biografia non disponibile.";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
-        // Configurazione link Social dinamici basati sulla scheda corrente
-        const shareUrl = encodeURIComponent(window.location.href);
-        const shareText = encodeURIComponent(`Guarda la testimonianza di ${d.nominativo} nell'Archivio Partigiani.`);
-        document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-        document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
-        document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`;
+        // Link Social dinamici
+        const sUrl = encodeURIComponent(window.location.href + "?id=" + d.nominativo);
+        document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${sUrl}`;
+        document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?url=${sUrl}`;
+        document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${sUrl}`;
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 15);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
 
-    // ... (Tutte le altre funzioni: filtra, apri, caricaMarker restano invariate) ...
-    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); }
-    function apri(nome) { const d = database.find(x => x.nominativo.trim().toLowerCase() === nome.trim().toLowerCase()); if(!d) return; document.getElementById('results-dropdown').style.display = 'none'; openDetails(d); const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.')); if(!isNaN(lat)) map.flyTo([lat, lon], 15); }
-    function caricaMarker(f=null, fit=false) { markers.clearLayers(); database.forEach(d => { if(!f || f(d)) { const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.')); if(!isNaN(lat)) { let m = L.marker([lat, lon], {icon: stellaIcon}); m.on('click', () => openDetails(d)); markers.addLayer(m); }}}); }
+    function copyLink() {
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = window.location.href;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        alert("Link copiato negli appunti!");
+    }
 
-    // MACCHINA DA SCRIVERE (Mantenuta come richiesto)
-    async function typeWriter(element, text, speed = 20) {
-        let i = 0; element.innerHTML = "";
+    function closeDetails() { 
+        document.getElementById('details-panel').classList.remove('open'); 
+        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); 
+    }
+
+    function apri(nome) {
+        const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase()));
+        if(!d) return;
+        document.getElementById('results-dropdown').style.display = 'none';
+        openDetails(d);
+        if(d.lat) map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
+    }
+
+    function filtra(tipo) {
+        const vn = document.getElementById('search-name').value.toLowerCase();
+        const vt = document.getElementById('search-theme').value.toLowerCase();
+        const drop = document.getElementById('results-dropdown');
+
+        if (vn.length > 0 || vt.length > 0) {
+            let filtrati = database.filter(d => 
+                (vn === "" || d.nominativo.toLowerCase().includes(vn)) &&
+                (vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt)))
+            ).slice(0, 20);
+            
+            if(filtrati.length > 0) {
+                drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <span>${d.regione}</span></div>`).join('');
+                drop.style.display = 'block';
+            } else { drop.style.display = 'none'; }
+        } else { drop.style.display = 'none'; }
+    }
+
+    function filtraRegione() {
+        const r = document.getElementById('filtro-regione').value;
+        caricaMarker(r ? d => d.regione === r : null, !!r);
+    }
+
+    function caricaMarker(f=null, fit=false) {
+        markers.clearLayers();
+        let b = L.latLngBounds();
+        database.forEach(d => {
+            if(!f || f(d)) {
+                const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
+                if(!isNaN(lat)) {
+                    let m = L.marker([lat, lon], {icon: stellaIcon});
+                    m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
+                    markers.addLayer(m);
+                    b.extend([lat, lon]);
+                }
+            }
+        });
+        if(fit) map.flyToBounds(b, {padding:[50,50]});
+    }
+
+    // AI TYPEWRITER
+    async function typeWriter(element, text, speed = 15) {
+        element.innerHTML = "";
         const parts = text.split(/(\[\[.*?\]\])/g);
         for (const part of parts) {
             if (part.startsWith('[[')) {
-                const nome = part.replace(/\[\[|\]\]/g, "");
-                element.innerHTML += `<b style="color:#3498db;cursor:pointer;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</b>`;
+                const n = part.replace(/\[\[|\]\]/g, "");
+                element.innerHTML += `<b style="color:#3498db;cursor:pointer;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`;
             } else {
-                for (let char of part) { element.innerHTML += char; element.parentNode.scrollTop = element.parentNode.scrollHeight; await new Promise(r => setTimeout(r, speed)); }
+                for (let char of part) {
+                    element.innerHTML += char;
+                    element.parentNode.scrollTop = element.parentNode.scrollHeight;
+                    await new Promise(r => setTimeout(r, speed));
+                }
             }
         }
     }
 
     async function sendAIMessage() {
-        const key = localStorage.getItem('gemini_key') || prompt("API Key:");
+        const key = localStorage.getItem('gemini_key') || prompt("Inserisci API Key Gemini:");
         if (!key) return; localStorage.setItem('gemini_key', key);
         const input = document.getElementById('ai-chat-input');
         const box = document.getElementById('ai-chat-messages');
         const userText = input.value.trim();
-        if (!userText) return;
+        if(!userText) return;
+
         box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
         input.value = "";
-        const loadingId = "load-" + Date.now();
-        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai"></div>`;
+        const id = "ai-" + Date.now();
+        box.innerHTML += `<div id="${id}" class="msg msg-ai">...</div>`;
+        box.scrollTop = box.scrollHeight;
+
         try {
-            let selezione = database.filter(d => {
-                const testo = `${d.nominativo} ${d.scheda} ${d.regione}`.toLowerCase();
-                return testo.includes(userText.toLowerCase());
-            }).slice(0, 50);
-            const contestStr = selezione.map(d => `[${d.nominativo}: ${d.scheda.substring(0, 400)}]`).join("\n");
+            const context = database.filter(d => d.nominativo.toLowerCase().includes(userText.toLowerCase()) || (d.scheda && d.scheda.toLowerCase().includes(userText.toLowerCase()))).slice(0,10);
+            const contestStr = context.map(d => `[${d.nominativo}: ${d.scheda.substring(0,300)}]`).join("\n");
+            
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Rispondi a: "${userText}" usando i dati: ${contestStr}. REGOLE: Breve, usa [[Nome]] per link.` }] }] })
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Rispondi brevemente a: ${userText}. Dati: ${contestStr}. Usa [[Nome Cognome]] per i link.` }] }] })
             });
             const data = await response.json();
-            await typeWriter(document.getElementById(loadingId), data.candidates[0].content.parts[0].text);
-        } catch (e) { document.getElementById(loadingId).innerText = "Errore."; }
+            await typeWriter(document.getElementById(id), data.candidates[0].content.parts[0].text);
+        } catch (e) { document.getElementById(id).innerText = "Errore API."; }
     }
 
-    function toggleAIChat() { const win = document.getElementById('ai-chat-window'); win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none'; }
+    function toggleAIChat() { 
+        const win = document.getElementById('ai-chat-window');
+        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+    }
 </script>
 </body>
 </html>
