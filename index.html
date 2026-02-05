@@ -171,7 +171,60 @@
         visibility: hidden;
     }
 }
-    </style>
+   /* --- OTTIMIZZAZIONE MOBILE --- */
+        @media screen and (max-width: 768px) {
+            #details-panel {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 85vh !important; /* Altezza quasi totale */
+                top: auto !important;
+                bottom: -85vh !important; /* Lo nasconde sotto il bordo */
+                left: 0 !important;
+                transform: none !important;
+                border-radius: 25px 25px 0 0 !important;
+                transition: bottom 0.6s cubic-bezier(0.19, 1, 0.22, 1) !important;
+            }
+
+            #details-panel.open {
+                bottom: 0 !important; /* Lo fa salire su */
+                transform: none !important;
+            }
+
+            #details-content {
+                flex-direction: column !important; /* Stack verticale: Video -> Bio -> Correlati */
+                overflow-y: auto !important; /* Rende tutto il contenuto scorrevole */
+            }
+
+            .main-col {
+                overflow-y: visible !important; /* Disabilita lo scroll interno alla colonna */
+                flex: none !important;
+            }
+
+            .side-rel {
+                width: 100% !important;
+                border-left: none !important;
+                border-top: 1px solid rgba(0,0,0,0.1);
+                background: rgba(255,255,255,0.2) !important;
+                padding-bottom: 40px !important; /* Spazio per non coprire i social */
+            }
+
+            .video-box {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+
+            #details-header {
+                padding: 10px 15px !important;
+            }
+
+            /* Social in riga su mobile ben distribuiti */
+            .social-box {
+                justify-content: space-evenly !important;
+                padding: 20px 0 !important;
+            }
+        } 
+   </style>
 </head>
 <body>
 
@@ -337,7 +390,10 @@
 
     function closeDetails() { 
         document.getElementById('details-panel').classList.remove('open'); 
-        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); 
+        // Su mobile serve questo per "resettare" la posizione se necessario
+        setTimeout(() => { 
+            document.getElementById('vimeo-player').src = ""; 
+        }, 500); 
     }
 
     function apri(nome) {
@@ -517,6 +573,7 @@
 </script>
 </body>
 </html>
+
 
 
 
