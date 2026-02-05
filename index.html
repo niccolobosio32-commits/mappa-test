@@ -471,7 +471,19 @@
 
     function toggleAIChat() { 
         const win = document.getElementById('ai-chat-window');
-        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+        const input = document.getElementById('ai-chat-input');
+        
+        // Verifica se la finestra sta per essere aperta
+        const isOpening = (win.style.display === 'none' || win.style.display === '');
+        
+        win.style.display = isOpening ? 'flex' : 'none';
+
+        // Se la finestra si apre, metti il focus sull'input
+        if (isOpening) {
+            setTimeout(() => {
+                input.focus();
+            }, 100); // Un piccolo ritardo assicura che l'elemento sia visibile prima del focus
+        }
     }
 
     async function sendAIMessage() {
@@ -573,6 +585,7 @@
 </script>
 </body>
 </html>
+
 
 
 
