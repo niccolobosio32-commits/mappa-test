@@ -334,8 +334,7 @@
     }
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
-    // FUNZIONI CHAT AI
-    // La tua chiave corretta: AIzaSyBXDK8OjIBny37SkACMGx0rvp5wgJD51Do
+    // --- FUNZIONI CHAT AI ---
     const GEMINI_API_KEY = "AIzaSyBXDK8OjIBny37SkACMGx0rvp5wgJD51Do"; 
 
     function toggleAIChat() {
@@ -357,7 +356,7 @@
         const loadingId = "loading-" + Date.now();
         box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
 
-        // Passiamo i dati del database all'AI (nomi e regioni)
+        // Passiamo i nomi e le regioni presenti nel database
         const contestData = database.slice(0, 500).map(d => `${d.nominativo} (${d.regione})`).join(", ");
 
         try {
@@ -367,30 +366,23 @@
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Sei l'assistente virtuale dell'Archivio Partigiani. 
-                            Dati disponibili nell'archivio: ${contestData}. 
-                            Istruzioni: Rispondi in modo molto breve, massimo 2 frasi. 
-                            Se l'utente chiede di una persona o di una regione presente nei dati, confermalo.
-                            Domanda utente: ${userText}`
+                            text: `Sei l'assistente dell'Archivio Partigiani. Dati disponibili: ${contestData}. Rispondi in modo breve alla domanda: ${userText}`
                         }]
                     }]
                 })
             });
 
             const data = await response.json();
-            
             if (data.candidates && data.candidates[0]) {
                 const aiResponse = data.candidates[0].content.parts[0].text;
                 document.getElementById(loadingId).innerText = aiResponse;
             } else {
-                document.getElementById(loadingId).innerText = "Spiacente, Gemini non può rispondere in questo momento.";
-                console.error("Dettagli errore:", data);
+                document.getElementById(loadingId).innerText = "L'AI non può rispondere ora.";
             }
             box.scrollTop = box.scrollHeight;
 
         } catch (error) {
-            document.getElementById(loadingId).innerText = "Errore tecnico di connessione.";
-            console.error(error);
+            document.getElementById(loadingId).innerText = "Errore di connessione.";
         }
     }
 </script>
