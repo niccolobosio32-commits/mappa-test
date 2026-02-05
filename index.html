@@ -241,7 +241,7 @@ border: 1px solid rgba(0,0,0,0.1);
     const vc = document.getElementById('search-city').value.toLowerCase().trim();
     
     searchTimeout = setTimeout(() => {
-        // 1. Logica di filtraggio dati (Questa era sparita!)
+        // 1. Filtro testuale standard
         let filtrati = database.filter(d => {
             const matchNome = vn === "" || d.nominativo.toLowerCase().includes(vn);
             const matchTema = vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt));
@@ -249,23 +249,25 @@ border: 1px solid rgba(0,0,0,0.1);
             return matchNome && matchTema && matchCitta;
         });
 
-        // 2. Aggiorna marker sulla mappa
+        // 2. Aggiorna marker
         caricaMarker(d => filtrati.includes(d), false);
 
-        // 3. Gestione Dropdown
+        // 3. Dropdown
         if (vn.length >= 2 || vt.length >= 2 || vc.length >= 2) {
             updateDropdown(filtrati.slice(0, 30)); 
         } else {
             document.getElementById('results-dropdown').style.display = 'none';
         }
 
-        // 4. Geocodifica solo per il campo Città
+        // 4. LOGICA RAGGIO 50KM (Ripristinata)
         if (tipo === 'city' && vc.length >= 3) {
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${vc},Italy&limit=1`)
             .then(r => r.json()).then(data => { 
                 if (data.length > 0) { 
-                    const c = L.latLng(data[0].lat, data[0].lon); 
-                    flyDolce(c, 11); 
+                    const centro = L.latLng(data[0].lat, data[0].lon); 
+                    flyDolce(centro, 10); 
+                    // Questa è la riga che mancava:
+                    applicaFiltroDistanza(centro);
                 } 
             });
         }
@@ -368,4 +370,5 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
+
 
