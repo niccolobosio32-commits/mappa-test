@@ -138,14 +138,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-   // Questo NON scrive la chiave nel file, così i bot di Google non la leggono.
-// La incollerai tu la prima volta che apri la mappa e il browser la ricorderà.
-const GEMINI_API_KEY = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key:");
-if (GEMINI_API_KEY && GEMINI_API_KEY !== "null") {
-    localStorage.setItem('gemini_key', GEMINI_API_KEY);
-} else {
-    console.warn("API Key non inserita. La chat non funzionerà.");
-}
     let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -160,6 +152,7 @@ if (GEMINI_API_KEY && GEMINI_API_KEY !== "null") {
     let database = [];
     let searchTimer;
 
+    // Caricamento CSV
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
@@ -172,6 +165,66 @@ if (GEMINI_API_KEY && GEMINI_API_KEY !== "null") {
         }
     });
 
+    // --- FUNZIONI CHIAVE API (MOLTO IMPORTANTE) ---
+    function getApiKey() {
+        let key = localStorage.getItem('gemini_key');
+        if (!key || key === "null" || key.trim() === "") {
+            key = prompt("Per attivare l'assistente AI, inserisci la tua API Key:");
+            if (key && key !== "null" && key.trim() !== "") {
+                localStorage.setItem('gemini_key', key);
+            }
+        }
+        return key;
+    }
+
+    async function sendAIMessage() {
+        const key = getApiKey();
+        if (!key) return;
+
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        const userText = input.value.trim();
+        if (!userText) return;
+
+        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+        input.value = "";
+        const loadingId = "load-" + Date.now();
+        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
+        box.scrollTop = box.scrollHeight;
+
+        try {
+            const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contents: [{ 
+                        parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in modo molto breve a: ${userText}` }] 
+                    }] 
+                })
+            });
+
+            const data = await response.json();
+            
+            if(data.error) {
+                if(data.error.message.includes("API key not valid")) {
+                    localStorage.removeItem('gemini_key');
+                    document.getElementById(loadingId).innerText = "Chiave non valida. Clicca di nuovo per inserirne una nuova.";
+                } else {
+                    document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
+                }
+            } else {
+                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
+            }
+        } catch (e) {
+            document.getElementById(loadingId).innerText = "Errore di connessione.";
+        }
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // --- FUNZIONI MAPPA E FILTRI ---
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
@@ -270,51 +323,11 @@ if (GEMINI_API_KEY && GEMINI_API_KEY !== "null") {
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
 
-   async function sendAIMessage() {
-    const input = document.getElementById('ai-chat-input');
-    const box = document.getElementById('ai-chat-messages');
-    const userText = input.value.trim();
-    if (!userText) return;
-
-    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
-    input.value = "";
-    const loadingId = "load-" + Date.now();
-    box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
-    box.scrollTop = box.scrollHeight;
-
-    try {
-        // Ho aggiornato il modello a gemini-2.5-flash come suggerito dal tuo test
-        const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ 
-                    parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in modo molto breve a: ${userText}` }] 
-                }] 
-            })
-        });
-
-        const data = await response.json();
-        
-        if(data.error) {
-            console.error("Dettaglio Errore:", data.error);
-            document.getElementById(loadingId).innerText = "Errore API: " + data.error.message;
-        } else {
-            document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-        }
-    } catch (e) {
-        document.getElementById(loadingId).innerText = "Errore di connessione al server.";
-        console.error("Errore Fetch:", e);
-    }
-    box.scrollTop = box.scrollHeight;
-}
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
 
 
 
