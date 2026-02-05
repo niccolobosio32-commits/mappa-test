@@ -348,49 +348,58 @@ border: 1px solid rgba(0,0,0,0.1);
         box.scrollTop = box.scrollHeight;
 
         try {
-    const q = userText.toLowerCase();
-    // Identifichiamo se l'utente sta cercando una zona geografica
-    let f = database.filter(d => {
-        const inNominativo = d.nominativo.toLowerCase().includes(q);
-        const inScheda = d.scheda && d.scheda.toLowerCase().includes(q);
-        const inRegione = d.regione && d.regione.toLowerCase().includes(q);
-        const inCitta = d.città_nascita && d.città_nascita.toLowerCase().includes(q);
-        
-        // Se l'utente cita una città, prendiamo anche chi è della stessa regione per dare contesto
-        return inNominativo || inScheda || inRegione || inCitta;
-    });
+            const q = userText.toLowerCase();
 
-    // Se i risultati sono troppo pochi, espandiamo la ricerca alla regione menzionata
-    if (f.length < 10) {
-        const regioniPossibili = ["emilia", "toscana", "lombardia", "piemonte", "lazio"]; 
-        const regTrovata = regioniPossibili.find(r => q.includes(r));
-        if (regTrovata) {
-            f = database.filter(d => d.regione.toLowerCase().includes(regTrovata));
-        }
-    }
+            // 1. FILTRO INIZIALE (Cerca ovunque nel database)
+            let f = database.filter(d => {
+                return d.nominativo.toLowerCase().includes(q) || 
+                       (d.scheda && d.scheda.toLowerCase().includes(q)) || 
+                       (d.regione && d.regione.toLowerCase().includes(q)) || 
+                       (d.città_nascita && d.città_nascita.toLowerCase().includes(q));
+            });
 
-    // Aumentiamo il limite a 100 per dare più scelta all'AI
-    const context = f.slice(0, 100).map(d => 
-        `[NOME: ${d.nominativo} | LOC: ${d.città_nascita}, ${d.regione} | BIO: ${d.scheda.substring(0, 400)}]`
-    ).join("\n");
+            // 2. ESPANSIONE PER TUTTA ITALIA (Se i risultati sono pochi)
+            const regioniItalia = [
+                "abruzzo", "basilicata", "calabria", "campania", "emilia-romagna", 
+                "friuli venezia giulia", "lazio", "liguria", "lombardia", "marche", 
+                "molise", "piemonte", "puglia", "sardegna", "sicilia", "toscana", 
+                "trentino-alto adige", "umbria", "valle d'aosta", "veneto"
+            ];
+            const regTrovata = regioniItalia.find(r => q.includes(r));
 
+            if (f.length < 15) {
+                if (regTrovata) {
+                    f = database.filter(d => d.regione.toLowerCase().includes(regTrovata));
+                } else if (f.length > 0) {
+                    const suggerimentoRegione = f[0].regione.toLowerCase();
+                    f = database.filter(d => d.regione.toLowerCase().includes(suggerimentoRegione));
+                }
+            }
+
+            // 3. PREPARAZIONE CONTESTO (Limite 100 per l'AI)
+            const context = f.slice(0, 100).map(d => 
+                `[NOME: ${d.nominativo} | LOC: ${d.città_nascita}, ${d.regione} | BIO: ${d.scheda.substring(0, 400)}]`
+            ).join("\n");
+
+            // 4. CHIAMATA A GEMINI 2.5 FLASH
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-    contents: [{ parts: [{ text: `Agisci come Archivista Storico esperto. 
-        REGOLE RIGIDE: 
-        1. NO preamboli, NO saluti, NO smancerie (NON dire "Certamente", "Ho trovato", ecc.). 
-        2. Risposta immediata: inizia direttamente con l'analisi o l'elenco. 
-        3. ANALISI TEMATICA: Collega i partigiani tra loro se hanno vissuto eventi simili (es. stessa battaglia, stessa brigata, Linea Gotica), anche se non è scritto esplicitamente per tutti.
-        4. GEOGRAFIA: Se l'utente cita una città, analizza i partigiani della zona e dei comuni limitrofi inclusi nei dati.
-        5. FORMATO: Grassetti per i concetti e nomi in [[Nome Cognome]].
-        
-        Domanda dell'utente: "${userText}"
-        Dati di contesto (CSV): 
-        ${context}` 
-    }] }] 
-    })
+                    contents: [{ parts: [{ text: `Agisci come Archivista Storico esperto. 
+                        REGOLE RIGIDE: 
+                        1. NO preamboli, NO saluti, NO smancerie. 
+                        2. Risposta immediata e analitica. 
+                        3. ANALISI TEMATICA: Collega i partigiani per eventi, brigate o zone, anche se non esplicito.
+                        4. GEOGRAFIA: Se l'utente cita una città, analizza i partigiani della zona e limitrofi.
+                        5. FORMATO: Grassetti per concetti e nomi in [[Nome Cognome]].
+                        
+                        Domanda: "${userText}"
+                        Dati: 
+                        ${context}` 
+                    }] }] 
+                })
+            });
 
             const data = await response.json();
             let aiText = data.candidates[0].content.parts[0].text;
@@ -406,8 +415,7 @@ border: 1px solid rgba(0,0,0,0.1);
                         .replace(/\n/g, '<br>');
                     
                     box.scrollTop = box.scrollHeight;
-                    let delay = words[i-1].length > 1 ? 15 : 40; 
-                    setTimeout(digita, delay); 
+                    setTimeout(digita, words[i-1]?.length > 1 ? 15 : 40); 
                 } else { 
                     aiMsgElement.classList.add('finished'); 
                 }
@@ -415,7 +423,7 @@ border: 1px solid rgba(0,0,0,0.1);
             digita();
 
         } catch (e) { 
-            aiMsgElement.innerText = "Errore di connessione o API Key errata."; 
+            aiMsgElement.innerText = "Errore di connessione o modello non disponibile."; 
             console.error(e);
         }
     }
@@ -428,6 +436,7 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
+
 
 
 
