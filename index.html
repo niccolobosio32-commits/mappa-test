@@ -302,24 +302,32 @@
     }
 
     function apri(nome) {
+        if (!nome || !database.length) return;
         const d = database.find(x => x.nominativo === nome);
         if(!d) return;
+        
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
-        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
+        
+        // Verifica che le coordinate esistano prima di spostare la mappa
+        const lat = parseFloat(d.lat?.replace(',','.'));
+        const lon = parseFloat(d.lon?.replace(',','.'));
+        if (!isNaN(lat) && !isNaN(lon)) {
+            map.flyTo([lat, lon], 14);
+        }
     }
 
     function openDetails(d) {
-        document.getElementById('h-nome').innerText = d.nominativo;
-        document.getElementById('h-reg').innerText = d.regione;
-        document.getElementById('label-nome').innerText = d.nominativo;
+        if (!d) return;
+        document.getElementById('h-nome').innerText = d.nominativo || "";
+        document.getElementById('h-reg').innerText = d.regione || "";
+        document.getElementById('label-nome').innerText = d.nominativo || "";
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
         
-        // CONDIVISIONE DINAMICA
         const shareURL = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
         const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
-        const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video intervista di " + d.nominativo + " " + shareURL)}`;
+        const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video intervista: " + d.nominativo + " " + shareURL)}`;
         
         document.getElementById('fb-share').href = fbURL;
         document.getElementById('wa-share').href = waURL;
@@ -332,6 +340,7 @@
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
+        
         document.getElementById('details-panel').classList.add('open');
     }
 
@@ -340,10 +349,17 @@
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
     }
 
+    // Questo assicura che il click sulla mappa chiuda tutto correttamente
+    map.on('click', function() { 
+        closeDetails(); 
+        document.getElementById('results-dropdown').style.display = 'none'; 
+    });
+
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
 
 
 
