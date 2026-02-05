@@ -72,15 +72,68 @@
         #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
         .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
-
+       
         @media screen and (max-width: 768px) {
-            #details-panel:not(.open) { display: none !important; }
-            #details-panel { width: 100% !important; height: 75vh !important; bottom: -80vh !important; top: auto !important; left: 0 !important; transform: none !important; border-radius: 25px 25px 0 0 !important; transition: bottom 0.5s ease !important; }
-            #details-panel.open { bottom: 0 !important; }
-            #details-content { flex-direction: column !important; overflow-y: auto !important; }
-            .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: 80px !important; }
-            #ai-chat-window { width: 95% !important; left: 2.5% !important; height: 50vh !important; top: 80px !important; position: fixed !important; }
+            #details-panel { 
+                width: 100% !important; 
+                height: 85vh !important; 
+                position: fixed !important; 
+                bottom: -90vh !important; 
+                top: auto !important; 
+                left: 0 !important; 
+                transform: none !important; 
+                border-radius: 25px 25px 0 0 !important; 
+                transition: bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
+                z-index: 9999; 
+            }
+
+            #details-panel.open { 
+                bottom: 0 !important; 
+            }
+
+            #details-content { 
+                flex-direction: column !important; 
+                overflow-y: auto !important; 
+                -webkit-overflow-scrolling: touch; 
+            }
+
+            .video-box { 
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                min-height: 210px; /* Altezza minima garantita per il video */
+                background: #000;
+            }
+
+            .main-col {
+                overflow-y: visible !important; 
+            }
+
+            .bio-box {
+                padding: 15px 20px !important;
+            }
+
+            #text-bio {
+                font-size: 15px !important; /* Leggermente più piccolo per mobile */
+            }
+
+            .side-rel { 
+                width: 100% !important; 
+                border-left: none !important; 
+                border-top: 1px solid rgba(0,0,0,0.1); 
+                padding: 20px !important;
+                padding-bottom: 100px !important; /* Spazio extra per non coprire i contenuti */
+            }
+
+            #ai-chat-window { 
+                width: 90% !important; 
+                left: 5% !important; 
+                height: 60vh !important; 
+                bottom: 80px !important;
+                top: auto !important;
+            }
         }
+        /* --- A QUI --- */
     </style>
 </head>
 <body>
@@ -320,3 +373,4 @@
 </script>
 </body>
 </html>
+
