@@ -183,75 +183,84 @@ border: 1px solid rgba(0,0,0,0.1);
 
     /* --- IL MOTORE FILTRI (LA PARTE SACRA) --- */
     const MotoreFiltri = {
-        RAGGIO_MAX: 50000, 
+    RAGGIO_MAX: 50000, 
 
-        esegui: function(tipo) {
-            const vn = document.getElementById('search-name').value.toLowerCase().trim();
-            const vt = document.getElementById('search-theme').value.toLowerCase().trim();
-            const vc = document.getElementById('search-city').value.toLowerCase().trim();
-            const vr = document.getElementById('filtro-regione').value;
+    esegui: function(tipo) {
+        const vn = document.getElementById('search-name').value.toLowerCase().trim();
+        const vt = document.getElementById('search-theme').value.toLowerCase().trim();
+        const vc = document.getElementById('search-city').value.toLowerCase().trim();
+        const vr = document.getElementById('filtro-regione').value;
 
-            // 1. Filtro base
-            let filtrati = database.filter(d => {
-                const mNome = vn === "" || d.nominativo.toLowerCase().includes(vn);
-                const mTema = vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt));
-                const mReg  = vr === "" || (d.regione.trim().toLowerCase() === vr.toLowerCase());
-                const mCittaTesto = vc === "" || (d.città_nascita && d.città_nascita.toLowerCase().includes(vc));
-                return mNome && mTema && mReg && mCittaTesto;
-            });
+        // 1. Filtro testuale iniziale
+        let filtrati = database.filter(d => {
+            const mNome = vn === "" || d.nominativo.toLowerCase().includes(vn);
+            const mTema = vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt));
+            const mReg  = vr === "" || (d.regione.trim().toLowerCase() === vr.toLowerCase());
+            return mNome && mTema && mReg;
+        });
 
-            // 2. Logica specifica per Città (Raggio 50km)
-            if (tipo === 'city' && vc.length >= 3) {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${vc},Italy&limit=1`)
-                    .then(r => r.json()).then(data => {
-                        if (data.length > 0) {
-                            const centro = L.latLng(data[0].lat, data[0].lon);
-                            flyDolce(centro, 10);
-                            
-                            let vicini = filtrati.filter(d => {
-                                const lat = parseFloat(d.lat?.replace(',','.'));
-                                const lon = parseFloat(d.lon?.replace(',','.'));
-                                return !isNaN(lat) && centro.distanceTo([lat, lon]) <= this.RAGGIO_MAX;
-                            });
-                            this.aggiornaUI(vicini, true);
-                        }
-                    });
-                }, 500);
-            } else {
-                this.aggiornaUI(filtrati, vr !== "");
-            }
-        },
+        // 2. LOGICA CITTÀ + RAGGIO 50KM + DROPDOWN AUTOMATICO
+        if (tipo === 'city' && vc.length >= 3) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${vc},Italy&limit=1`)
+                .then(r => r.json()).then(data => {
+                    if (data.length > 0) {
+                        const centro = L.latLng(data[0].lat, data[0].lon);
+                        flyDolce(centro, 10);
+                        
+                        // Filtra per distanza
+                        let vicini = filtrati.filter(d => {
+                            const lat = parseFloat(d.lat?.replace(',','.'));
+                            const lon = parseFloat(d.lon?.replace(',','.'));
+                            return !isNaN(lat) && centro.distanceTo([lat, lon]) <= this.RAGGIO_MAX;
+                        });
 
-        aggiornaUI: function(lista, nascondiRegione) {
-            caricaMarker(d => lista.includes(d), false);
-            const vn = document.getElementById('search-name').value.length;
-            const vt = document.getElementById('search-theme').value.length;
-            const vc = document.getElementById('search-city').value.length;
-            const vr = document.getElementById('filtro-regione').value;
-
-            if (vn >= 2 || vt >= 2 || vc >= 2 || vr !== "") {
-                this.renderDropdown(lista.slice(0, 50), nascondiRegione);
-            } else {
-                document.getElementById('results-dropdown').style.display = 'none';
-            }
-        },
-
-        renderDropdown: function(lista, nascondiRegione) {
-            const drop = document.getElementById('results-dropdown');
-            if (lista.length > 0) {
-                drop.innerHTML = lista.map(d => {
-                    const safeName = d.nominativo.replace(/'/g, "\\'");
-                    const info = nascondiRegione ? (d.città_nascita || "") : d.regione;
-                    return `<div class="res-item" onclick="apri('${safeName}')"><b>${d.nominativo}</b> <span style="font-size:11px;opacity:0.6">${info}</span></div>`;
-                }).join('');
-                drop.style.display = 'block';
-            } else {
-                drop.style.display = 'none';
-            }
+                        // MOSTRA I RISULTATI NELLA BARRA (OBBLIGATORIO)
+                        caricaMarker(d => vicini.includes(d), false);
+                        this.renderDropdown(vicini.slice(0, 50), true); 
+                    }
+                });
+            }, 500);
+        } else {
+            // Filtro normale per gli altri campi
+            this.aggiornaUI(filtrati, vr !== "");
         }
-    };
+    },
+
+    aggiornaUI: function(lista, nascondiRegione) {
+        caricaMarker(d => lista.includes(d), false);
+        const vn = document.getElementById('search-name').value;
+        const vt = document.getElementById('search-theme').value;
+        const vr = document.getElementById('filtro-regione').value;
+
+        // Mostra dropdown se c'è ricerca attiva o regione selezionata
+        if (vn.length >= 2 || vt.length >= 2 || vr !== "") {
+            this.renderDropdown(lista.slice(0, 50), nascondiRegione);
+        } else {
+            document.getElementById('results-dropdown').style.display = 'none';
+        }
+    },
+
+    renderDropdown: function(lista, nascondiRegione) {
+        const drop = document.getElementById('results-dropdown');
+        if (lista.length > 0) {
+            drop.innerHTML = lista.map(d => {
+                const safeName = d.nominativo.replace(/'/g, "\\'");
+                // Se cerco per raggio/città, mostro il comune di nascita per chiarezza
+                const info = d.città_nascita || d.regione; 
+                return `<div class="res-item" onclick="apri('${safeName}')">
+                            <b>${d.nominativo}</b> 
+                            <span style="font-size:11px;opacity:0.6">${info}</span>
+                        </div>`;
+            }).join('');
+            drop.style.display = 'block';
+        } else {
+            drop.innerHTML = '<div class="res-item">Nessun partigiano nel raggio di 50km</div>';
+            drop.style.display = 'block';
+        }
+    }
+};
 
     // Funzioni di ponte per HTML
     function filtra(tipo) { MotoreFiltri.esegui(tipo); }
@@ -368,6 +377,7 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
+
 
 
 
