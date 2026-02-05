@@ -287,14 +287,37 @@
         const vn = document.getElementById('search-name').value.toLowerCase();
         const vt = document.getElementById('search-theme').value.toLowerCase();
         const vc = document.getElementById('search-city').value.toLowerCase();
+        
         searchTimeout = setTimeout(() => {
+            // 1. RICERCA PER CITTÀ (Geocoding)
             if (tipo === 'city' && vc.length >= 3) {
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${vc},Italy&limit=1`)
-                .then(r => r.json()).then(data => { if (data.length > 0) { const c = [data[0].lat, data[0].lon]; flyDolce(c, 11); applicaFiltroDistanza(L.latLng(c)); } });
-            } else if (vn.length >= 2 || vt.length >= 3) {
-                let f = database.filter(d => (vn === "" || d.nominativo.toLowerCase().includes(vn)) && (vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt)))).slice(0, 25);
-                updateDropdown(f);
-            } else document.getElementById('results-dropdown').style.display = 'none';
+                .then(r => r.json()).then(data => { 
+                    if (data.length > 0) { 
+                        const c = L.latLng(data[0].lat, data[0].lon); 
+                        flyDolce(c, 11); 
+                        applicaFiltroDistanza(c); 
+                    } 
+                });
+                return;
+            } 
+
+            // 2. FILTRO COMBINATO (Mappa + Dropdown)
+            let filtrati = database.filter(d => {
+                const matchNome = vn === "" || d.nominativo.toLowerCase().includes(vn);
+                const matchTema = vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt));
+                return matchNome && matchTema;
+            });
+
+            // Aggiorna i puntini sulla mappa
+            caricaMarker(d => filtrati.includes(d), false);
+
+            // Gestione del menu a tendina
+            if (vn.length >= 2) {
+                updateDropdown(filtrati.slice(0, 25));
+            } else {
+                document.getElementById('results-dropdown').style.display = 'none';
+            }
         }, 600);
     }
 
@@ -303,17 +326,28 @@
         if (lista.length > 0) {
             drop.innerHTML = lista.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <span>${d.regione}</span></div>`).join('');
             drop.style.display = 'block';
-        } else drop.style.display = 'none';
+        } else {
+            drop.style.display = 'none';
+        }
     }
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
-        caricaMarker(reg ? d => d.regione === reg : null, !!reg);
+        document.getElementById('results-dropdown').style.display = 'none';
+        // Reset dei campi testo per chiarezza
+        document.getElementById('search-name').value = "";
+        document.getElementById('search-theme').value = "";
+        
+        caricaMarker(reg ? d => d.regione.toLowerCase() === reg.toLowerCase() : null, !!reg);
     }
 
     function applicaFiltroDistanza(centro) {
-        let f = database.filter(d => { const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.')); return !isNaN(lat) && centro.distanceTo([lat, lon]) <= 50000; });
-        caricaMarker(d => f.includes(d), false);
+        caricaMarker(d => { 
+            const lat = parseFloat(d.lat?.replace(',','.')), 
+                  lon = parseFloat(d.lon?.replace(',','.')); 
+            if(isNaN(lat) || isNaN(lon)) return false;
+            return centro.distanceTo([lat, lon]) <= 50000; 
+        }, false);
     }
 
     function toggleAIChat() {
@@ -373,4 +407,5 @@
 </script>
 </body>
 </html>
+
 
