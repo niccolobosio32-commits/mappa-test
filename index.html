@@ -12,11 +12,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <style>
-        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.4); --red: #e21118; --yellow: #ffcc00; }
+        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.5); --red: #e21118; --yellow: #ffcc00; }
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #f0f0f0; }
 
-        /* UI RICERCA */
+        /* UI RICERCA ISTANTANEA */
         #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
         #filter-bar { 
             background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -42,42 +42,35 @@
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; }
-        #details-content { display: flex; overflow: hidden; flex: 1; height: 100%; position: relative; }
         
-        /* BOX SOCIAL LATERALE (Interno alla scheda) */
+        #details-content { display: flex; flex: 1; overflow: hidden; }
+
+        /* SOCIAL BAR VERTICALE */
         #side-social {
-            display: flex; flex-direction: column; gap: 15px; padding: 20px 10px;
-            background: rgba(0,0,0,0.05); border-right: 1px solid rgba(0,0,0,0.05);
-            justify-content: center;
+            width: 50px; display: flex; flex-direction: column; align-items: center; 
+            gap: 20px; padding: 20px 0; background: rgba(0,0,0,0.05); border-right: 1px solid rgba(0,0,0,0.1);
         }
-        #side-social a, #side-social button { 
-            background: none; border: none; color: var(--navy); font-size: 18px; 
-            cursor: pointer; transition: 0.3s; opacity: 0.6; 
-        }
+        #side-social a, #side-social button { color: var(--navy); font-size: 18px; cursor: pointer; transition: 0.3s; background: none; border: none; opacity: 0.6; }
         #side-social a:hover, #side-social button:hover { opacity: 1; transform: scale(1.2); color: var(--blue); }
 
-        .main-col { flex: 1; overflow-y: auto; }
+        .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 10px 25px; line-height: 1.3; }
+        .bio-box { padding: 15px 25px; line-height: 1.3; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; padding-bottom: 30px; }
 
-        /* CORRELATI */
         .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
-        .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; }
         .rel-item:hover { background: var(--blue); color: white; }
 
-        /* MARKER STELLA */
-        .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: all 0.3s ease; cursor: pointer; }
-        .stella:hover svg polygon { fill: var(--yellow) !important; stroke: #000 !important; }
-        .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
-        
         /* CHAT AI */
-        #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
+        #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; }
         #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
         #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
-        .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-line; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
+        .msg-ai { background: #f0f0f0; align-self: flex-start; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
+        
+        .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -85,21 +78,12 @@
 <div id="ui-container">
     <div id="filter-bar">
         <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
-        <input type="text" id="search-name" placeholder="Cognome..." oninput="filtra('name')">
-        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtra('theme')">
-        <input type="text" id="search-city" placeholder="Città..." oninput="filtra('city')">
+        <input type="text" id="search-name" placeholder="Cognome..." oninput="filtra()">
+        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtra()">
+        <input type="text" id="search-city" placeholder="Città..." oninput="filtra()">
         <select id="filtro-regione" onchange="filtraRegione()">
             <option value="">Tutte le Regioni</option>
-            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option>
-            <option value="Calabria">Calabria</option><option value="Campania">Campania</option>
-            <option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option>
-            <option value="Lazio">Lazio</option><option value="Liguria">Liguria</option>
-            <option value="Lombardia">Lombardia</option><option value="Marche">Marche</option>
-            <option value="Molise">Molise</option><option value="Piemonte">Piemonte</option>
-            <option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option>
-            <option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option>
-            <option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option>
-            <option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
+            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
         </select>
     </div>
     <div id="results-dropdown"></div>
@@ -114,17 +98,15 @@
     </div>
     <div id="details-content">
         <div id="side-social">
-            <a id="share-fb" href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
-            <a id="share-tw" href="#" target="_blank"><i class="fab fa-x-twitter"></i></a>
-            <a id="share-wa" href="#" target="_blank"><i class="fab fa-whatsapp"></i></a>
-            <button onclick="copyLink()"><i class="fas fa-link"></i></button>
+            <a id="share-fb" href="#" target="_blank" title="Condividi su Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a id="share-tw" href="#" target="_blank" title="Condividi su X"><i class="fab fa-x-twitter"></i></a>
+            <a id="share-wa" href="#" target="_blank" title="Condividi su WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            <button onclick="copyLink()" title="Copia Link"><i class="fas fa-link"></i></button>
         </div>
 
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-            <div class="bio-box">
-                <p id="text-bio"></p>
-            </div>
+            <div class="bio-box"><p id="text-bio"></p></div>
         </div>
         <div class="side-rel">
             <div style="font-size:9px; font-weight:800; opacity:0.5; margin-bottom:10px;">NELLA STESSA REGIONE</div>
@@ -159,12 +141,7 @@
     // Chiusura automatica cliccando sulla mappa
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 
-    const stellaIcon = L.divIcon({
-        className: 'stella',
-        html: `<svg width="32" height="32" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`,
-        iconSize: [32, 32], iconAnchor: [16, 16]
-    });
-
+    const stellaIcon = L.divIcon({ className: 'stella', html: `<svg width="32" height="32" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`, iconSize: [32, 32], iconAnchor: [16, 16] });
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
@@ -181,32 +158,24 @@
         }
     });
 
-    function flyDolce(target, zoom = 12) {
-        map.flyTo(target, zoom, { duration: 2.0, easeLinearity: 0.1 });
-    }
-
     function openDetails(d) {
         document.getElementById('h-nome').innerText = d.nominativo;
         document.getElementById('h-reg').innerText = d.regione;
-        document.getElementById('text-bio').innerText = d.scheda || "Nessuna biografia disponibile.";
+        document.getElementById('text-bio').innerText = d.scheda || "Biografia non disponibile.";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
-        // Aggiorna link social
-        const sUrl = encodeURIComponent(window.location.href);
+        const sUrl = encodeURIComponent(window.location.href + "?id=" + d.id);
         document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${sUrl}`;
         document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?url=${sUrl}`;
         document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${sUrl}`;
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 15);
-        document.getElementById('box-rel').innerHTML = rel.map(r => `
-            <div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>
-        `).join('');
+        document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
     }
 
     function copyLink() {
-        navigator.clipboard.writeText(window.location.href);
-        alert("Link copiato!");
+        navigator.clipboard.writeText(window.location.href).then(() => alert("Link copiato!"));
     }
 
     function closeDetails() { 
@@ -215,62 +184,99 @@
     }
 
     function apri(nome) {
-        const d = database.find(x => x.nominativo.trim().toLowerCase() === nome.trim().toLowerCase());
+        const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase()));
         if(!d) return;
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
-        const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
-        if(!isNaN(lat)) flyDolce([lat, lon], 15);
+        if(d.lat) map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
     }
 
-    // Ricerca corretta e istantanea
-    function filtra(tipo) {
+    function filtra() {
         const vn = document.getElementById('search-name').value.toLowerCase();
         const vt = document.getElementById('search-theme').value.toLowerCase();
         const vc = document.getElementById('search-city').value.toLowerCase();
         const drop = document.getElementById('results-dropdown');
 
-        if (vn.length > 0 || vt.length > 0 || vc.length > 0) {
-            let filtrati = database.filter(d => {
-                return (vn === "" || d.nominativo.toLowerCase().includes(vn)) &&
-                       (vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt))) &&
-                       (vc === "" || (d.città_nascita && d.città_nascita.toLowerCase().includes(vc)));
-            }).slice(0, 25);
+        if (vn || vt || vc) {
+            let filtrati = database.filter(d => 
+                (vn === "" || d.nominativo.toLowerCase().includes(vn)) &&
+                (vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt))) &&
+                (vc === "" || (d.città_nascita && d.città_nascita.toLowerCase().includes(vc)))
+            ).slice(0, 20);
             
-            if(filtrati.length > 0) {
-                drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <span>${d.regione}</span></div>`).join('');
-                drop.style.display = 'block';
-            } else { drop.style.display = 'none'; }
-        } else { drop.style.display = 'none'; }
+            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <span>${d.regione}</span></div>`).join('');
+            drop.style.display = filtrati.length ? 'block' : 'none';
+        } else drop.style.display = 'none';
     }
 
-    function filtraRegione() {
-        const reg = document.getElementById('filtro-regione').value;
-        caricaMarker(reg ? d => d.regione === reg : null, !!reg);
-    }
-
-    function caricaMarker(filtroFn = null, fit = false) {
+    function caricaMarker(f=null) {
         markers.clearLayers();
-        let bounds = L.latLngBounds();
-        let hasData = false;
         database.forEach(d => {
-            if (!filtroFn || filtroFn(d)) {
+            if(!f || f(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
-                if (!isNaN(lat)) {
-                    let m = L.marker([lat, lon], { icon: stellaIcon });
+                if(!isNaN(lat)) {
+                    let m = L.marker([lat, lon], {icon: stellaIcon});
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
                     markers.addLayer(m);
-                    bounds.extend([lat, lon]);
-                    hasData = true;
                 }
             }
         });
-        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100]});
     }
 
-    // Le altre funzioni AI rimangono come nel tuo codice base
-    function toggleAIChat() { const win = document.getElementById('ai-chat-window'); win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none'; }
-    async function sendAIMessage() { /* ... identica al tuo codice originale ... */ }
+    function filtraRegione() {
+        const r = document.getElementById('filtro-regione').value;
+        caricaMarker(r ? d => d.regione === r : null);
+    }
+
+    // AI TYPEWRITER - SCRITTURA A MACCHINA
+    async function typeWriter(element, text) {
+        element.innerHTML = "";
+        const words = text.split(" ");
+        for (let word of words) {
+            // Gestione dei link [[Nome]]
+            if (word.startsWith("[[") && word.endsWith("]]")) {
+                const n = word.replace(/\[\[|\]\]/g, "");
+                element.innerHTML += `<b style="color:#3498db;cursor:pointer;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b> `;
+            } else {
+                element.innerHTML += word + " ";
+            }
+            element.parentNode.scrollTop = element.parentNode.scrollHeight;
+            await new Promise(r => setTimeout(r, 40)); // Velocità scrittura
+        }
+    }
+
+    async function sendAIMessage() {
+        const key = localStorage.getItem('gemini_key') || prompt("API Key:");
+        if (!key) return; localStorage.setItem('gemini_key', key);
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        const userText = input.value.trim();
+        if(!userText) return;
+
+        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+        input.value = "";
+        const id = "ai-" + Date.now();
+        box.innerHTML += `<div id="${id}" class="msg msg-ai">...</div>`;
+        box.scrollTop = box.scrollHeight;
+
+        try {
+            const context = database.filter(d => d.nominativo.toLowerCase().includes(userText.toLowerCase()) || (d.scheda && d.scheda.toLowerCase().includes(userText.toLowerCase()))).slice(0,15);
+            const contextStr = context.map(d => `[${d.nominativo}: ${d.scheda.substring(0,400)}]`).join("\n");
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Rispondi brevemente: ${userText}. Dati: ${contextStr}. Usa [[Nome]] per i nomi dei partigiani.` }] }] })
+            });
+            const data = await response.json();
+            const aiText = data.candidates[0].content.parts[0].text;
+            await typeWriter(document.getElementById(id), aiText);
+        } catch (e) { document.getElementById(id).innerText = "Errore API."; }
+    }
+
+    function toggleAIChat() { 
+        const win = document.getElementById('ai-chat-window');
+        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+    }
 </script>
 </body>
 </html>
