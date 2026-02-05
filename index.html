@@ -250,6 +250,7 @@
         if (hasData && fit) map.flyToBounds(bounds, {padding: [50,50], maxZoom: 12});
     }
 
+    // RICERCA CITTÀ STABILIZZATA
     function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : tipo === 'theme' ? 'search-theme' : 'search-city').value.toLowerCase();
         const drop = document.getElementById('results-dropdown');
@@ -260,13 +261,11 @@
                 .then(r => r.json()).then(data => {
                     if (data.length > 0) {
                         const centro = L.latLng(data[0].lat, data[0].lon);
-                        map.flyTo(centro, 10);
-                        let filtrati = database.filter(d => {
-                            const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
-                            return !isNaN(dLat) && centro.distanceTo([dLat, dLon]) <= 50000;
-                        });
-                        caricaMarker(d => filtrati.includes(d), false);
-                        updateDropdown(filtrati.slice(0, 20));
+                        
+                        // Rimuoviamo il flyTo e usiamo setView (movimento istantaneo, meno bug)
+                        map.setView(centro, 10);
+                        
+                        applicaFiltroDistanza(centro);
                     }
                 });
         } else {
@@ -275,109 +274,36 @@
         }
     }
 
-    function updateDropdown(lista) {
-        const drop = document.getElementById('results-dropdown');
-        if (lista.length > 0) {
-            drop.innerHTML = lista.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
-        } else drop.style.display = 'none';
+    // FUNZIONE DI CALCOLO UNIFICATA (Evita i salti)
+    function applicaFiltroDistanza(centro) {
+        // 1. Pulizia cerchi precedenti
+        map.eachLayer(layer => { if(layer instanceof L.Circle) map.removeLayer(layer); });
+
+        // 2. Disegna raggio 50km
+        L.circle(centro, {radius: 50000, color: 'red', weight: 1, fillOpacity: 0.05, interactive: false}).addTo(map);
+
+        // 3. Filtro dati
+        let filtrati = database.filter(d => {
+            const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
+            return !isNaN(dLat) && centro.distanceTo([dLat, dLon]) <= 50000;
+        });
+
+        // 4. Carica marker senza forzare lo zoom (fit=false)
+        caricaMarker(d => filtrati.includes(d), false);
+        updateDropdown(filtrati.slice(0, 20));
     }
 
-    function filtraRegione() {
-        const reg = document.getElementById('filtro-regione').value;
-        caricaMarker(reg ? d => d.regione === reg : null, !!reg);
-        if (reg) {
-            let filtrati = database.filter(d => d.regione === reg).slice(0, 40);
-            updateDropdown(filtrati);
-        }
-    }
-
-    function apri(nome) {
-        const d = database.find(x => x.nominativo === nome);
-        if(!d) return;
-        document.getElementById('results-dropdown').style.display = 'none';
-        openDetails(d);
-        const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
-        if(!isNaN(lat)) map.flyTo([lat, lon], 14);
-    }
-
-    function openDetails(d) {
-        document.getElementById('h-nome').innerText = d.nominativo;
-        document.getElementById('h-reg').innerText = d.regione;
-        document.getElementById('text-bio').innerText = d.scheda || "";
-        document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 8);
-        document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
-        document.getElementById('details-panel').classList.add('open');
-    }
-
-    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); }
-    function toggleAIChat() { 
-        const win = document.getElementById('ai-chat-window');
-        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
-    }
-    
-    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
-
-    // Pulsante GPS
-   // Pulsante GPS STABILIZZATO
+    // PULSANTE GPS ANTI-SALTO
     const gpsBtn = L.control({position: 'topright'});
     gpsBtn.onAdd = function() {
         let div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        div.innerHTML = '<button title="Trova vicino a me" style="width:34px;height:34px;cursor:pointer;background:white;border:none;font-size:18px;">📍</button>';
-        
-        let geolocActive = false; // Per evitare che salti continuamente
-
+        div.innerHTML = '<button title="GPS" style="width:34px;height:34px;cursor:pointer;background:white;border:none;font-size:18px;">📍</button>';
         div.onclick = function() {
-            if (geolocActive) return; // Se sta già cercando, non ricominciare
-            
-            if (!navigator.geolocation) return alert("Geolocalizzazione non supportata.");
-            
-            geolocActive = true;
-            div.querySelector('button').style.backgroundColor = "#ffcccc"; // Feedback visivo (colore rosso chiaro)
-
             navigator.geolocation.getCurrentPosition(p => {
                 const loc = L.latLng(p.coords.latitude, p.coords.longitude);
-                
-                // Se la precisione è scarsa (sopra i 2000 metri), avvisa l'utente
-                if (p.coords.accuracy > 2000) {
-                    console.warn("Segnale GPS debole, posizione approssimativa.");
-                }
-
-                map.flyTo(loc, 10, { animate: true, duration: 1.5 });
-                
-                // Rimuovi eventuali cerchi precedenti
-                map.eachLayer(layer => { if(layer instanceof L.Circle) map.removeLayer(layer); });
-
-                // Disegna il raggio di 50km
-                L.circle(loc, {
-                    radius: 50000, 
-                    color: '#3498db', 
-                    weight: 2, 
-                    fillOpacity: 0.05,
-                    interactive: false 
-                }).addTo(map);
-
-                let filtrati = database.filter(d => {
-                    const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
-                    return !isNaN(dLat) && loc.distanceTo([dLat, dLon]) <= 50000;
-                });
-
-                caricaMarker(d => filtrati.includes(d), false);
-                
-                geolocActive = false;
-                div.querySelector('button').style.backgroundColor = "white";
-                
-                if(filtrati.length === 0) alert("Nessuna testimonianza trovata nel raggio di 50km dalla tua posizione.");
-            }, (err) => {
-                geolocActive = false;
-                div.querySelector('button').style.backgroundColor = "white";
-                alert("Errore GPS: Segnale non disponibile o permessi negati.");
-            }, {
-                enableHighAccuracy: true, // Forza l'uso del GPS reale e non solo del Wi-Fi
-                timeout: 10000,
-                maximumAge: 0
-            });
+                map.setView(loc, 10); // setView è più stabile di flyTo
+                applicaFiltroDistanza(loc);
+            }, (err) => alert("GPS non disponibile"), { enableHighAccuracy: true });
         };
         return div;
     };
@@ -385,6 +311,7 @@
 </script>
 </body>
 </html>
+
 
 
 
