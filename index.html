@@ -222,16 +222,27 @@
         if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10});
     }
 
+// 1. Questa gestisce NOME e CITTÀ
     async function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { drop.style.display = 'none'; return; }
+        if (val.length < 3) { 
+            drop.style.display = 'none'; 
+            if(tipo==='city') caricaMarker(); 
+            return; 
+        }
+        
         if (tipo === 'name') {
             let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         }
-    }
+        
+        if (tipo === 'city') {
+            // Cerchiamo nella colonna corretta: città_nascita
+            caricaMarker(d => (d.città_nascita || "").toLowerCase().includes(val), true);
+        }
+    } // <-- Mancava questa chiusura!
 
     function filtraTematico() {
         const val = document.getElementById('search-theme').value.toLowerCase().trim();
@@ -266,7 +277,6 @@
         document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
-        
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
         document.getElementById('details-panel').classList.add('open');
@@ -279,7 +289,6 @@
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 
- // --- LOGICA CHAT AI ---
     function toggleAIChat() {
         const win = document.getElementById('ai-chat-window');
         if(!win) return;
@@ -292,43 +301,30 @@
         const userText = input.value.trim();
         if (!userText) return;
 
-        // Aggiungi messaggio utente in chat
         box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
         input.value = "";
         box.scrollTop = box.scrollHeight;
 
-        // Crea segnaposto per la risposta AI
         const loadingId = "loading-" + Date.now();
         box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
 
-        // Passiamo all'AI solo una parte dei nomi per evitare di superare i limiti di testo
         const contestData = database.slice(0, 50).map(d => `${d.nominativo} (${d.regione})`).join(", ");
 
         try {
-            // URL v1beta: il più flessibile per le nuove chiavi API
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
+            // URL CAMBIATO IN GEMINI-PRO PER MASSIMA COMPATIBILITÀ
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contestData}. Rispondi brevemente a: ${userText}` }]
-                    }]
+                    contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contestData}. Rispondi a: ${userText}` }] }]
                 })
             });
-
             const data = await response.json();
-            
             if (data.error) {
-                // Se vedi ancora l'errore "not found", scriverà il motivo qui in chat
-                document.getElementById(loadingId).innerText = "Nota: " + data.error.message;
-                console.error("Dettaglio errore:", data.error);
+                document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
             } else if (data.candidates && data.candidates[0].content) {
-                const aiResponse = data.candidates[0].content.parts[0].text;
-                document.getElementById(loadingId).innerText = aiResponse;
-            } else {
-                document.getElementById(loadingId).innerText = "Nessuna risposta ricevuta.";
+                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
             }
         } catch (e) {
             document.getElementById(loadingId).innerText = "Errore di connessione.";
@@ -338,4 +334,5 @@
 </script>
 </body>
 </html>
+
 
