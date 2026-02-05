@@ -151,7 +151,6 @@
     let markers = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
     map.addLayer(markers);
     let database = [];
-    let searchTimer;
 
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
@@ -202,7 +201,7 @@
 
             const selezione = matchSemplici.slice(0, 25);
             if (selezione.length === 0) {
-                document.getElementById(loadingId).innerText = "Nessun risultato specifico trovato.";
+                document.getElementById(loadingId).innerText = "Nessun risultato trovato.";
                 return;
             }
 
@@ -213,7 +212,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     contents: [{ 
-                        parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contestStr} \n\nDOMANDA: "${userText}" \n\nREGOLE: 1. Rispondi in modo discorsivo. 2. Nomi tra doppie quadre [[Nome Cognome]]. 3. Vai a capo dopo ogni descrizione. 4. Niente grassetti.` }] 
+                        parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Rispondi in modo discorsivo ed empatico alla domanda: "${userText}". Dati: ${contestStr}. REGOLE: Nomi tra [[Nome]], vai a capo tra biografie, niente grassetti.` }] 
                     }] 
                 })
             });
@@ -255,8 +254,25 @@
         const val = document.getElementById(tipo === 'name' ? 'search-name' : tipo === 'theme' ? 'search-theme' : 'search-city').value.toLowerCase();
         const drop = document.getElementById('results-dropdown');
         if (val.length < 3) { drop.style.display = 'none'; return; }
-        let filtrati = database.filter(d => (tipo==='name' ? d.nominativo : d.scheda).toLowerCase().includes(val)).slice(0, 15);
-        updateDropdown(filtrati);
+
+        if (tipo === 'city') {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val},Italy&limit=1`)
+                .then(r => r.json()).then(data => {
+                    if (data.length > 0) {
+                        const centro = L.latLng(data[0].lat, data[0].lon);
+                        map.flyTo(centro, 10);
+                        let filtrati = database.filter(d => {
+                            const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
+                            return !isNaN(dLat) && centro.distanceTo([dLat, dLon]) <= 50000;
+                        });
+                        caricaMarker(d => filtrati.includes(d), false);
+                        updateDropdown(filtrati.slice(0, 20));
+                    }
+                });
+        } else {
+            let filtrati = database.filter(d => (tipo==='name' ? d.nominativo : d.scheda).toLowerCase().includes(val)).slice(0, 15);
+            updateDropdown(filtrati);
+        }
     }
 
     function updateDropdown(lista) {
@@ -269,14 +285,10 @@
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
-        const drop = document.getElementById('results-dropdown');
         caricaMarker(reg ? d => d.regione === reg : null, !!reg);
         if (reg) {
             let filtrati = database.filter(d => d.regione === reg).slice(0, 40);
             updateDropdown(filtrati);
-            drop.style.display = 'block';
-        } else {
-            drop.style.display = 'none';
         }
     }
 
@@ -300,14 +312,34 @@
     }
 
     function closeDetails() { document.getElementById('details-panel').classList.remove('open'); }
-    
     function toggleAIChat() { 
         const win = document.getElementById('ai-chat-window');
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
     
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
+
+    // Pulsante GPS
+    const gpsBtn = L.control({position: 'topright'});
+    gpsBtn.onAdd = function() {
+        let div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        div.innerHTML = '<button style="width:30px;height:30px;cursor:pointer;">📍</button>';
+        div.onclick = function() {
+            navigator.geolocation.getCurrentPosition(p => {
+                const loc = L.latLng(p.coords.latitude, p.coords.longitude);
+                map.flyTo(loc, 10);
+                let filtrati = database.filter(d => {
+                    const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
+                    return !isNaN(dLat) && loc.distanceTo([dLat, dLon]) <= 50000;
+                });
+                caricaMarker(d => filtrati.includes(d), false);
+            });
+        };
+        return div;
+    };
+    gpsBtn.addTo(map);
 </script>
 </body>
 </html>
+
 
