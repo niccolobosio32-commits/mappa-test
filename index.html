@@ -16,13 +16,13 @@
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; }
 
         /* UI RICERCA */
-        #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1000px; }
+        #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
         #filter-bar { 
             background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
             display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
         }
-        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 80px; }
+        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
         #results-dropdown { 
             background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
@@ -61,9 +61,7 @@
         .msg-ai { background: #f0f0f0; align-self: flex-start; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
 
-        /* MARKER */
         .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: 0.3s; }
-        .stella:hover svg { transform: scale(1.5); }
         .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
     </style>
 </head>
@@ -73,11 +71,11 @@
     <div id="filter-bar">
         <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
         <input type="text" id="search-name" placeholder="Cognome..." oninput="filtra('name')">
-        <input type="text" id="search-theme" placeholder="Temi (es: Resistenza)..." oninput="filtraTematico()" style="color:#e67e22;">
+        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtraTematico()" style="color:#e67e22;">
         <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
         <select id="filtro-regione" onchange="filtraRegione()">
             <option value="">Regione...</option>
-            <option value="Piemonte">Piemonte</option><option value="Lombardia">Lombardia</option><option value="Toscana">Toscana</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Lazio">Lazio</option> </select>
+        </select>
     </div>
     <div id="results-dropdown"></div>
 </div>
@@ -97,9 +95,7 @@
         </div>
         <div class="main-col">
             <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-            <div class="bio-box">
-                <p id="text-bio"></p>
-            </div>
+            <div class="bio-box"><p id="text-bio"></p></div>
         </div>
         <div class="side-rel">
             <div style="font-size:9px; font-weight:800; opacity:0.5; margin-bottom:10px;">CORRELATI</div>
@@ -152,9 +148,20 @@
                 Object.keys(d).forEach(k => clean[k.trim().toLowerCase()] = d[k].trim());
                 return clean;
             });
+            popolaRegioni();
             caricaMarker();
         }
     });
+
+    function popolaRegioni() {
+        const select = document.getElementById('filtro-regione');
+        const regioni = [...new Set(database.map(d => d.regione))].filter(r => r).sort();
+        regioni.forEach(r => {
+            let opt = document.createElement('option');
+            opt.value = r; opt.innerText = r;
+            select.appendChild(opt);
+        });
+    }
 
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
@@ -183,9 +190,8 @@
         if (val.length < 3) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 10);
-            drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-            drop.style.display = 'block';
+            let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
+            updateDropdown(filtrati);
         } else if (tipo === 'city') {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(async () => {
@@ -197,14 +203,19 @@
                         const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
                         return !isNaN(pLat) && (map.distance([cLat, cLon], [pLat, pLon]) <= 50000);
                     });
-                    if (vicini.length > 0) {
-                        caricaMarker(d => vicini.includes(d), true);
-                        drop.innerHTML = vicini.slice(0,10).map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
-                        drop.style.display = 'block';
-                    }
+                    updateDropdown(vicini.slice(0, 20));
+                    caricaMarker(d => vicini.includes(d), true);
                 }
             }, 800);
         }
+    }
+
+    function updateDropdown(lista) {
+        const drop = document.getElementById('results-dropdown');
+        if (lista.length > 0) {
+            drop.innerHTML = lista.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>(${d.regione})</small></div>`).join('');
+            drop.style.display = 'block';
+        } else { drop.style.display = 'none'; }
     }
 
     function filtraTematico() {
@@ -215,8 +226,7 @@
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
-        if(!reg) { caricaMarker(); return; }
-        caricaMarker(d => d.regione?.toLowerCase() === reg.toLowerCase(), true);
+        caricaMarker(reg ? d => d.regione === reg : null, !!reg);
     }
 
     function apri(nome) {
@@ -224,8 +234,7 @@
         if(!d) return;
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
-        const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
-        map.flyTo([lat, lon], 14);
+        map.flyTo([parseFloat(d.lat.replace(',','.')), parseFloat(d.lon.replace(',','.'))], 14);
     }
 
     function openDetails(d) {
@@ -234,10 +243,9 @@
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
         
-        // Sharing
         const shareURL = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
         document.getElementById('fb-share').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
-        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent("Intervista di " + d.nominativo + ": " + shareURL)}`;
+        document.getElementById('wa-share').href = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video di " + d.nominativo + ": " + shareURL)}`;
         document.getElementById('copy-link').onclick = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Link copiato!"); };
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 8);
@@ -263,23 +271,23 @@
 
         box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
         input.value = "";
-        
         const loadingId = "load-" + Date.now();
         box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
         box.scrollTop = box.scrollHeight;
 
-        const contest = database.slice(0, 80).map(d => `${d.nominativo} (${d.regione})`).join(", ");
+        const contest = database.slice(0, 60).map(d => `${d.nominativo} (${d.regione})`).join(", ");
 
         try {
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio. Dati: ${contest}. Rispondi brevemente a: ${userText}` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in max 2 righe a: ${userText}` }] }] })
             });
             const data = await r.json();
-            const responseText = data.candidates[0].content.parts[0].text;
-            document.getElementById(loadingId).innerText = responseText;
-        } catch (e) { document.getElementById(loadingId).innerText = "Errore di connessione."; }
+            document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
+        } catch (e) { 
+            document.getElementById(loadingId).innerText = "Errore di connessione. Verifica API Key."; 
+        }
         box.scrollTop = box.scrollHeight;
     }
 
