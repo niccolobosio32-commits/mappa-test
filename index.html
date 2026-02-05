@@ -222,27 +222,37 @@
         if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], maxZoom: 10});
     }
 
-// 1. Questa gestisce NOME e CITTÀ
     async function filtra(tipo) {
         const val = document.getElementById(tipo === 'name' ? 'search-name' : 'search-city').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
-        if (val.length < 3) { 
-            drop.style.display = 'none'; 
-            if(tipo==='city') caricaMarker(); 
-            return; 
-        }
+        if (val.length < 3) { drop.style.display = 'none'; if(tipo==='city' || tipo==='name') caricaMarker(); return; }
         
         if (tipo === 'name') {
             let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         }
-        
+
         if (tipo === 'city') {
-            // Cerchiamo nella colonna corretta: città_nascita
-            caricaMarker(d => (d.città_nascita || "").toLowerCase().includes(val), true);
+            try {
+                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val},Italy`);
+                const data = await r.json();
+                if (data.length > 0) {
+                    const cLat = parseFloat(data[0].lat), cLon = parseFloat(data[0].lon);
+                    const dist = (l1, o1, l2, o2) => {
+                        const R = 6371;
+                        const dL = (l2-l1)*Math.PI/180, dO = (o2-o1)*Math.PI/180;
+                        const a = Math.sin(dL/2)**2 + Math.cos(l1*Math.PI/180)*Math.cos(l2*Math.PI/180)*Math.sin(dO/2)**2;
+                        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    };
+                    caricaMarker(d => {
+                        const pLat = parseFloat(d.lat?.replace(',','.')), pLon = parseFloat(d.lon?.replace(',','.'));
+                        return !isNaN(pLat) && dist(cLat, cLon, pLat, pLon) <= 50;
+                    }, true);
+                }
+            } catch(e) { console.error("Errore Geo:", e); }
         }
-    } // <-- Mancava questa chiusura!
+    }
 
     function filtraTematico() {
         const val = document.getElementById('search-theme').value.toLowerCase().trim();
@@ -311,8 +321,8 @@
         const contestData = database.slice(0, 50).map(d => `${d.nominativo} (${d.regione})`).join(", ");
 
         try {
-            // URL CAMBIATO IN GEMINI-PRO PER MASSIMA COMPATIBILITÀ
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+            // USIAMO GEMINI-1.5-FLASH
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -334,5 +344,6 @@
 </script>
 </body>
 </html>
+
 
 
