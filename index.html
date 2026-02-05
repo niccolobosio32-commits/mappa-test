@@ -320,19 +320,63 @@
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 
     // Pulsante GPS
+   // Pulsante GPS STABILIZZATO
     const gpsBtn = L.control({position: 'topright'});
     gpsBtn.onAdd = function() {
         let div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        div.innerHTML = '<button style="width:30px;height:30px;cursor:pointer;">📍</button>';
+        div.innerHTML = '<button title="Trova vicino a me" style="width:34px;height:34px;cursor:pointer;background:white;border:none;font-size:18px;">📍</button>';
+        
+        let geolocActive = false; // Per evitare che salti continuamente
+
         div.onclick = function() {
+            if (geolocActive) return; // Se sta già cercando, non ricominciare
+            
+            if (!navigator.geolocation) return alert("Geolocalizzazione non supportata.");
+            
+            geolocActive = true;
+            div.querySelector('button').style.backgroundColor = "#ffcccc"; // Feedback visivo (colore rosso chiaro)
+
             navigator.geolocation.getCurrentPosition(p => {
                 const loc = L.latLng(p.coords.latitude, p.coords.longitude);
-                map.flyTo(loc, 10);
+                
+                // Se la precisione è scarsa (sopra i 2000 metri), avvisa l'utente
+                if (p.coords.accuracy > 2000) {
+                    console.warn("Segnale GPS debole, posizione approssimativa.");
+                }
+
+                map.flyTo(loc, 10, { animate: true, duration: 1.5 });
+                
+                // Rimuovi eventuali cerchi precedenti
+                map.eachLayer(layer => { if(layer instanceof L.Circle) map.removeLayer(layer); });
+
+                // Disegna il raggio di 50km
+                L.circle(loc, {
+                    radius: 50000, 
+                    color: '#3498db', 
+                    weight: 2, 
+                    fillOpacity: 0.05,
+                    interactive: false 
+                }).addTo(map);
+
                 let filtrati = database.filter(d => {
                     const dLat = parseFloat(d.lat?.replace(',','.')), dLon = parseFloat(d.lon?.replace(',','.'));
                     return !isNaN(dLat) && loc.distanceTo([dLat, dLon]) <= 50000;
                 });
+
                 caricaMarker(d => filtrati.includes(d), false);
+                
+                geolocActive = false;
+                div.querySelector('button').style.backgroundColor = "white";
+                
+                if(filtrati.length === 0) alert("Nessuna testimonianza trovata nel raggio di 50km dalla tua posizione.");
+            }, (err) => {
+                geolocActive = false;
+                div.querySelector('button').style.backgroundColor = "white";
+                alert("Errore GPS: Segnale non disponibile o permessi negati.");
+            }, {
+                enableHighAccuracy: true, // Forza l'uso del GPS reale e non solo del Wi-Fi
+                timeout: 10000,
+                maximumAge: 0
             });
         };
         return div;
@@ -341,5 +385,6 @@
 </script>
 </body>
 </html>
+
 
 
