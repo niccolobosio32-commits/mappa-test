@@ -263,39 +263,49 @@
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
     }
 
-    async function sendAIMessage() {
-        const input = document.getElementById('ai-chat-input');
-        const box = document.getElementById('ai-chat-messages');
-        const userText = input.value.trim();
-        if (!userText) return;
+   async function sendAIMessage() {
+    const input = document.getElementById('ai-chat-input');
+    const box = document.getElementById('ai-chat-messages');
+    const userText = input.value.trim();
+    if (!userText) return;
 
-        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
-        input.value = "";
-        const loadingId = "load-" + Date.now();
-        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
-        box.scrollTop = box.scrollHeight;
+    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+    input.value = "";
+    const loadingId = "load-" + Date.now();
+    box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
+    box.scrollTop = box.scrollHeight;
 
-        try {
-            const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Dati: ${contest}. Rispondi breve a: ${userText}` }] }] })
-            });
-            const data = await response.json();
-            if(data.error) {
-                document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
-            } else {
-                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-            }
-        } catch (e) {
-            document.getElementById(loadingId).innerText = "Errore di connessione.";
+    try {
+        // Ho aggiornato il modello a gemini-2.5-flash come suggerito dal tuo test
+        const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in modo molto breve a: ${userText}` }] 
+                }] 
+            })
+        });
+
+        const data = await response.json();
+        
+        if(data.error) {
+            console.error("Dettaglio Errore:", data.error);
+            document.getElementById(loadingId).innerText = "Errore API: " + data.error.message;
+        } else {
+            document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
         }
-        box.scrollTop = box.scrollHeight;
+    } catch (e) {
+        document.getElementById(loadingId).innerText = "Errore di connessione al server.";
+        console.error("Errore Fetch:", e);
     }
-
+    box.scrollTop = box.scrollHeight;
+}
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
