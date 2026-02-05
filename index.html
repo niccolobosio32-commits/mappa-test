@@ -390,19 +390,36 @@ border: 1px solid rgba(0,0,0,0.1);
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: `Agisci come Archivista Storico Senior. 
-                        Analizza i 150 profili forniti per rispondere alla domanda: "${userText}".
+            // --- CHIAMATA AI BLINDATA (CONTESTO STORICO E TEMATICO) ---
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contents: [{ 
+                        parts: [{ 
+                            text: `Sei l'Archivista Ufficiale del Progetto Memoria Partigiana.
+            
+                            IL TUO SCOPO: Rispondere ESCLUSIVAMENTE a domande sulla Resistenza italiana, sulla Seconda Guerra Mondiale e sui partigiani presenti nel database.
 
-                        REGOLE INTEGRATE (PUNTO 4 & 5):
-                        1. NO PREAMBOLI.
-                        2. LINEA DEL TEMPO (Punto 4): Se la domanda riguarda un periodo o un evento, estrai le date dalle biografie e presenta i fatti in ordine cronologico.
-                        3. CONNESSIONI SEMANTICHE (Punto 5): Collega i profili non solo per luogo, ma per analogia di esperienza (es. tutti quelli che sono stati arrestati, tutti quelli che operavano in montagna).
-                        4. MAPPA ATTIVA: Usa sempre [[Nome Cognome]] per i link.
-                        5. SINTESI: Inizia con un'analisi del contesto storico generale dell'area o del tema richiesto.
+                            REGOLE DI COMPORTAMENTO:
+                            1. SE LA DOMANDA È FUORI TEMA (es. cucina, attualità, sport, programmazione): rispondi esattamente: "Sono un archivista specializzato nella storia della Resistenza. Posso aiutarti solo con ricerche inerenti l'archivio dei partigiani e il contesto storico della liberazione."
+                            2. NO PREAMBOLI: Inizia subito con l'analisi.
+                            3. PERCORSI TEMATICI: Collega i profili per analogia (es. chi ha subito torture, chi era nelle Brigate Garibaldi, chi era una staffetta).
+                            4. ORDINE CRONOLOGICO: Se la domanda riguarda un periodo, presenta i fatti seguendo le date estratte dalle biografie.
+                            5. MAPPA ATTIVA: Usa sempre [[Nome Cognome]] per generare i link cliccabili.
+                            6. SINTESI: Inizia sempre con una brevissima analisi del contesto storico generale del tema richiesto.
 
-                        DATI: 
-                        ${context}` 
-                    }] }] 
+                            DATI ARCHIVIO PER QUESTA RICERCA: 
+                            ${context}
+
+                            DOMANDA UTENTE: "${userText}"` 
+                        }] 
+                    }],
+                    generationConfig: {
+                        temperature: 0.2, // Più precisione storica, meno "fantasia"
+                        topP: 0.8,
+                        maxOutputTokens: 1000,
+                    }
                 })
             });
 
@@ -437,6 +454,7 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
+
 
 
 
