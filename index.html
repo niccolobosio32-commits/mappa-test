@@ -90,23 +90,23 @@
             flex-direction: column; 
             justify-content: space-between; /* Spinge i social in fondo */
         }
-        
+        /* SOCIAL BOX IN RIGA */
         .social-box { 
             display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            margin-top: 20px; 
+            flex-direction: row; /* In riga */
+            justify-content: center; /* Centrate orizzontalmente */
+            gap: 15px; 
+            margin-top: 15px; 
             padding-top: 15px; 
             border-top: 1px solid rgba(0,0,0,0.1); 
-            align-items: center;
         }
         
         .social-btn { 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            width: 38px; 
-            height: 38px; 
+            width: 36px; 
+            height: 36px; 
             border-radius: 50%; 
             background: rgba(255,255,255,0.3); 
             backdrop-filter: blur(5px);
@@ -118,7 +118,7 @@
         
         .social-btn:hover { 
             background: var(--blue); 
-            transform: scale(1.1); 
+            transform: translateY(-3px); /* Salta leggermente verso l'alto */
             border-color: white;
         }
         
@@ -256,20 +256,19 @@
         document.getElementById('text-bio').innerText = d.scheda || "Nessuna biografia disponibile.";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
-        // Elenco Correlati
+        // 1. CREA LA LISTA DEI CORRELATI
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 15);
         let relHtml = `<div>${rel.map(r => `
             <div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>
         `).join('')}</div>`;
 
-        // Generazione Link di Condivisione (Link Diretto)
+        // 2. DEFINISCE I DATI PER IL LINK DIRETTO
         const shareUrl = window.location.origin + window.location.pathname + "?p=" + encodeURIComponent(d.nominativo);
         const shareText = `Guarda la video intervista di ${d.nominativo} su Archivio Partigiani`;
 
-        // Box Social
+        // 3. CREA IL "PEZZO" HTML DEI SOCIAL (Quello che cercavi)
         const socialHtml = `
             <div class="social-box">
-                <div style="font-size:9px; font-weight:800; opacity:0.5; margin-bottom:5px;">CONDIVIDI</div>
                 <a class="social-btn" href="https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareUrl)}" target="_blank" title="WhatsApp">
                     <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.27 9.27 0 01-4.487-1.164l-.325-.193-3.34.877.89-3.253-.213-.339a9.27 9.27 0 01-1.421-4.906c0-5.113 4.158-9.27 9.274-9.27 2.476 0 4.803.965 6.556 2.719a9.23 9.23 0 012.716 6.558c0 5.116-4.158 9.274-9.274 9.274m10.963-12.713A11.01 11.01 0 0012.048 2.73c-6.103 0-11.07 4.966-11.07 11.07 0 1.95.51 3.855 1.478 5.533L.65 23.35l4.103-1.076a11.002 11.002 0 005.293 1.358h.005c6.101 0 11.07-4.968 11.07-11.072 0-2.956-1.15-5.736-3.238-7.824z"/></svg>
                 </a>
@@ -282,8 +281,10 @@
             </div>
         `;
 
-        // Inserimento nel DOM
+        // 4. INSERISCE TUTTO NEL PANNELLO LATERALE
         document.getElementById('box-rel').innerHTML = relHtml + socialHtml;
+        
+        // 5. APRE IL PANNELLO
         document.getElementById('details-panel').classList.add('open');
     }
 
@@ -469,6 +470,7 @@
 </script>
 </body>
 </html>
+
 
 
 
