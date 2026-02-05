@@ -10,12 +10,34 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
-    <style>
-        :root { --navy: #1a2a3a; --blue: #3498db; --glass: rgba(255, 255, 255, 0.4); --red: #e21118; --yellow: #ffcc00; }
+   <style>
+        /* 1. EFFETTO SCRITTURA AI E CURSORE */
+        :root { 
+            --navy: #1a2a3a; 
+            --blue: #3498db; 
+            --glass: rgba(255, 255, 255, 0.4); 
+            --red: #e21118; 
+            --yellow: #ffcc00; 
+        }
+
+        .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
+        
+        .msg-ai:after { 
+            content: '▋'; 
+            animation: blink 1s infinite; 
+            margin-left: 5px; 
+            color: var(--blue); 
+            font-size: 12px; 
+            vertical-align: middle;
+        }
+        .msg-ai.finished:after { content: ''; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* 2. BASE E MAPPA */
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #f0f0f0; }
 
-        /* UI RICERCA */
+        /* 3. UI RICERCA */
         #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
         #filter-bar { 
             background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -29,7 +51,7 @@
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
         .res-item:hover { background: var(--blue); color: white; }
 
-        /* SCHEDA DETTAGLI */
+        /* 4. SCHEDA DETTAGLI */
         #details-panel { 
             position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1100px; z-index: 4000; 
@@ -47,22 +69,19 @@
         .bio-box { padding: 10px 25px; line-height: 1.3; }
         #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; padding-bottom: 30px; }
 
-        /* CORRELATI */
+        /* 5. CORRELATI E MARKER */
         .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; }
         .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .rel-item:hover { background: var(--blue); color: white; }
-
-        /* MARKER STELLA */
         .stella svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: all 0.3s ease; cursor: pointer; }
         .stella:hover svg polygon { fill: var(--yellow) !important; stroke: #000 !important; }
         .leaflet-tooltip-custom { background: #000; color: #fff; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; }
         
-        /* CHAT AI */
+        /* 6. CHAT AI WINDOW */
         #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
         #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
         #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
         .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
-        .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-line; }
         .msg-user { background: var(--blue); color: white; align-self: flex-end; }
     </style>
 </head>
@@ -201,8 +220,12 @@
     }
 
     function apri(nome) {
-        const d = database.find(x => x.nominativo.trim().toLowerCase() === nome.trim().toLowerCase());
-        if(!d) return;
+        // Ricerca più flessibile: trova il nominativo che contiene la stringa cercata
+        const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase().trim()));
+        if(!d) {
+            console.warn("Nominativo non trovato:", nome);
+            return;
+        }
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
         const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
@@ -311,12 +334,12 @@
                 body: JSON.stringify({ 
                     contents: [{ 
                         parts: [{ 
-                            text: `Agisci come Archivista Storico esperto. Rispondi alla domanda: "${userText}". 
-                            Analizza queste ${selezione.length} testimonianze.
-                            REGOLE: 
-                            1. Sintetizza le informazioni comuni. 
-                            2. Usa [[Nome Cognome]] per i link cliccabili. 
-                            3. Se i dati sono molti, organizza in punti elenco per regione o evento.
+                            text: `Agisci come Archivista Storico. Rispondi a: "${userText}". 
+                            FORMATTAZIONE ELEGANTE:
+                            1. Usa il grassetto per concetti chiave.
+                            2. Organizza in brevi paragrafi o punti elenco puliti.
+                            3. Per ogni partigiano citato, scrivi SEMPRE il nome tra doppi brackets, es: [[Nome Cognome]].
+                            4. Non usare titoli eccessivi, mantieni uno stile sobrio e accademico.
                             DATI: ${contestStr}` 
                         }] 
                     }] 
@@ -326,40 +349,53 @@
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
 
-            const aiText = data.candidates[0].content.parts[0].text;
-            aiMsgElement.innerText = ""; // Pulisce i puntini di sospensione
-            
-            // FUNZIONE MACCHINA DA SCRIVERE INTERNA
-            const words = aiText.split(" ");
+            let aiText = data.candidates[0].content.parts[0].text;
+            aiMsgElement.innerText = ""; 
+
+            const words = aiText.split(/(\s+)/); 
             let i = 0;
+            let fullText = "";
+
             const interval = setInterval(() => {
                 if (i < words.length) {
-                    let word = words[i];
-                    // Se la parola fa parte di un link [[...]] lo processa alla fine della parola stessa
-                    let currentHtml = aiMsgElement.innerHTML;
+                    fullText += words[i];
                     
-                    // Aggiunge la parola e gestisce il formato [[Link]]
-                    const formattedWord = word.replace(/\[\[(.*?)\]\]/g, (m, n) => 
-                        `<b style="color:#3498db;cursor:pointer;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`
-                    );
-
-                    aiMsgElement.innerHTML += formattedWord + " ";
+                    let htmlRender = fullText
+    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') 
+    .replace(/\[\[(.*?)\]\]/g, (m, n) => 
+        `<b style="color:#3498db;cursor:pointer;text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`
+    )
+    .replace(/\n/g, '<br>'); // <-- Fondamentale per la formattazione elegante!
+                    aiMsgElement.innerHTML = htmlRender;
                     box.scrollTop = box.scrollHeight;
                     i++;
                 } else {
+                    // QUI AGGIUNGIAMO LA CLASSE FINISHED
                     clearInterval(interval);
+                    aiMsgElement.classList.add('finished');
                 }
-            }, 50); // Velocità di scrittura (50ms tra una parola e l'altra)
+            }, 30); 
 
         } catch (e) { 
             console.error("Errore API:", e);
-            aiMsgElement.innerText = "Errore nel caricamento del cervello 2.5. Verifica i permessi della tua API Key."; 
+            aiMsgElement.innerText = "Errore di connessione."; 
         }
+    }
+
+    // Anche questa è meglio aggiornarla per essere sicuri che i link funzionino sempre
+    function apri(nome) {
+        const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase().trim()));
+        if(!d) return;
+        document.getElementById('results-dropdown').style.display = 'none';
+        openDetails(d);
+        const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
+        if(!isNaN(lat)) flyDolce([lat, lon], 15);
     }
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
 
 
