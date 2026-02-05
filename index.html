@@ -366,22 +366,31 @@ border: 1px solid rgba(0,0,0,0.1);
             
             aiMsgElement.innerText = "";
             let words = aiText.split(/(\s+)/), i = 0, full = "";
-            const interval = setInterval(() => {
+            
+            function digita() {
                 if (i < words.length) {
                     full += words[i++];
                     aiMsgElement.innerHTML = full.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
                         .replace(/\[\[(.*?)\]\]/g, (m, n) => `<b style="color:#3498db;cursor:pointer;text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`)
                         .replace(/\n/g, '<br>');
+                    
                     box.scrollTop = box.scrollHeight;
-                } else { clearInterval(interval); aiMsgElement.classList.add('finished'); }
-            }, 30);
-        } catch (e) { aiMsgElement.innerText = "Errore di connessione."; }
-    }
+
+                    // Calcolo velocità dinamica: 
+                    // Se è uno spazio o un segno di punteggiatura, rallenta un po' per "respirare"
+                    let delay = words[i-1].length > 1 ? 15 : 40; 
+                    setTimeout(digita, delay); 
+                } else { 
+                    aiMsgElement.classList.add('finished'); 
+                }
+            }
+            digita(); // Avvia l'effetto dolce
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
 
 
 
