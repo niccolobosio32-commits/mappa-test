@@ -178,12 +178,15 @@
         z-index: 10;
     }
 
-    /* Finestra AI su mobile più snella */
+   /* Finestra AI su mobile ottimizzata per tastiera */
     #ai-chat-window {
-        width: 90% !important;
-        right: 5% !important;
-        left: 5% !important;
-        bottom: 90px !important;
+        width: 95% !important;
+        right: 2.5% !important;
+        left: 2.5% !important;
+        height: 60vh !important; /* Più bassa per lasciare spazio alla tastiera */
+        bottom: auto !important;
+        top: 70px !important; /* Si ancora sotto la barra di ricerca */
+        z-index: 7000 !important;
     }
 }
    </style>
@@ -435,17 +438,16 @@
     const win = document.getElementById('ai-chat-window');
     const input = document.getElementById('ai-chat-input');
     
-    // Controlla se è chiusa (display none o stringa vuota)
     const isOpening = (win.style.display === 'none' || win.style.display === '');
     
     win.style.display = isOpening ? 'flex' : 'none';
 
     if (isOpening) {
-        // Il segreto è aspettare un battito di ciglia (100-200ms) 
-        // affinché il browser "veda" l'elemento prima di dargli il focus
         setTimeout(() => {
             input.focus();
-        }, 200);
+            // Scrolla leggermente per assicurarsi che l'input sia visibile
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
     }
 }
 
@@ -548,6 +550,7 @@
 </script>
 </body>
 </html>
+
 
 
 
