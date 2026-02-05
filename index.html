@@ -173,23 +173,34 @@
         background: rgba(255,255,255,0.2) !important;
     }
 
-    /* Finestra AI su mobile: posizione galleggiante anti-tastiera */
+    /* Finestra AI su mobile: ancorata in alto per lasciare spazio alla tastiera */
     #ai-chat-window {
-        width: 90% !important;
-        left: 5% !important;
-        right: 5% !important;
-        height: 50vh !important;
-        top: 50% !important;
+        width: 95% !important;
+        left: 2.5% !important;
+        right: 2.5% !important;
+        height: 50vh !important; /* Metà schermo */
+        top: 80px !important; /* Appena sotto la barra di ricerca */
         bottom: auto !important;
-        transform: translateY(-75%) !important;
+        transform: none !important; /* Rimuoviamo il transform che creava confusione */
         z-index: 7000 !important;
         position: fixed !important;
+        display: none; /* Verrà gestito dal JS */
+        flex-direction: column;
     }
 
-    #ai-chat-input {
-        font-size: 16px !important; /* Impedisce lo zoom forzato su iPhone */
+    /* Assicuriamoci che l'area messaggi non mangi tutto lo spazio */
+    #ai-chat-messages {
+        flex: 1;
+        overflow-y: auto;
     }
-}
+
+    /* Forza l'input a stare in fondo alla finestrella */
+    .ai-input-container {
+        padding: 10px;
+        background: #fff;
+        border-top: 1px solid #eee;
+        display: flex;
+    }
     
    </style>
 </head>
@@ -248,8 +259,14 @@
         <span>Assistente Archivio</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px; line-height: 1;">&times;</span>
     </div>
+    
     <div id="ai-chat-messages"></div>
-    ...
+
+    <div class="ai-input-container">
+        <input type="text" id="ai-chat-input" placeholder="Chiedi all'AI..." 
+               style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; font-size: 16px;" 
+               onkeypress="if(event.key==='Enter') sendAIMessage()">
+    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -445,8 +462,8 @@
     if (isOpening) {
         setTimeout(() => {
             input.focus();
-            // Scrolla leggermente per assicurarsi che l'input sia visibile
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Trucco per scrollare la finestra in cima e mostrare l'input
+            window.scrollTo(0, 0); 
         }, 300);
     }
 }
@@ -550,6 +567,7 @@
 </script>
 </body>
 </html>
+
 
 
 
