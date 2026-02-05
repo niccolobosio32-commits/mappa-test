@@ -178,17 +178,24 @@
         z-index: 10;
     }
 
-   /* Finestra AI su mobile ottimizzata per tastiera */
+   /* Finestra AI su mobile: centrata verticalmente */
     #ai-chat-window {
-        width: 95% !important;
-        right: 2.5% !important;
-        left: 2.5% !important;
-        height: 60vh !important; /* Più bassa per lasciare spazio alla tastiera */
+        width: 90% !important;
+        left: 5% !important;
+        right: 5% !important;
+        height: 50vh !important; /* Altezza media per lasciare spazio sopra e sotto */
+        top: 50% !important;
         bottom: auto !important;
-        top: 70px !important; /* Si ancora sotto la barra di ricerca */
+        transform: translateY(-70%) !important; /* La sposta verso l'alto rispetto al centro */
         z-index: 7000 !important;
+        position: fixed !important;
     }
-}
+
+    /* Assicuriamoci che l'input della chat sia ben visibile */
+    #ai-chat-input {
+        font-size: 16px !important; /* Evita lo zoom automatico di iOS su input */
+    }
+    
    </style>
 </head>
 <body>
@@ -242,14 +249,12 @@
 </div>
 
 <div id="ai-chat-window">
-    <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between;">
+    <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
         <span>Assistente Archivio</span>
-        <span onclick="toggleAIChat()" style="cursor:pointer;">&times;</span>
+        <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px; line-height: 1;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
-    <div style="padding:10px; border-top:1px solid #eee; display:flex;">
-        <input type="text" id="ai-chat-input" placeholder="Chiedi all'AI..." style="flex:1; border:1px solid #ddd; border-radius:20px; padding:5px 12px;" onkeypress="if(event.key==='Enter') sendAIMessage()">
-    </div>
+    ...
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -550,6 +555,7 @@
 </script>
 </body>
 </html>
+
 
 
 
