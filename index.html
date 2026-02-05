@@ -123,8 +123,10 @@
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between;">
-        Assistente Archivio <span onclick="toggleAIChat()" style="cursor:pointer;">&times;</span>
+        <span>Assistente Archivio <small style="cursor:pointer; opacity:0.5;" onclick="if(confirm('Vuoi cambiare o resettare la tua API Key?')){localStorage.removeItem('gemini_key'); location.reload();}"> ⚙️</small></span>
+        <span onclick="toggleAIChat()" style="cursor:pointer;">&times;</span>
     </div>
+
     <div id="ai-chat-messages">
         <div class="msg msg-ai">Ciao! Chiedimi pure dei temi trattati nelle interviste.</div>
     </div>
@@ -178,51 +180,93 @@
     }
 
     async function sendAIMessage() {
-        const key = getApiKey();
-        if (!key) return;
+    const key = getApiKey();
+    if (!key) return;
 
-        const input = document.getElementById('ai-chat-input');
-        const box = document.getElementById('ai-chat-messages');
-        const userText = input.value.trim();
-        if (!userText) return;
+    const input = document.getElementById('ai-chat-input');
+    const box = document.getElementById('ai-chat-messages');
+    const userText = input.value.trim();
+    if (!userText) return;
 
-        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
-        input.value = "";
-        const loadingId = "load-" + Date.now();
-        box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">...</div>`;
-        box.scrollTop = box.scrollHeight;
+    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+    input.value = "";
+    const loadingId = "load-" + Date.now();
+    box.innerHTML += `<div id="${loadingId}" class="msg msg-ai">Analizzando l'archivio...</div>`;
+    box.scrollTop = box.scrollHeight;
 
-        try {
-            const contest = database.slice(0, 50).map(d => `${d.nominativo}(${d.regione})`).join(",");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati: ${contest}. Rispondi in modo molto breve a: ${userText}` }] 
-                    }] 
-                })
-            });
+    try {
+        // --- 1. MOTORE DI RICERCA INTERNO ---
+        const termini = userText.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+        
+        let matchSemplici = database.filter(d => {
+            const testoDoc = `${d.nominativo} ${d.regione} ${d.scheda}`.toLowerCase();
+            return termini.some(t => testoDoc.includes(t));
+        });
 
-            const data = await response.json();
-            
-            if(data.error) {
-                if(data.error.message.includes("API key not valid")) {
-                    localStorage.removeItem('gemini_key');
-                    document.getElementById(loadingId).innerText = "Chiave non valida. Clicca di nuovo per inserirne una nuova.";
-                } else {
-                    document.getElementById(loadingId).innerText = "Errore: " + data.error.message;
-                }
-            } else {
-                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-            }
-        } catch (e) {
-            document.getElementById(loadingId).innerText = "Errore di connessione.";
+        matchSemplici.sort((a, b) => {
+            const contaA = termini.filter(t => `${a.nominativo} ${a.scheda}`.toLowerCase().includes(t)).length;
+            const contaB = termini.filter(t => `${b.nominativo} ${b.scheda}`.toLowerCase().includes(t)).length;
+            return contaB - contaA;
+        });
+
+        const selezione = matchSemplici.slice(0, 25);
+        
+        if (selezione.length === 0) {
+            document.getElementById(loadingId).innerText = "Non ho trovato testimonianze specifiche su questo tema. Prova a cercare un luogo o un evento diverso.";
+            return;
         }
-        box.scrollTop = box.scrollHeight;
+
+        // --- 2. COSTRUZIONE DEL CONTESTO ---
+        const contestStr = selezione.map(d => 
+            `PARTIGIANO: ${d.nominativo} | REGIONE: ${d.regione} | STORIA: ${d.scheda?.substring(0, 450)}...`
+        ).join("\n\n");
+
+        // --- 3. CHIAMATA A GEMINI ---
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ text: `Sei l'assistente dell'Archivio Partigiani. Usa questi dati per rispondere:
+                    
+                    ${contestStr}
+
+                    DOMANDA: "${userText}"
+                    
+                    REGOLE:
+                    - Rispondi in italiano in modo discorsivo.
+                    - Fondamentale: ogni volta che nomini un partigiano della lista, scrivi il nome tra doppie quadre. Esempio: [[Mario Rossi]].` }] 
+                }] 
+            })
+        });
+
+        const data = await response.json();
+        if(data.error) throw new Error(data.error.message);
+
+        const aiText = data.candidates[0].content.parts[0].text;
+
+        // --- 4. RENDERE I NOMI CLICCABILI (Versione Robusta) ---
+        const testoLinkato = aiText.replace(/\[\[(.*?)\]\]/g, (match, nome) => {
+            const nomePulito = nome.trim();
+            const esiste = database.find(d => d.nominativo.toLowerCase() === nomePulito.toLowerCase());
+            if(esiste) {
+                // Usiamo l'escape per l'apostrofo nel nome per evitare errori JS
+                const nomeEscaped = esiste.nominativo.replace(/'/g, "\\'");
+                return `<b style="color:#3498db; cursor:pointer; text-decoration:underline;" onclick="apri('${nomeEscaped}')">${nomePulito}</b>`;
+            }
+            return `<b>${nomePulito}</b>`;
+        });
+
+        document.getElementById(loadingId).innerHTML = testoLinkato;
+
+    } catch (e) {
+        document.getElementById(loadingId).innerText = "Errore: " + e.message;
+        if(e.message.includes("key")) localStorage.removeItem('gemini_key');
     }
+    box.scrollTop = box.scrollHeight;
+}
 
     // --- FUNZIONI MAPPA E FILTRI ---
     function caricaMarker(filtroFn = null, fit = false) {
@@ -327,6 +371,7 @@
 </script>
 </body>
 </html>
+
 
 
 
