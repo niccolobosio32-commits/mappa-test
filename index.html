@@ -77,6 +77,32 @@
         .stella:hover svg { transform: scale(1.8); }
         .stella:hover polygon { fill: #e21118; stroke: #fff; }
         .leaflet-tooltip-custom { background: rgba(0, 0, 0, 0.8); color: #fff; border: none; padding: 5px 10px; font-size: 12px; border-radius: 5px; }
+        /* TASTO E FINESTRA CHAT AI */
+#ai-chat-toggle {
+    position: absolute; bottom: 25px; right: 25px; z-index: 6000;
+    width: 60px; height: 60px; background: #1a2a3a; color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.2);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#ai-chat-toggle:hover { transform: scale(1.1); background: #3498db; }
+
+#ai-chat-window {
+    position: absolute; bottom: 95px; right: 25px; z-index: 6000;
+    width: 350px; height: 450px; background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-radius: 20px; border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    display: none; flex-direction: column; overflow: hidden;
+}
+#ai-chat-header { background: #1a2a3a; color: white; padding: 15px; font-weight: 700; display: flex; justify-content: space-between; }
+#ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.msg { padding: 8px 12px; border-radius: 12px; max-width: 80%; line-height: 1.4; }
+.msg-ai { background: #eee; align-self: flex-start; color: #333; }
+.msg-user { background: #3498db; align-self: flex-end; color: white; }
+#ai-chat-input-area { padding: 10px; border-top: 1px solid rgba(0,0,0,0.1); display: flex; gap: 8px; }
+#ai-chat-input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 8px 15px; outline: none; font-size: 13px; color: #000; }
+#ai-send-btn { background: #1a2a3a; color: white; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -129,10 +155,28 @@
                 <a href="#" id="copy-link-m" class="social-btn">🔗</a>
             </div>
         </div>
-        <div class="side-rel">
+      <div class="side-rel">
             <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:8px; color:#000; letter-spacing:1px;">CORRELATI</div>
             <div id="box-rel"></div>
         </div>
+    </div>
+</div>
+
+<div id="ai-chat-toggle" onclick="toggleAIChat()">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+</div>
+
+<div id="ai-chat-window">
+    <div id="ai-chat-header">
+        <span>Assistente AI Archivio</span>
+        <button onclick="toggleAIChat()" style="background:none; border:none; color:white; cursor:pointer; font-size:20px;">&times;</button>
+    </div>
+    <div id="ai-chat-messages">
+        <div class="msg msg-ai">Ciao! Sono l'intelligenza dell'Archivio. Come posso aiutarti nella ricerca?</div>
+    </div>
+    <div id="ai-chat-input-area">
+        <input type="text" id="ai-chat-input" placeholder="Scrivi qui..." onkeypress="if(event.key==='Enter') sendAIMessage()">
+        <button id="ai-send-btn" onclick="sendAIMessage()">></button>
     </div>
 </div>
 
@@ -288,6 +332,29 @@
     }
 
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
+    // FUNZIONI CHAT AI
+    function toggleAIChat() {
+        const win = document.getElementById('ai-chat-window');
+        if(!win) return;
+        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+    }
+
+    function sendAIMessage() {
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        if (!input || !input.value.trim()) return;
+
+        box.innerHTML += `<div class="msg msg-user">${input.value}</div>`;
+        const userText = input.value;
+        input.value = "";
+        box.scrollTop = box.scrollHeight;
+
+        setTimeout(() => {
+            box.innerHTML += `<div class="msg msg-ai">Sto analizzando l'archivio per aiutarti con "${userText}"...</div>`;
+            box.scrollTop = box.scrollHeight;
+        }, 600);
+    }
 </script>
 </body>
 </html>
+
