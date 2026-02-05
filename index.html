@@ -22,7 +22,7 @@
             padding: 10px 20px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
             display: flex; gap: 10px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
         }
-        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; }
+        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 14px; background: transparent; font-weight: 700; color: #000; min-width: 50px; }
         
         #results-dropdown { 
             background: rgba(255, 255, 255, 0.95); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -30,7 +30,7 @@
         .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; }
         .res-item:hover { background: var(--blue); color: white; }
 
-        /* SCHEDA BIOGRAFICA */
+        /* SCHEDA BIOGRAFICA - SPAZIATURA MINIMALE */
         #details-panel { 
             position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
             width: 94%; max-width: 1150px; z-index: 4000; 
@@ -42,25 +42,19 @@
         }
         #details-panel.open { transform: translate(-50%, -50%); }
         #details-header { background: rgba(26, 42, 58, 0.75); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        
         #details-content { display: flex; overflow: hidden; flex: 1; width: 100%; }
         
-        /* COLONNA SOCIAL (DESKTOP) */
         .side-social { width: 60px; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 15px; flex-shrink: 0; }
         .social-btn { width: 38px; height: 38px; background: rgba(255,255,255,0.5); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; color: #000; font-weight: 900; font-size: 18px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s; }
         .social-btn:hover { background: var(--blue); color: #fff; }
 
-        /* COLONNA CENTRALE (VIDEO E BIO) */
         .main-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         .video-box { width: 100%; aspect-ratio: 16/9; background: #000; flex-shrink: 0; }
-      .bio-box { 
-    padding: 10px 30px; 
-    line-height: 1.2; /* Leggermente più leggibile ma compatto */
-    text-align: justify; /* Rende il blocco di testo più ordinato */
-}
+        
+        /* Correzione spaziatura bio richiesta */
+        .bio-box { padding: 10px 30px; line-height: 1.2; text-align: justify; }
         #text-bio { font-family: 'Lora', serif; font-size: 17px; color: #000; margin: 0; }
 
-        /* COLONNA DESTRA (CORRELATI) */
         .side-rel { width: 280px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; flex-shrink: 0; }
         #box-rel { display: flex; flex-direction: column; gap: 8px; }
         .rel-item { padding: 10px; background: rgba(255,255,255,0.3); border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); color: #000; font-weight: 600; transition: 0.3s; }
@@ -68,45 +62,17 @@
 
         .mobile-socials { display: none; }
 
-        /* MOBILE OPTIMIZATION */
-       @media (max-width: 768px) {
-    #details-panel { top: 60%; max-height: 85vh; }
-    #details-content { flex-direction: column; overflow-y: auto; }
-    
-    .side-social { display: none; }
-    
-    /* Spostiamo la colonna correlati sopra i social */
-    .side-rel { 
-        width: 100%; 
-        border-left: none; 
-        border-top: 1px solid rgba(0,0,0,0.1); 
-        padding: 10px 15px; 
-        order: 2; /* Forza l'ordine dopo la biografia */
-    }
-    
-    #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 8px; }
-    .rel-item { min-width: 130px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 768px) {
+            #details-panel { top: 60%; max-height: 85vh; }
+            #details-content { flex-direction: column; overflow-y: auto; }
+            .side-social { display: none; }
+            .side-rel { width: 100%; border-left: none; border-top: 1px solid rgba(0,0,0,0.1); padding: 10px 15px; order: 2; }
+            #box-rel { flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 8px; }
+            .rel-item { min-width: 130px; text-align: center; }
+            .mobile-socials { display: flex !important; justify-content: center; gap: 15px; padding: 10px; order: 3; }
+            .video-box { position: sticky; top: 0; z-index: 10; }
+        }
 
-    /* Social in fondo e più piccoli */
-    .mobile-socials { 
-        display: flex !important; 
-        justify-content: center; 
-        gap: 15px; 
-        padding: 10px; 
-        order: 3; /* In fondo a tutto */
-    }
-    
-    .mobile-socials .social-btn { 
-        width: 30px; 
-        height: 30px; 
-        font-size: 14px; 
-        border-radius: 8px; 
-    }
-    
-    .video-box { position: sticky; top: 0; z-index: 10; }
-}
-
-        /* MARKER */
         .stella svg { transition: 0.3s; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
         .stella:hover svg { transform: scale(1.8); }
         .stella:hover polygon { fill: #e21118; stroke: #fff; }
@@ -116,23 +82,24 @@
 <body>
 
 <div id="ui-container">
-  <div id="filter-bar">
-    <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
-    
-    <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
-    
-    <span style="color: rgba(0,0,0,0.2);">|</span>
-    
-    <input type="text" id="search-theme" placeholder="Temi (es. staffetta, lager)..." oninput="filtraTematico()" style="color: #e67e22 !important;">
-    
-    <span style="color: rgba(0,0,0,0.2);">|</span>
-
-    <input type="text" id="search-city" placeholder="Città (50km)..." oninput="filtra('city')">
-    
-    <select id="filtro-regione" onchange="filtraRegione()">
-        <option value="">Regione...</option>
-        <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
-    </select>
+    <div id="filter-bar">
+        <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; font-size:18px;">↺</button>
+        <input type="text" id="search-name" placeholder="Cerca Cognome..." oninput="filtra('name')">
+        
+        <span style="color: rgba(0,0,0,0.1);">|</span>
+        
+        <input type="text" id="search-theme" placeholder="Temi..." oninput="filtraTematico()" style="color: #e67e22 !important;">
+        
+        <span style="color: rgba(0,0,0,0.1);">|</span>
+        
+        <input type="text" id="search-city" placeholder="Città..." oninput="filtra('city')">
+        
+        <select id="filtro-regione" onchange="filtraRegione()">
+            <option value="">Regione...</option>
+            <option value="Abruzzo">Abruzzo</option><option value="Basilicata">Basilicata</option><option value="Calabria">Calabria</option><option value="Campania">Campania</option><option value="Emilia-Romagna">Emilia-Romagna</option><option value="Friuli Venezia Giulia">Friuli Venezia Giulia</option><option value="Lazio">Lazio</option><option value="Liguria">Liguria</option><option value="Lombardia">Lombardia</option><option value="Marche">Marche</option><option value="Molise">Molise</option><option value="Piemonte">Piemonte</option><option value="Puglia">Puglia</option><option value="Sardegna">Sardegna</option><option value="Sicilia">Sicilia</option><option value="Toscana">Toscana</option><option value="Trentino-Alto Adige">Trentino-Alto Adige</option><option value="Umbria">Umbria</option><option value="Valle d'Aosta">Valle d'Aosta</option><option value="Veneto">Veneto</option>
+        </select>
+    </div>
+    <div id="results-dropdown"></div>
 </div>
 
 <div id="map"></div>
@@ -144,29 +111,28 @@
         </div>
         <button onclick="closeDetails()" style="background:none; border:none; color:white; font-size:35px; cursor:pointer; line-height:1;">&times;</button>
     </div>
-   <div id="details-content">
-    <div class="side-social">
-        <a href="#" id="fb-share" class="social-btn" target="_blank">f</a>
-        <a href="#" id="wa-share" class="social-btn" target="_blank">w</a>
-        <a href="#" id="copy-link" class="social-btn">🔗</a>
-    </div>
-    
-    <div class="main-col">
-        <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
-        <div class="bio-box">
-            <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME</div>
-            <p id="text-bio"></p>
+    <div id="details-content">
+        <div class="side-social">
+            <a href="#" id="fb-share" class="social-btn" target="_blank">f</a>
+            <a href="#" id="wa-share" class="social-btn" target="_blank">w</a>
+            <a href="#" id="copy-link" class="social-btn">🔗</a>
         </div>
-        <div class="mobile-socials">
-            <a href="#" id="fb-share-m" class="social-btn" target="_blank">f</a>
-            <a href="#" id="wa-share-m" class="social-btn" target="_blank">w</a>
-            <a href="#" id="copy-link-m" class="social-btn">🔗</a>
+        <div class="main-col">
+            <div class="video-box"><iframe id="vimeo-player" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe></div>
+            <div class="bio-box">
+                <div id="label-nome" style="background:#000; color:#fff; display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; margin-bottom:10px;">NOME</div>
+                <p id="text-bio"></p>
+            </div>
+            <div class="mobile-socials">
+                <a href="#" id="fb-share-m" class="social-btn" target="_blank">f</a>
+                <a href="#" id="wa-share-m" class="social-btn" target="_blank">w</a>
+                <a href="#" id="copy-link-m" class="social-btn">🔗</a>
+            </div>
         </div>
-    </div>
-
-    <div class="side-rel">
-        <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:8px; color:#000; letter-spacing:1px;">CORRELATI</div>
-        <div id="box-rel"></div>
+        <div class="side-rel">
+            <div style="font-size:10px; font-weight:800; opacity:0.6; margin-bottom:8px; color:#000; letter-spacing:1px;">CORRELATI</div>
+            <div id="box-rel"></div>
+        </div>
     </div>
 </div>
 
@@ -198,12 +164,10 @@
                 return clean;
             });
             caricaMarker(); 
-
-            // LOGICA APERTURA DA LINK ESTERNO
             const urlParams = new URLSearchParams(window.location.search);
             const pNome = urlParams.get('p');
             if (pNome) {
-                const found = database.find(x => x.nominativo.toLowerCase() === decodeURIComponent(pNome).toLowerCase());
+                const found = database.find(x => x.nominativo?.toLowerCase() === decodeURIComponent(pNome).toLowerCase());
                 if (found) setTimeout(() => apri(found.nominativo), 1200);
             }
         }
@@ -217,7 +181,7 @@
             if (!filtroFn || filtroFn(d)) {
                 const lat = parseFloat(d.lat?.replace(',','.'));
                 const lon = parseFloat(d.lon?.replace(',','.'));
-                if (!isNaN(lat)) {
+                if (!isNaN(lat) && !isNaN(lon)) {
                     let m = L.marker([lat, lon], { icon: stellaIcon });
                     m.bindTooltip(d.nominativo, { className: 'leaflet-tooltip-custom', direction: 'top', offset: [0, -10] });
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
@@ -236,7 +200,7 @@
         if (val.length < 3) { drop.style.display = 'none'; return; }
 
         if (tipo === 'name') {
-            let filtrati = database.filter(d => d.nominativo.toLowerCase().includes(val)).slice(0, 15);
+            let filtrati = database.filter(d => d.nominativo?.toLowerCase().includes(val)).slice(0, 15);
             drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
             drop.style.display = 'block';
         } else {
@@ -261,67 +225,45 @@
             }, 600);
         }
     }
+
+    // NUOVA FUNZIONE: Ricerca Tematica
     function filtraTematico() {
         const val = document.getElementById('search-theme').value.toLowerCase().trim();
         const drop = document.getElementById('results-dropdown');
+        if (val.length < 3) { drop.style.display = 'none'; caricaMarker(); return; }
         
-        if (val.length < 3) { 
-            drop.style.display = 'none'; 
-            caricaMarker(); 
-            return; 
-        }
-
-        let filtrati = database.filter(d => {
-            const contenuto = d.scheda ? d.scheda.toLowerCase() : "";
-            return contenuto.includes(val);
-        }).slice(0, 20);
-
+        let filtrati = database.filter(d => (d.scheda || "").toLowerCase().includes(val)).slice(0, 20);
         if (filtrati.length > 0) {
-            caricaMarker(d => {
-                const contenuto = d.scheda ? d.scheda.toLowerCase() : "";
-                return contenuto.includes(val);
-            }, true);
-
+            caricaMarker(d => (d.scheda || "").toLowerCase().includes(val), true);
             drop.innerHTML = `<div style="padding:10px; font-size:10px; color:#e67e22; font-weight:800; border-bottom:1px solid #eee;">RISULTATI TEMATICI</div>` + 
-                filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small style="font-weight:400;">(${d.regione})</small></div>`).join('');
+                filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b> <small>(${d.regione})</small></div>`).join('');
             drop.style.display = 'block';
-        } else {
-            drop.style.display = 'none';
-            markers.clearLayers();
-        }
+        } else { drop.style.display = 'none'; markers.clearLayers(); }
     }
 
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         const drop = document.getElementById('results-dropdown');
         if(!reg) { drop.style.display = 'none'; caricaMarker(); return; }
-        caricaMarker(d => d.regione.toLowerCase() === reg.toLowerCase(), true);
-        let filtrati = database.filter(d => d.regione.toLowerCase() === reg.toLowerCase());
+        caricaMarker(d => d.regione?.toLowerCase() === reg.toLowerCase(), true);
+        let filtrati = database.filter(d => d.regione?.toLowerCase() === reg.toLowerCase()).slice(0,20);
         drop.innerHTML = filtrati.map(d => `<div class="res-item" onclick="apri('${d.nominativo.replace(/'/g, "\\'")}')"><b>${d.nominativo}</b></div>`).join('');
         drop.style.display = 'block';
     }
 
     function apri(nome) {
-        if (!nome || !database.length) return;
         const d = database.find(x => x.nominativo === nome);
         if(!d) return;
-        
         document.getElementById('results-dropdown').style.display = 'none';
         openDetails(d);
-        
-        // Verifica che le coordinate esistano prima di spostare la mappa
-        const lat = parseFloat(d.lat?.replace(',','.'));
-        const lon = parseFloat(d.lon?.replace(',','.'));
-        if (!isNaN(lat) && !isNaN(lon)) {
-            map.flyTo([lat, lon], 14);
-        }
+        const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
+        if(!isNaN(lat)) map.flyTo([lat, lon], 14);
     }
 
     function openDetails(d) {
-        if (!d) return;
-        document.getElementById('h-nome').innerText = d.nominativo || "";
-        document.getElementById('h-reg').innerText = d.regione || "";
-        document.getElementById('label-nome').innerText = d.nominativo || "";
+        document.getElementById('h-nome').innerText = d.nominativo;
+        document.getElementById('h-reg').innerText = d.regione;
+        document.getElementById('label-nome').innerText = d.nominativo;
         document.getElementById('text-bio').innerText = d.scheda || "";
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}` : "";
         
@@ -329,18 +271,14 @@
         const fbURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
         const waURL = `https://api.whatsapp.com/send?text=${encodeURIComponent("Video intervista: " + d.nominativo + " " + shareURL)}`;
         
-        document.getElementById('fb-share').href = fbURL;
-        document.getElementById('wa-share').href = waURL;
-        document.getElementById('fb-share-m').href = fbURL;
-        document.getElementById('wa-share-m').href = waURL;
+        document.getElementById('fb-share').href = fbURL; document.getElementById('wa-share').href = waURL;
+        document.getElementById('fb-share-m').href = fbURL; document.getElementById('wa-share-m').href = waURL;
 
         const copyFn = (e) => { e.preventDefault(); navigator.clipboard.writeText(shareURL); alert("Link copiato!"); };
-        document.getElementById('copy-link').onclick = copyFn;
-        document.getElementById('copy-link-m').onclick = copyFn;
+        document.getElementById('copy-link').onclick = copyFn; document.getElementById('copy-link-m').onclick = copyFn;
 
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 10);
         document.getElementById('box-rel').innerHTML = rel.map(r => `<div class="rel-item" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</div>`).join('');
-        
         document.getElementById('details-panel').classList.add('open');
     }
 
@@ -349,18 +287,7 @@
         setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500);
     }
 
-    // Questo assicura che il click sulla mappa chiuda tutto correttamente
-    map.on('click', function() { 
-        closeDetails(); 
-        document.getElementById('results-dropdown').style.display = 'none'; 
-    });
-
     map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
-
-
-
-
-
