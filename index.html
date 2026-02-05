@@ -232,12 +232,16 @@
     function flyDolce(target, zoom = 12) { map.flyTo(target, zoom, { duration: 2.5, easeLinearity: 0.1 }); }
 
     function caricaMarker(filtroFn = null, fit = false) {
-        markers.clearLayers();
+        markers.clearLayers(); // Svuota i cluster
         let bounds = L.latLngBounds();
         let hasData = false;
+
         database.forEach(d => {
+            // Se non c'è filtro, o se il dato passa il filtro
             if (!filtroFn || filtroFn(d)) {
-                const lat = parseFloat(d.lat?.replace(',','.')), lon = parseFloat(d.lon?.replace(',','.'));
+                const lat = parseFloat(d.lat?.replace(',','.'));
+                const lon = parseFloat(d.lon?.replace(',','.'));
+                
                 if (!isNaN(lat) && !isNaN(lon)) {
                     let m = L.marker([lat, lon], { icon: stellaIcon });
                     m.bindTooltip(`<b>${d.nominativo}</b>`, { className: 'leaflet-tooltip-custom', direction: 'top', offset: [0, -10] });
@@ -248,7 +252,14 @@
                 }
             }
         });
-        if (hasData && fit) map.flyToBounds(bounds, {padding: [100,100], duration: 2.5});
+
+        // Se abbiamo filtrato qualcosa e vogliamo centrare la vista
+        if (hasData && fit) {
+            map.flyToBounds(bounds, {padding: [50, 50], duration: 2});
+        } else if (!hasData && filtroFn) {
+            // Se il filtro non trova nulla, resetta la vista o avvisa
+            console.log("Nessun risultato trovato per il filtro applicato.");
+        }
     }
 
     function openDetails(d) {
@@ -284,12 +295,12 @@
 
     function filtra(tipo) {
         clearTimeout(searchTimeout);
-        const vn = document.getElementById('search-name').value.toLowerCase();
-        const vt = document.getElementById('search-theme').value.toLowerCase();
-        const vc = document.getElementById('search-city').value.toLowerCase();
+        const vn = document.getElementById('search-name').value.toLowerCase().trim();
+        const vt = document.getElementById('search-theme').value.toLowerCase().trim();
+        const vc = document.getElementById('search-city').value.toLowerCase().trim();
         
         searchTimeout = setTimeout(() => {
-            // 1. RICERCA PER CITTÀ (Geocoding)
+            // Caso CITTÀ
             if (tipo === 'city' && vc.length >= 3) {
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${vc},Italy&limit=1`)
                 .then(r => r.json()).then(data => { 
@@ -301,6 +312,25 @@
                 });
                 return;
             } 
+
+            // Caso NOME e TEMI
+            let filtrati = database.filter(d => {
+                const matchNome = vn === "" || d.nominativo.toLowerCase().includes(vn);
+                const matchTema = vt === "" || (d.scheda && d.scheda.toLowerCase().includes(vt));
+                return matchNome && matchTema;
+            });
+
+            // Aggiorna i marker sulla mappa in tempo reale
+            caricaMarker(d => filtrati.includes(d), false);
+
+            // Mostra dropdown solo per il nome
+            if (vn.length >= 2) {
+                updateDropdown(filtrati.slice(0, 25));
+            } else {
+                document.getElementById('results-dropdown').style.display = 'none';
+            }
+        }, 600);
+    }
 
             // 2. FILTRO COMBINATO (Mappa + Dropdown)
             let filtrati = database.filter(d => {
@@ -334,11 +364,14 @@
     function filtraRegione() {
         const reg = document.getElementById('filtro-regione').value;
         document.getElementById('results-dropdown').style.display = 'none';
-        // Reset dei campi testo per chiarezza
+        
+        // Svuota le ricerche testuali quando usi il menu a tendina
         document.getElementById('search-name').value = "";
         document.getElementById('search-theme').value = "";
+        document.getElementById('search-city').value = "";
         
-        caricaMarker(reg ? d => d.regione.toLowerCase() === reg.toLowerCase() : null, !!reg);
+        // Filtro con tolleranza per maiuscole/minuscole
+        caricaMarker(reg ? d => d.regione.trim().toLowerCase() === reg.toLowerCase() : null, !!reg);
     }
 
     function applicaFiltroDistanza(centro) {
@@ -407,5 +440,6 @@
 </script>
 </body>
 </html>
+
 
 
