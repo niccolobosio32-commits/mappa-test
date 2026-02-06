@@ -11,82 +11,107 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
    <style>
-        :root { 
-            --navy: #1a2a3a; 
-            --blue: #3498db; 
-            --glass: rgba(255, 255, 255, 0.4); 
-            --red: #e21118; 
-            --yellow: #ffcc00; 
-        }
+    :root { 
+        --navy: #1a2a3a; 
+        --blue: #3498db; 
+        --glass: rgba(255, 255, 255, 0.4); 
+        --red: #e21118; 
+        --yellow: #ffcc00; 
+    }
 
-        .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
-        .msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
-        .msg-ai.finished:after { content: ''; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    /* Animazione AI */
+    .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
+    .msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
+    .msg-ai.finished:after { content: ''; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
-        #map { width: 100%; height: 100%; position: absolute; z-index: 1; background: #f0f0f0; }
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
 
-        #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
-        #filter-bar { 
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-            display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
-        }
-        #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
-        #results-dropdown { 
-            background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 9999; /* Per essere sicuro che stia sopra tutto */
-border: 1px solid rgba(0,0,0,0.1);
-        }
-        .res-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
-        .res-item:hover { background: var(--blue); color: white; }
+    /* FIX MAPPA: position fixed e 100% risolvono il bug del bianco su mobile */
+    #map { 
+        width: 100%; 
+        height: 100%; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        z-index: 1; 
+        background: #f0f0f0; 
+    }
 
+    /* UI Superiore */
+    #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
+    #filter-bar { 
+        background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+        display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
+    }
+    #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
+    
+    #results-dropdown { 
+        background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
+        display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
+    }
+    .res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
+    .res-item:hover { background: var(--blue); color: white; }
+
+    /* PANNELLO DETTAGLI (PC) */
+    #details-panel { 
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
+        width: 94%; max-width: 1100px; z-index: 4000; 
+        background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
+        transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
+        border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
+        display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+        max-height: 85vh;
+    }
+    #details-panel.open { transform: translate(-50%, -50%); }
+    #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    #details-content { display: flex; overflow: hidden; flex: 1; }
+    .main-col { flex: 1; overflow-y: auto; }
+    .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+    .bio-box { padding: 10px 20px; line-height: 1.3; }
+    #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; padding-bottom: 20px; }
+
+    /* Sidebar Relati */
+    .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
+    .rel-item { padding: 6px 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 11px; margin-bottom: 4px; cursor: pointer; font-weight: 600; }
+
+    /* Social */
+    .social-box { display: flex; justify-content: center; gap: 15px; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
+    .social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
+    .social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
+
+    /* AI CHAT UI */
+    #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
+    #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+    #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
+    .msg-user { background: var(--blue); color: white; align-self: flex-end; }
+
+    /* 📱 OTTIMIZZAZIONE MOBILE */
+    @media screen and (max-width: 768px) {
         #details-panel { 
-            position: absolute; top: 55%; left: 50%; transform: translate(-50%, 160%); 
-            width: 94%; max-width: 1100px; z-index: 4000; 
-            background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
-            transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1); 
-            border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
-            display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
-            max-height: 85vh;
+            width: 100% !important; 
+            height: 85vh !important; 
+            position: fixed !important; 
+            bottom: -100% !important; 
+            top: auto !important; 
+            left: 0 !important; 
+            transform: none !important; 
+            border-radius: 25px 25px 0 0 !important; 
+            transition: bottom 0.5s ease !important; 
+            z-index: 9999; 
         }
-        #details-panel.open { transform: translate(-50%, -50%); }
-        #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; }
-        #details-content { display: flex; overflow: hidden; flex: 1; height: 100%; }
-        .main-col { flex: 1; overflow-y: auto; }
-        .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .bio-box { padding: 10px 25px; line-height: 1.3; }
-        #text-bio { font-family: 'Lora', serif; font-size: 16px; color: #000; margin: 0; padding-bottom: 30px; }
-
-        .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between; }
-        .rel-item { padding: 8px; background: rgba(255,255,255,0.4); border-radius: 10px; font-size: 11px; margin-bottom: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .rel-item:hover { background: var(--blue); color: white; }
-        
-        .social-box { display: flex; flex-direction: row; justify-content: center; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
-        .social-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
-        .social-btn:hover { background: var(--blue); transform: translateY(-3px); border-color: white; }
-        .social-btn svg { width: 18px; height: 18px; fill: #1a2a3a; }
-        .social-btn:hover svg { fill: white; }
-
-        #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
-        #ai-chat-window { position: absolute; bottom: 95px; right: 25px; z-index: 6000; width: 320px; height: 400px; background: white; border-radius: 20px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
-        #ai-chat-messages { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
-        .msg-user { background: var(--blue); color: white; align-self: flex-end; }
-       
-        @media screen and (max-width: 768px) {
-            #details-panel { width: 100% !important; height: 85vh !important; position: fixed !important; bottom: -100% !important; top: auto !important; left: 0 !important; transform: none !important; border-radius: 25px 25px 0 0 !important; transition: bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1) !important; z-index: 9999; }
-            #details-panel.open { bottom: 0 !important; }
-            #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
-            .video-box { position: sticky; top: 0; z-index: 10; min-height: 210px; background: #000; }
-            .main-col { overflow-y: visible !important; }
-            .bio-box { padding: 15px 20px !important; }
-            #text-bio { font-size: 15px !important; }
-            .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 20px !important; padding-bottom: 100px !important; }
-            #ai-chat-window { width: 90% !important; left: 5% !important; height: 60vh !important; bottom: 80px !important; top: auto !important; }
-        }
-    </style>
+        #details-panel.open { bottom: 0 !important; }
+        #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
+        .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
+        .main-col { overflow-y: visible !important; }
+        .bio-box { padding: 10px 15px !important; }
+        #text-bio { font-size: 15px !important; }
+        .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
+        #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
+    }
+</style>
 </head>
 <body>
 
@@ -152,9 +177,20 @@ border: 1px solid rgba(0,0,0,0.1);
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <script>
-    let map = L.map('map', {zoomControl: false}).setView([42.0, 12.5], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let map = L.map('map', { 
+    zoomControl: false,
+    tap: false // Disabilita il 'tap' di Leaflet che spesso crea conflitti su mobile
+}).setView([42.0, 12.5], 6);
 
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+// FIX PER MOBILE: Forza il ricalcolo della dimensione dopo mezzo secondo
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 500);
+});
     const stellaIcon = L.divIcon({
         className: 'stella',
         html: `<svg width="32" height="32" viewBox="0 0 100 100"><polygon points="50,5 61,39 98,39 68,60 79,94 50,74 21,94 32,60 2,39 39,39" fill="#e21118" stroke="#fff" stroke-width="3"/></svg>`,
@@ -332,119 +368,101 @@ border: 1px solid rgba(0,0,0,0.1);
     }
 
    /* --- CHAT AI (CON GEMINI 2.5 FLASH) --- */
-    async function sendAIMessage() {
-        const key = localStorage.getItem('gemini_key') || prompt("API Key:");
-        if (!key) return; localStorage.setItem('gemini_key', key);
-        const input = document.getElementById('ai-chat-input');
-        const box = document.getElementById('ai-chat-messages');
-        const userText = input.value.trim();
-        if (!userText) return;
+async function sendAIMessage() {
+    const key = localStorage.getItem('gemini_key') || prompt("API Key:");
+    if (!key) return; localStorage.setItem('gemini_key', key);
+    const input = document.getElementById('ai-chat-input');
+    const box = document.getElementById('ai-chat-messages');
+    const userText = input.value.trim();
+    if (!userText) return;
 
-        box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
-        input.value = "";
-        const aiMsgId = "ai-" + Date.now();
-        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">...</div>`;
-        const aiMsgElement = document.getElementById(aiMsgId);
-        box.scrollTop = box.scrollHeight;
+    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+    input.value = "";
+    const aiMsgId = "ai-" + Date.now();
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">...</div>`;
+    const aiMsgElement = document.getElementById(aiMsgId);
+    box.scrollTop = box.scrollHeight;
 
-        try {
-            const q = userText.toLowerCase();
+    try {
+        const q = userText.toLowerCase();
 
-            // --- PUNTO 5: ESPANSIONE SEMANTICA AVANZATA ---
-            const concettiStorici = {
-                "linea gotica": ["appennino", "fronte", "1944", "ritirata", "futa", "marzabotto", "montagna", "fortificazioni", "massa", "pesaro"],
-                "staffette": ["donne", "comunicazione", "messaggi", "bicicletta", "collegamento", "informazioni", "nido", "viveri", "gappiste"],
-                "gap": ["urbana", "città", "sabotaggio", "gappisti", "clandestinità", "esplosivo", "attentato", "sap"],
-                "eccidi": ["strage", "rappresaglia", "civili", "fucilazione", "tedeschi", "ss", "marzabotto", "sant'anna", "vittime"],
-                "liberazione": ["aprile", "insurrezione", "cln", "1945", "clnai", "resa"],
-                "vita clandestina": ["falso", "nome di battaglia", "rifugio", "nascosto", "copertura", "identità"],
-                "repressione": ["tortura", "arresto", "carcere", "deportazione", "militi", "fascisti", "brigata nera"]
-            };
+        // 1. FILTRO INIZIALE (Cerca corrispondenze dirette)
+        let f = database.filter(d => {
+            return d.nominativo.toLowerCase().includes(q) || 
+                   (d.scheda && d.scheda.toLowerCase().includes(q)) || 
+                   (d.regione && d.regione.toLowerCase().includes(q)) || 
+                   (d.città_nascita && d.città_nascita.toLowerCase().includes(q));
+        });
 
-            let terminiRicerca = [q];
-            for (let concetto in concettiStorici) {
-                if (q.includes(concetto)) terminiRicerca = [...terminiRicerca, ...concettiStorici[concetto]];
-            }
-
-            // FILTRO
-            let f = database.filter(d => {
-                const testo = (d.nominativo + " " + (d.scheda || "") + " " + d.regione + " " + d.città_nascita).toLowerCase();
-                return terminiRicerca.some(t => testo.includes(t));
-            });
-
-            // ESPANSIONE REGIONALE
-            const regioniItalia = ["abruzzo", "basilicata", "calabria", "campania", "emilia-romagna", "friuli venezia giulia", "lazio", "liguria", "lombardia", "marche", "molise", "piemonte", "puglia", "sardegna", "sicilia", "toscana", "trentino-alto adige", "umbria", "valle d'aosta", "veneto"];
+        // ============================================================
+        // 2. ESPANSIONE GEOGRAFICA INTELLIGENTE (SOSTITUITO QUI)
+        // ============================================================
+        if (f.length < 20) {
+            const regioniItalia = [
+                "abruzzo", "basilicata", "calabria", "campania", "emilia", "romagna", 
+                "friuli", "lazio", "liguria", "lombardia", "marche", "molise", 
+                "piemonte", "puglia", "sardegna", "sicilia", "toscana", "trentino", 
+                "umbria", "valle d'aosta", "veneto"
+            ];
+            
             const regTrovata = regioniItalia.find(r => q.includes(r));
-            if (f.length < 15) {
-                if (regTrovata) f = database.filter(d => d.regione.toLowerCase().includes(regTrovata));
-                else if (f.length > 0) f = database.filter(d => d.regione.toLowerCase().includes(f[0].regione.toLowerCase()));
-            }
-
-            // --- PUNTO 1 & 4: CONTESTO E CRONOLOGIA ---
-            const context = f.slice(0, 150).map(d => 
-                `{NOME: "${d.nominativo}", LUOGO: "${d.città_nascita} (${d.regione})", BIO: "${(d.scheda || "").substring(0, 800)}"}`
-            ).join("\n");
-
-            // --- CHIAMATA AI ---
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-            // --- CHIAMATA AI BLINDATA (CONTESTO STORICO E TEMATICO) ---
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ 
-                            text: `Sei l'Archivista Ufficiale del Progetto Memoria Partigiana.
             
-                            IL TUO SCOPO: Rispondere ESCLUSIVAMENTE a domande sulla Resistenza italiana, sulla Seconda Guerra Mondiale e sui partigiani presenti nel database.
-
-                            REGOLE DI COMPORTAMENTO:
-                            1. SE LA DOMANDA È FUORI TEMA (es. cucina, attualità, sport, programmazione): rispondi esattamente: "Sono un archivista specializzato nella storia della Resistenza. Posso aiutarti solo con ricerche inerenti l'archivio dei partigiani e il contesto storico della liberazione."
-                            2. NO PREAMBOLI: Inizia subito con l'analisi.
-                            3. PERCORSI TEMATICI E CITAZIONI: Ogni volta che un profilo nei DATI forniti ha una connessione con la domanda, DEVI citarlo usando [[Nome Cognome]]. Non limitarti a citarne uno, includi tutti quelli pertinenti trovati nel contesto.
-                            4. ORDINE CRONOLOGICO: Organizza i partigiani citati secondo una linea temporale se la domanda lo permette.
-                            5. MAPPA ATTIVA: Il formato [[Nome Cognome]] è obbligatorio per ogni partigiano menzionato che sia presente nei dati forniti.
-                            6. PRIORITÀ AL DATABASE: Rispondi usando prioritariamente le informazioni biografiche contenute nei DATI. Usa la tua conoscenza storica solo per fare da collante tra le varie biografie.
-
-                            DATI ARCHIVIO PER QUESTA RICERCA: 
-                            ${context}
-
-                            DOMANDA UTENTE: "${userText}"` 
-                        }] 
-                    }],
-                    generationConfig: {
-                        temperature: 0.2, // Più precisione storica, meno "fantasia"
-                        topP: 0.8,
-                        maxOutputTokens: 1000,
-                    }
-                })
-            });
-
-            const data = await response.json();
-            let aiText = data.candidates[0].content.parts[0].text;
-            
-            aiMsgElement.innerText = "";
-            let words = aiText.split(/(\s+)/), i = 0, full = "";
-            function digita() {
-                if (i < words.length) {
-                    full += words[i++];
-                    aiMsgElement.innerHTML = full.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                        .replace(/\[\[(.*?)\]\]/g, (m, n) => `<b style="color:#3498db;cursor:pointer;text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`)
-                        .replace(/\n/g, '<br>');
-                    box.scrollTop = box.scrollHeight;
-                    setTimeout(digita, words[i-1]?.length > 1 ? 15 : 40); 
-                } else { aiMsgElement.classList.add('finished'); }
+            if (regTrovata) {
+                // Se l'utente ha citato una regione, carica i partigiani di quella regione
+                f = database.filter(d => d.regione.toLowerCase().includes(regTrovata));
+            } else {
+                // Se non trova match e non c'è una regione esplicita (es. "Casalecchio")
+                // passiamo comunque un campione del database (es. i primi 80) 
+                // così l'IA può cercare tra quelli se ci sono collegamenti geografici
+                f = database.slice(0, 80); 
             }
-            digita();
-
-        } catch (e) { 
-            aiMsgElement.innerText = "Errore di connessione o API Key errata."; 
-            console.error(e);
         }
-    }
+        // ============================================================
+
+        // 3. PREPARAZIONE CONTESTO (Dati per Gemini)
+        const context = f.slice(0, 100).map(d => 
+            `[NOME: ${d.nominativo} | LOC: ${d.città_nascita}, ${d.regione} | BIO: ${d.scheda.substring(0, 500)}]`
+        ).join("\n");
+
+        // 4. CHIAMATA A GEMINI
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: `Agisci come Archivista Storico. 
+                    REGOLE:
+                    1. NO WIKIPEDIA: Usa SOLO i dati forniti.
+                    2. GEOGRAFIA: Se l'utente cita un luogo (es. Casalecchio) e non lo trovi nei dati, usa la tua conoscenza per collegarlo alle città vicine presenti nei dati (es. Bologna).
+                    3. RELAZIONI: Trova legami tra persone, brigate e periodi storici.
+                    4. LINK: Scrivi i nomi come [[Nome Cognome]] per renderli cliccabili.
+                    
+                    Domanda: "${userText}"
+                    Dati: 
+                    ${context}` 
+                }] }] 
+            })
+        });
+
+        const data = await response.json();
+        let aiText = data.candidates[0].content.parts[0].text;
+
+        // Effetto scrittura e rendering link
+        aiMsgElement.innerText = "";
+        let words = aiText.split(/(\s+)/), i = 0, full = "";
+        function digita() {
+            if (i < words.length) {
+                full += words[i++];
+                aiMsgElement.innerHTML = full.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                    .replace(/\[\[(.*?)\]\]/g, (m, n) => `<b style="color:#3498db;cursor:pointer;text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</b>`)
+                    .replace(/\n/g, '<br>');
+                box.scrollTop = box.scrollHeight;
+                setTimeout(digita, 20);
+            }
+        }
+        digita();
+
+    } catch (e) { aiMsgElement.innerText = "Errore di connessione."; }
+}
 
     // Gestione click mappa per chiudere tutto
     map.on('click', () => { 
@@ -454,7 +472,6 @@ border: 1px solid rgba(0,0,0,0.1);
 </script>
 </body>
 </html>
-
 
 
 
