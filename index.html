@@ -597,47 +597,32 @@ function getDist(lat1, lon1, lat2, lon2) {
 
         pBar.style.width = '50%';
 
-        // Formattazione del "Faldone" per il Prompt (Massimo 80 record per non saturare l'AI)
+  // 1. Formattazione del "Faldone" per il Prompt
         const context = contextRecords.slice(0, 80).map(d => {
             const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
             return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${miniBio}...]`;
         }).join("\n");
-        // 2. AGGIUNGI QUESTO SUBITO SOTTO (Il nuovo blocco per il libro)
-        const paroleChiave = originalText.toLowerCase().split(' ').filter(p => p.length > 4);
+
+        // 2. Ricerca nel Libro (Versione Pulita e Sicura)
+        const paroleChiave = originalText.toLowerCase().split(/\s+/).filter(p => p.length > 4);
         let estrattiLibro = "";
 
-// LOG DI CONTROLLO 1: Vediamo se il file è collegato
-console.log("Stato caricamento TESTO_LIBRO:", typeof TESTO_LIBRO !== 'undefined' ? "CARICATO" : "NON TROVATO");
-
-if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
-    // PULIZIA INTELLIGENTE:
-    // 1. Trasformiamo i doppi invii a capo (paragrafi) in un simbolo speciale ###
-    // 2. Eliminiamo i singoli invii a capo (quelli che spezzano le frasi a metà)
-    // 3. Dividiamo per ### per ottenere i blocchi di testo interi
-    const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###") 
-                                   .replace(/\n/g, " ")       
-                                   .split("###");
-
-    // Cerchiamo le parole chiave nei blocchi "stirati"
-    const trovati = testoPulito.filter(p => 
-        paroleChiave.some(word => p.toLowerCase().includes(word))
-    ).slice(0, 5); // Ne prendiamo 5 (che ora sono paragrafi lunghi, non singole righe)
-    
-    estrattiLibro = trovati.join('\n\n[---]\n\n');
-
-    // LOG DI CONTROLLO 2: Ora vedrai paragrafi veri in console
-    console.log("Parole cercate:", paroleChiave);
-    console.log("Blocchi corposi trovati nel libro:", trovati);
-}
-        if (paroleChiave.length > 0) {
-            // Cerca nel libro caricato dal file esterno
-            const paragrafiLibro = TESTO_LIBRO.split('\n');
-            const trovati = paragrafiLibro.filter(p => 
-                paroleChiave.some(word => p.toLowerCase().includes(word))
-            ).slice(0, 10); 
+        if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
+            console.log("Ricerca nel libro in corso per:", paroleChiave);
             
-            estrattiLibro = trovati.join('\n\n');
+            // Pulizia dei paragrafi
+            const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###")
+                                           .replace(/\n/g, " ")
+                                           .split("###");
+
+            const trovati = testoPulito.filter(p => 
+                paroleChiave.some(word => p.toLowerCase().includes(word))
+            ).slice(0, 5); 
+            
+            estrattiLibro = trovati.join('\n\n[---]\n\n');
+            console.log("Blocchi trovati:", trovati.length);
         }
+
         pBar.style.width = '70%';
         pBar.classList.add('progress-active');
 
@@ -751,6 +736,7 @@ Domanda Utente: "${originalText}"
 </script>
 </body>
 </html>
+
 
 
 
