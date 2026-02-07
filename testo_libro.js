@@ -3,16 +3,6 @@ Noi, Partigiani
 Memoriale della Resistenza italiana
 A cura di Gad Lerner e Laura Gnocchi
 Prefazione di Carla Nespolo
-© Giangiacomo Feltrinelli Editore Milano
-Prima edizione digitale 2020
-da prima edizione in “Varia”
-aprile 2020
-ISBN ebook: 9788858840399
-Quest’opera è protetta dalla legge sul diritto d’autore.
-È vietata ogni duplicazione, anche parziale, non autorizzata.
-Prefazione
-di Carla Nespolo
-Presidente nazionale Anpi
 Questo volume nasce da un progetto di ricerca storica e d’impegno
 morale degli amici giornalisti Laura Gnocchi e Gad Lerner, a cui l’Anpi
 nazionale ha immediatamente aderito, mettendo a disposizione dei
@@ -8525,12 +8515,4 @@ WRONOVSKI LAURA, Milano 1924
 ZANIN LINO, Castions di Zoppola (PN) 1923
 ZANOBETTI DINO, Alessandria d’Egitto 1919
 ZITO BRUNO, Trento 1922
-ZOCCA GABRIELLA, Bologna 1926
-Ringraziamenti
-Il nostro ringraziamento va a tutti i volontari, giornalisti, attivisti,
-fotografi, videomaker, cittadini, membri dell’Anpi che hanno permesso di
-realizzare queste interviste. Un grazie particolare ai responsabili delle
-strutture territoriali dell’Anpi che ci hanno messo in contatto e spesso
-accompagnato dagli ex partigiani e partigiane; a Caterina Teoldi e Irina
-Galli di Moovie Film Service Company che ci hanno permesso di partire, a
-Donatella Alfonso, Stefano Moretti, Walter Montella, Vittorio Ragone.`;
+ZOCCA GABRIELLA, Bologna 1926;
