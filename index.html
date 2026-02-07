@@ -717,21 +717,20 @@ Domanda Utente: "${originalText}"`
                 tempDiv.innerHTML = formattedText;
                 
                 const walk = (node) => {
-                    if (node.nodeType === 3) { // Solo nodi di testo puro
-                        const text = node.nodeValue;
-                        // Controlliamo se la regex trova il nome ma non come parte di un luogo "San..."
-                        if (regex.test(text)) {
-                            const wrapper = document.createElement('span');
-                            // Eseguiamo la sostituzione reale togliendo le quadre se presenti
-                            wrapper.innerHTML = text.replace(regex, linkHTML);
-                            node.parentNode.replaceChild(wrapper, node);
-                        }
-                   } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-                        // Rimosso il blocco su LIBRO-NARRATO e LIBRO-CITAZIONE
-                        // Ora la funzione entra ovunque per cercare i nomi
-                        Array.from(node.childNodes).forEach(walk);
-                    }
-                };
+    if (node.nodeType === 3) { // Nodo di testo
+        const text = node.nodeValue;
+        if (regex.test(text)) {
+            const wrapper = document.createElement('span');
+            // La regex toglierà le doppie quadre [[ ]] e metterà il link
+            wrapper.innerHTML = text.replace(regex, linkHTML);
+            node.parentNode.replaceChild(wrapper, node);
+        }
+    } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
+        // Entriamo in TUTTI i tag, inclusi quelli del libro. 
+        // L'unica eccezione è non entrare nei link già creati.
+        Array.from(node.childNodes).forEach(walk);
+    }
+};
                 
                 walk(tempDiv);
                 formattedText = tempDiv.innerHTML;
@@ -760,6 +759,7 @@ Domanda Utente: "${originalText}"`
 </script>
 </body>
 </html>
+
 
 
 
