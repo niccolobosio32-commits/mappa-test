@@ -605,20 +605,29 @@ function getDist(lat1, lon1, lat2, lon2) {
         // 2. AGGIUNGI QUESTO SUBITO SOTTO (Il nuovo blocco per il libro)
         const paroleChiave = originalText.toLowerCase().split(' ').filter(p => p.length > 4);
         let estrattiLibro = "";
-        // LOG DI CONTROLLO 1: Vediamo se il file JS del libro è caricato
+
+// LOG DI CONTROLLO 1: Vediamo se il file è collegato
 console.log("Stato caricamento TESTO_LIBRO:", typeof TESTO_LIBRO !== 'undefined' ? "CARICATO" : "NON TROVATO");
 
 if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
-    const paragrafiLibro = TESTO_LIBRO.split('\n');
-    const trovati = paragrafiLibro.filter(p => 
-        paroleChiave.some(word => p.toLowerCase().includes(word))
-    ).slice(0, 10); 
-    
-    estrattiLibro = trovati.join('\n\n');
+    // PULIZIA INTELLIGENTE:
+    // 1. Trasformiamo i doppi invii a capo (paragrafi) in un simbolo speciale ###
+    // 2. Eliminiamo i singoli invii a capo (quelli che spezzano le frasi a metà)
+    // 3. Dividiamo per ### per ottenere i blocchi di testo interi
+    const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###") 
+                                   .replace(/\n/g, " ")       
+                                   .split("###");
 
-    // LOG DI CONTROLLO 2: Vediamo cosa stiamo mandando a Gemini
+    // Cerchiamo le parole chiave nei blocchi "stirati"
+    const trovati = testoPulito.filter(p => 
+        paroleChiave.some(word => p.toLowerCase().includes(word))
+    ).slice(0, 5); // Ne prendiamo 5 (che ora sono paragrafi lunghi, non singole righe)
+    
+    estrattiLibro = trovati.join('\n\n[---]\n\n');
+
+    // LOG DI CONTROLLO 2: Ora vedrai paragrafi veri in console
     console.log("Parole cercate:", paroleChiave);
-    console.log("Paragrafi trovati nel libro:", trovati);
+    console.log("Blocchi corposi trovati nel libro:", trovati);
 }
         if (paroleChiave.length > 0) {
             // Cerca nel libro caricato dal file esterno
@@ -742,6 +751,7 @@ Domanda Utente: "${originalText}"
 </script>
 </body>
 </html>
+
 
 
 
