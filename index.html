@@ -304,7 +304,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
+<script src="testo_libro.js"></script>
+<script src="tuo_script_mappa.js"></script>
 <script>
     // Inizializzazione Mappa con fix per Tap su Mobile
     let map = L.map('map', { 
@@ -601,7 +602,19 @@ function getDist(lat1, lon1, lat2, lon2) {
             const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
             return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${miniBio}...]`;
         }).join("\n");
-
+        // 2. AGGIUNGI QUESTO SUBITO SOTTO (Il nuovo blocco per il libro)
+        const paroleChiave = originalText.toLowerCase().split(' ').filter(p => p.length > 4);
+        let estrattiLibro = "";
+        
+        if (paroleChiave.length > 0) {
+            // Cerca nel libro caricato dal file esterno
+            const paragrafiLibro = TESTO_LIBRO.split('\n');
+            const trovati = paragrafiLibro.filter(p => 
+                paroleChiave.some(word => p.toLowerCase().includes(word))
+            ).slice(0, 10); 
+            
+            estrattiLibro = trovati.join('\n\n');
+        }
         pBar.style.width = '70%';
         pBar.classList.add('progress-active');
 
@@ -632,8 +645,13 @@ REGOLE COMPORTAMENTALI:
 7. INTEGRAZIONE KB ESTERNA: Se i dati forniti includono estratti di testo (Knowledge Base), usali esclusivamente per arricchire le biografie dei partigiani del CSV. Non produrre narrazioni storiche astratte; ancora ogni dettaglio del libro ai nomi [[Nome Cognome]] presenti nei fatti accertati, citando la fonte tra parentesi.
 
 Domanda Utente: "${originalText}" 
+
 Dati CSV Filtrati (Geograficamente Pertinenti): 
-${context}` 
+${context}
+
+ESTRATTI DAL LIBRO DI RIFERIMENTO (KNOWLEDGE BASE):
+${estrattiLibro || "Nessun dettaglio extra trovato nel libro per questa ricerca."}`
+
                     }] 
                 }] 
             })
@@ -710,6 +728,7 @@ ${context}`
 </script>
 </body>
 </html>
+
 
 
 
