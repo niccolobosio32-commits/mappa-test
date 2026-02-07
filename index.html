@@ -605,7 +605,21 @@ function getDist(lat1, lon1, lat2, lon2) {
         // 2. AGGIUNGI QUESTO SUBITO SOTTO (Il nuovo blocco per il libro)
         const paroleChiave = originalText.toLowerCase().split(' ').filter(p => p.length > 4);
         let estrattiLibro = "";
-        
+        // LOG DI CONTROLLO 1: Vediamo se il file JS del libro è caricato
+console.log("Stato caricamento TESTO_LIBRO:", typeof TESTO_LIBRO !== 'undefined' ? "CARICATO" : "NON TROVATO");
+
+if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
+    const paragrafiLibro = TESTO_LIBRO.split('\n');
+    const trovati = paragrafiLibro.filter(p => 
+        paroleChiave.some(word => p.toLowerCase().includes(word))
+    ).slice(0, 10); 
+    
+    estrattiLibro = trovati.join('\n\n');
+
+    // LOG DI CONTROLLO 2: Vediamo cosa stiamo mandando a Gemini
+    console.log("Parole cercate:", paroleChiave);
+    console.log("Paragrafi trovati nel libro:", trovati);
+}
         if (paroleChiave.length > 0) {
             // Cerca nel libro caricato dal file esterno
             const paragrafiLibro = TESTO_LIBRO.split('\n');
@@ -728,6 +742,7 @@ ${estrattiLibro || "Nessun dettaglio trovato."}`
 </script>
 </body>
 </html>
+
 
 
 
