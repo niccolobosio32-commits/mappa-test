@@ -726,12 +726,11 @@ Domanda Utente: "${originalText}"`
                             wrapper.innerHTML = text.replace(regex, linkHTML);
                             node.parentNode.replaceChild(wrapper, node);
                         }
-                    } else if (node.nodeType === 1 && 
-         node.className !== 'link-partigiano' && 
-         node.tagName !== 'LIBRO-NARRATO' && 
-         node.tagName !== 'LIBRO-CITAZIONE') {
-    Array.from(node.childNodes).forEach(walk);
-}
+                   } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
+                        // Rimosso il blocco su LIBRO-NARRATO e LIBRO-CITAZIONE
+                        // Ora la funzione entra ovunque per cercare i nomi
+                        Array.from(node.childNodes).forEach(walk);
+                    }
                 };
                 
                 walk(tempDiv);
@@ -761,6 +760,7 @@ Domanda Utente: "${originalText}"`
 </script>
 </body>
 </html>
+
 
 
 
