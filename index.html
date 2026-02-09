@@ -302,7 +302,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio 0.2</span>
+        <span>Assistente Archivio 0.3</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -555,7 +555,7 @@ function getDist(lat1, lon1, lat2, lon2) {
     try {
         let q = userText.toLowerCase();
         
-        // 1. FILTRO PERTINENZA (Geografica, Storica o Cronologica)
+        // 1. FILTRO PERTINENZA (Max 80 record, Bio 250ch)
         let matches = database.filter(d => {
             const ricercaTesto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return q.split(/\s+/).some(p => p.length > 3 && ricercaTesto.includes(p));
@@ -578,23 +578,18 @@ function getDist(lat1, lon1, lat2, lon2) {
                     parts: [{ 
                         text: `Agisci come Archivista Storico esperto 1943-45. 
                         
-                        REGOLE COMPORTAMENTALI (STILE PULITO):
-                        - Inizio immediato, no saluti.
-                        - SEZIONE 1: **FATTI ACCERTATI**. Scrivi in modo DISCORSIVO e fluido. 
-                        - IMPORTANTE: Non scrivere etichette come "REG:", "BIO:", "NOME:" o barre verticali. Integra le informazioni della bio e della regione direttamente nel testo.
-                        - Esempio corretto: "[[Mario Rossi]], nato in Sicilia e attivo in Piemonte, fu catturato nel..."
-                        - Usa le quadre [[Nome Cognome]] solo per i nomi presenti nei dati.
+                        STRUTTURA OBBLIGATORIA:
+                        1. **FATTI ACCERTATI**: Introduzione brevissima (max 2 righe). Poi un ELENCO PUNTATO con i nomi [[Nome Cognome]] e una sintesi estrema dei dati (regione/fatti). Ogni nome deve stare su una nuova riga.
+                        2. **PERCORSI E RELAZIONI**: Approfondimento sui legami logici, geografici (valli, comuni) e brigate.
+                        3. **INTEGRAZIONE LIBRO**: Usa i tag <libro-narrato> e <libro-citazione>.
                         
-                        REGOLE STORICHE:
-                        - Pari dignità (Principio Smuraglia): armata, civile e IMI sono identici.
-                        - Regione: 'Nascita / Operazione'. Usa cultura storica per valli e zone operative.
+                        REGOLE STORICHE: 
+                        - Pari dignità tra armata, civili e IMI.
+                        - Regione: 'Nascita / Operazione'. Usa cultura storica per valli.
 
-                        SEZIONE 2: **PERCORSI E RELAZIONI**. Ragionamento su legami e contesto.
-                        SEZIONE 3: **INTEGRAZIONE LIBRO**. Usa tag <libro-narrato> e <libro-citazione>.
-
-                        DATI CSV (Bio 250ch):
-                        ${matches.map(d => `Dato: ${d.nominativo}, ${d.regione}. Bio: ${d.scheda?.substring(0,250)}`).join("\n")}
-                        LIBRO: ${estrattiLibro || "Nessun dettaglio trovato."}
+                        DATI:
+                        ${matches.map(d => `${d.nominativo} (${d.regione}): ${d.scheda?.substring(0,250)}`).join("\n")}
+                        LIBRO: ${estrattiLibro}
                         DOMANDA: "${userText}"`
                     }] 
                 }] 
@@ -622,15 +617,16 @@ function getDist(lat1, lon1, lat2, lon2) {
             });
         }
 
-        // POST-PROCESSING GRAFICA E LINKER
+        // 2. POST-PROCESSING (GRAFICA DI IERI + LINKER)
         let html = fullText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-narrato>/g, '<div style="background:#f4f4f4; border-left:4px solid #7f8c8d; padding:10px; margin:10px 0; border-radius:4px; font-size:0.95em;">')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; border-radius:4px; color:#333;"><b>📜 APPROFONDIMENTO DAL LIBRO:</b><br>')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<blockquote style="font-style:italic; color:#2c3e50; border-left:4px solid #e67e22; padding:10px; margin:10px 0; background:#fffcf9;">')
-            .replace(/<\/libro-citazione>/g, '</blockquote>');
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50;"><b>💬 CITAZIONE DAL VOLUME:</b><br>"')
+            .replace(/<\/libro-citazione>/g, '"</div>');
 
+        // Linker Universale (Scansione finale per rendere cliccabile tutto)
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -650,6 +646,7 @@ function getDist(lat1, lon1, lat2, lon2) {
 </script>
 </body>
 </html>
+
 
 
 
