@@ -302,7 +302,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio</span>
+        <span>Assistente Archivio 1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -555,7 +555,7 @@ function getDist(lat1, lon1, lat2, lon2) {
     try {
         let q = userText.toLowerCase();
         
-        // 1. FILTRO AMPIO PER ANALISI TERRITORIALE (80 record)
+        // 1. FILTRO INTEGRALE (80 record per mantenere la profondità di analisi)
         let matches = database.filter(d => {
             const t = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return q.split(/\s+/).some(p => p.length > 3 && t.includes(p));
@@ -563,15 +563,15 @@ function getDist(lat1, lon1, lat2, lon2) {
 
         const nomiDaLinkare = matches.map(d => d.nominativo).sort((a, b) => b.length - a.length);
 
-        // 2. RICERCA LIBRO (Solo come integrazione eventuale)
+        // 2. RICERCA NEL LIBRO (Integrazione, non priorità)
         let estrattiLibro = "";
         if (typeof TESTO_LIBRO !== 'undefined') {
             const parole = q.split(/\s+/).filter(p => p.length > 4);
             const paragrafi = TESTO_LIBRO.split("\n\n");
-            estrattiLibro = paragrafi.filter(p => parole.some(w => p.toLowerCase().includes(w))).slice(0, 4).join("\n\n");
+            estrattiLibro = paragrafi.filter(p => parole.some(w => p.toLowerCase().includes(w))).slice(0, 6).join("\n\n");
         }
 
-        // 3. CHIAMATA STREAMING CON LOGICA STORICO-GEOGRAFICA INTEGRALE
+        // 3. CHIAMATA CON IL TUO PROMPT ORIGINALE E INTEGRALE
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -580,37 +580,38 @@ function getDist(lat1, lon1, lat2, lon2) {
                     parts: [{ 
                         text: `Agisci come Archivista Storico esperto del periodo 1943-45.
 
-ISTRUZIONI TECNICHE SUL CSV (LOGICA GEOGRAFICA E TEMPORALE):
-- Colonna 'regione': indica la regione di nascita. Se contiene uno slash (es. "Regione A / Regione B"), il primo termine è la regione di NASCITA, il secondo è la regione dove il soggetto ha OPERATO.
-- LOGICA DI INCROCIO: Per domande su spostamenti geografici, identifica chi ha la zona di origine nella nascita e la zona di destinazione dopo lo slash o citata nella BIO.
-- INTELLIGENZA TERRITORIALE: Usa la tua cultura storica e geografica per associare i comuni del CSV alle rispettive valli (es. Val di Susa, Val d'Ossola), province o zone operative (es. Linea Gotica, Zone Libere) anche se non esplicitato nel testo del CSV.
-- CONTESTO STORICO: Collega i nomi a eventi, brigate o rastrellamenti noti del periodo in base alle date o ai luoghi citati.
+ISTRUZIONI TECNICHE SUL CSV:
+- Colonna 'regione': indica la regione di nascita. Se contiene uno slash (es. "Sicilia / Piemonte"), il primo termine è la regione di NASCITA, il secondo è la regione dove il soggetto ha OPERATO.
+- Colonna 'città_nascita': indica esclusivamente la città di nascita.
+- Incrocia questi dati: se l'utente chiede di spostamenti geografici, cerca chi ha la regione di origine come nascita e la zona di destinazione come operazione (o citata nella BIO).
+- Usa la tua cultura storica per associare comuni e paesi alle rispettive valli o province anche se non esplicitato. Sfrutta l'intelligenza geografica per contestualizzare i nomi nel territorio corretto (es. Linea Gotica, valli alpine).
 
 RIGORE STORICO E PARITÀ DI DIGNITÀ:
 - Tutte le forme di Resistenza (armata, civile, passiva, deportati IMI) hanno PARI DIGNITÀ.
-- NON creare mai gerarchie di merito. La deportazione nei lager è Resistenza. Evita contrapposizioni morali o comparative tra i diversi percorsi.
+- NON creare mai gerarchie di merito o coraggio. La deportazione nei lager è Resistenza. Evita contrapposizioni morali o comparative tra i diversi percorsi.
 
 REGOLE COMPORTAMENTALI:
 1. INIZIO IMMEDIATO: Rispondi subito senza preamboli o saluti.
-2. CONTESTUALIZZAZIONE: Connetti i dati del CSV in percorsi logici, territoriali e temporali.
-3. SEZIONE 1: **FATTI ACCERTATI**. Presenta i dati in modo discorsivo. Includi il maggior numero possibile di partigiani tra quelli forniti che siano coerenti con la domanda. Nomi in [[Nome Cognome]].
-4. SEZIONE 2: **PERCORSI E RELAZIONI**. Identifica legami per vicinanza geografica (valli, comuni), appartenenza a brigate o partecipazione a medesimi eventi storici.
+2. CONTESTUALIZZAZIONE: Usa le tue conoscenze storiche e geografiche come collante per connettere i dati del CSV in percorsi logici e territoriali.
+3. SEZIONE 1: **FATTI ACCERTATI**. Presenta i dati in modo discorsivo. Inizia subito con i nomi [[Nome Cognome]] (usa le quadre solo per i nomi presenti nei dati forniti).
+4. SEZIONE 2: **PERCORSI E RELAZIONI**. Identifica legami per vicinanza geografica (valli, comuni), brigate o eventi comuni.
 5. GEOGRAFIA ESTERNA: Se l'utente cita zone non esplicite nel CSV (es. "${userText}"), usa la tua conoscenza per identificare nei dati forniti i partigiani pertinenti.
-6. LIMITI: Se tra i dati forniti non trovi riferimenti geografici vicini alla richiesta, indica i partigiani della stessa provincia o area spiegando il collegamento storico.
-7. INTEGRAZIONE KB ESTERNA (LIBRO): Se e solo se i dati del libro sono pertinenti, integrali usando <libro-narrato> per sintesi e <libro-citazione> per citazioni dirette. Non dare priorità al libro rispetto al CSV.
+6. LIMITI: Se tra i dati forniti non trovi riferimenti geografici vicini alla richiesta, indica i partigiani della stessa provincia o area geografica spiegando il collegamento.
+7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura: Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>. Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. Non scrivere più "(Fonte: Libro)" alla fine.
 
-DATI CSV PER ANALISI:
-${matches.map(d => `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ: ${d.città_nascita} | BIO: ${d.scheda?.substring(0,300)}]`).join("\n")}
+DATI CSV:
+${matches.map(d => `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | BIO: ${d.scheda?.substring(0,300)}]`).join("\n")}
 
-ESTRATTI LIBRO (OPZIONALI):
+ESTRATTI LIBRO:
 ${estrattiLibro}
 
-DOMANDA UTENTE: "${userText}"`
+DOMANDA: "${userText}"`
                     }] 
                 }] 
             })
         });
 
+        // 4. STREAMING E RENDER
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let fullText = "";
@@ -632,24 +633,23 @@ DOMANDA UTENTE: "${userText}"`
             });
         }
 
-        // 4. FORMATTAZIONE FINALE E SMART LINKING
+        // 5. POST-PROCESSING ESTETICO (Solo alla fine)
         let html = fullText
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:12px; border-bottom:1px solid #eee;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-narrato>/g, '<div class="kb-narrato" style="font-size:0.9em; border-left:3px solid #ccc; padding-left:10px; margin:5px 0; color:#444;">')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:4px solid #adb5bd; padding:8px; margin:10px 0; font-size:0.9em;">')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<blockquote style="font-style:italic; border-left:3px solid #e67e22; padding-left:10px; margin:5px 0;">')
+            .replace(/<libro-citazione>/g, '<blockquote style="font-style:italic; border-left:4px solid #e67e22; padding:10px; margin:10px 0; background:#fffbf0;">')
             .replace(/<\/libro-citazione>/g, '</blockquote>');
 
+        // Linker universale: cerca ogni nome del CSV nel testo finale
         nomiDaLinkare.forEach(nome => {
-            if (nome.length < 3) return;
             const escaped = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`\\[{0,2}${escaped}\\]{0,2}`, 'gi');
-            html = html.replace(regex, `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`);
+            html = html.replace(regex, `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`);
         });
 
         aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
-        aiMsgElement.classList.add('finished');
 
     } catch (e) { aiMsgElement.innerText = "Errore: " + e.message; }
 }
@@ -657,6 +657,7 @@ DOMANDA UTENTE: "${userText}"`
 </script>
 </body>
 </html>
+
 
 
 
