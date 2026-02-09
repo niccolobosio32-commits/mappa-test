@@ -547,9 +547,6 @@ function getDist(lat1, lon1, lat2, lon2) {
     
     if (!userText) return;
 
-    const pContainer = document.getElementById('ai-progress-container');
-    const pBar = document.getElementById('ai-progress-bar');
-    
     box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
     input.value = "";
     
@@ -558,60 +555,26 @@ function getDist(lat1, lon1, lat2, lon2) {
     const aiMsgElement = document.getElementById(aiMsgId);
     box.scrollTop = box.scrollHeight;
 
-    pContainer.style.display = 'block';
-    pBar.style.width = '10%';
-
     try {
-        let contextRecords = [];
         let q = userText.toLowerCase();
 
-        // 1. FILTRO SEMANTICO E TESTUALE (Ricerca nel CSV)
-        let directMatches = database.filter(d => {
+        // 1. FILTRO VELOCE (Massimo 40 record per non intasare il modello)
+        let contextRecords = database.filter(d => {
             const contenuto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return q.split(/\s+/).some(p => p.length > 3 && contenuto.includes(p));
-        });
+        }).slice(0, 40);
 
-        // 2. INTELLIGENZA GEOGRAFICA VELOCE (Filtro a imbuto)
-        const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
-        let cleanGeo = userText.toLowerCase();
-        stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
-        cleanGeo = cleanGeo.trim();
-
-        if (cleanGeo.length > 2) {
-            try {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&addressdetails=1&limit=1`);
-                const geoData = await geoRes.json();
-                if (geoData && geoData.length > 0) {
-                    const cLat = parseFloat(geoData[0].lat);
-                    const cLon = parseFloat(geoData[0].lon);
-                    const regionFound = geoData[0].address ? geoData[0].address.state : "";
-
-                    contextRecords = database.filter(d => {
-                        if (regionFound && d.regione && !d.regione.includes(regionFound)) return false;
-                        if(!d.lat || !d.lon) return false;
-                        const latP = parseFloat(d.lat.replace(',','.'));
-                        const lonP = parseFloat(d.lon.replace(',','.'));
-                        return getDist(cLat, cLon, latP, lonP) < 35; 
-                    });
-                }
-            } catch (e) { console.warn("Geo-skip"); }
-        }
-
-        contextRecords = [...new Set([...contextRecords, ...directMatches])].slice(0, 60);
         const nomiPerLink = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
 
-        // 3. RICERCA NEL LIBRO (Versione fedele)
+        // 2. RICERCA NEL LIBRO (Pochi estratti mirati)
         let estrattiLibro = "";
         if (typeof TESTO_LIBRO !== 'undefined') {
-            const paroleChiave = originalText.toLowerCase().split(/\s+/).filter(p => p.length > 4);
-            const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###").replace(/\n/g, " ").split("###");
-            const trovati = testoPulito.filter(p => paroleChiave.some(word => p.toLowerCase().includes(word))).slice(0, 5);
-            estrattiLibro = trovati.join('\n\n[---]\n\n');
+            const parole = q.split(/\s+/).filter(p => p.length > 4);
+            const paragrafi = TESTO_LIBRO.split("\n\n");
+            estrattiLibro = paragrafi.filter(p => parole.some(w => p.toLowerCase().includes(w))).slice(0, 4).join("\n\n");
         }
 
-        pBar.style.width = '40%';
-
-        // 4. PROMPT INTEGRALE CON TUTTE LE TUE REGOLE
+        // 3. PROMPT INTEGRALE CON TUTTE LE TUE REGOLE E IL RIGORE STORICO
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -626,10 +589,10 @@ ISTRUZIONI TECNICHE SUL CSV:
 - Incrocia questi dati: se l'utente chiede di "meridionali al nord", cerca chi ha una regione del sud come nascita e una del nord come operazione (o citata nella BIO).
 - Usa la tua cultura storica per associare comuni e paesi alle rispettive valli o province anche se non esplicitato.
 
-RIGORE STORICO E PARITÀ DI DIGNITÀ:
+RIGORE STORICO E PARITÀ DI DIGNITÀ (ESSENZIALE):
 - Tutte le forme di Resistenza (armata, civile, passiva, deportati IMI) hanno PARI DIGNITÀ.
-- NON creare mai gerarchie di merito o coraggio tra questi gruppi. 
-- La deportazione nei lager è Resistenza. Evita contrapposizioni morali o comparative (es. evitare frasi come "a differenza di chi scelse di combattere...") tra i diversi percorsi. Tratta ogni figura con il corretto inquadramento storico senza sminuirne il ruolo.
+- NON creare mai gerarchie di merito o coraggio. La deportazione nei lager è Resistenza. 
+- Evita contrapposizioni morali o comparative (es. "a differenza di chi scelse di combattere...") tra i percorsi.
 
 REGOLE COMPORTAMENTALI:
 1. INIZIO IMMEDIATO: Rispondi subito senza preamboli o saluti.
@@ -638,12 +601,12 @@ REGOLE COMPORTAMENTALI:
 4. SEZIONE 2: **PERCORSI E RELAZIONI**. Identifica legami per vicinanza geografica (valli, comuni), brigate o eventi comuni.
 5. GEOGRAFIA ESTERNA: Se l'utente cita zone non esplicite nel CSV (es. "${originalText}"), usa la tua conoscenza per identificare nei dati forniti i partigiani pertinenti.
 6. LIMITI: Se tra i dati forniti non trovi riferimenti geografici vicini alla richiesta, indica i partigiani della stessa provincia o area geografica spiegando il collegamento.
-7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura: Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>. Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. Non scrivere più "(Fonte: Libro)" alla fine, useremo i tag.
+7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura: Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>. Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. Non scrivere più "(Fonte: Libro)" alla fine.
 
-Dati CSV Filtrati:
-${contextRecords.map(d => `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${d.scheda?.substring(0,300)}...]`).join("\n")}
+DATI CSV:
+${contextRecords.map(d => `[${d.nominativo} | ${d.regione} | BIO: ${d.scheda?.substring(0,250)}]`).join("\n")}
 
-ESTRATTI DAL LIBRO:
+ESTRATTI LIBRO:
 ${estrattiLibro || "Nessun dettaglio trovato."}
 
 Domanda Utente: "${originalText}"`
@@ -653,30 +616,31 @@ Domanda Utente: "${originalText}"`
         });
 
         const data = await response.json();
-        if (!data.candidates || !data.candidates[0]) throw new Error("Risposta AI non disponibile");
+        if (!data.candidates || !data.candidates[0]) throw new Error("Errore risposta AI");
         let aiText = data.candidates[0].content.parts[0].text;
 
-        // 5. FORMATTAZIONE E SMART LINKING (Corretto per quadre e velocità)
-        let formattedText = aiText
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
+        // 4. FORMATTAZIONE E PULIZIA LINKING
+        let html = aiText
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px;">$1</b>')
             .replace(/\n/g, '<br>');
 
         nomiPerLink.forEach(nome => {
             if (nome.length < 3) return;
-            const escapedNome = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\[{0,2}${escapedNome}\\]{0,2}`, 'gi');
-            const linkHTML = `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-            formattedText = formattedText.replace(regex, linkHTML);
+            const escaped = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Regex che cattura [[Nome]], [Nome] o Nome semplice
+            const regex = new RegExp(`\\[{0,2}${escaped}\\]{0,2}`, 'gi');
+            html = html.replace(regex, `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`);
         });
 
-        aiMsgElement.innerHTML = formattedText;
+        // Pulizia finale per rimasugli di quadre non linkate
+        html = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+
+        aiMsgElement.innerHTML = html;
         aiMsgElement.classList.add('finished');
-        pContainer.style.display = 'none';
         box.scrollTop = box.scrollHeight;
 
     } catch (e) {
         aiMsgElement.innerText = "Errore: " + e.message;
-        pContainer.style.display = 'none';
     }
 }
 
@@ -684,6 +648,7 @@ Domanda Utente: "${originalText}"`
 </script>
 </body>
 </html>
+
 
 
 
