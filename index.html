@@ -302,7 +302,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio 0.2</span>
+        <span>Assistente Archivio 0.3</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -555,7 +555,7 @@ function getDist(lat1, lon1, lat2, lon2) {
     try {
         let q = userText.toLowerCase();
         
-        // FILTRO AMPIO (80 record)
+        // 1. FILTRO STORICO (80 record per non perdere l'intelligenza geografica)
         let matches = database.filter(d => {
             const t = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return q.split(/\s+/).some(p => p.length > 3 && t.includes(p));
@@ -563,6 +563,7 @@ function getDist(lat1, lon1, lat2, lon2) {
 
         const nomiDaLinkare = matches.map(d => d.nominativo).sort((a, b) => b.length - a.length);
 
+        // 2. RICERCA NEL LIBRO (Solo integrazione)
         let estrattiLibro = "";
         if (typeof TESTO_LIBRO !== 'undefined') {
             const parole = q.split(/\s+/).filter(p => p.length > 4);
@@ -579,22 +580,17 @@ function getDist(lat1, lon1, lat2, lon2) {
                         text: `Agisci come Archivista Storico esperto del periodo 1943-45.
 
 ISTRUZIONI TECNICHE SUL CSV:
-- Colonna 'regione': indica la regione di nascita. Se contiene uno slash (es. "Sicilia / Piemonte"), il primo termine è la regione di NASCITA, il secondo è la regione dove il soggetto ha OPERATO.
-- Incrocia questi dati: per spostamenti geografici, cerca chi ha la regione di origine come nascita e la zona di destinazione come operazione.
-- Sfrutta l'intelligenza geografica per contestualizzare i comuni in valli e zone operative (es. Linea Gotica).
+- Colonna 'regione': primo termine = NASCITA, secondo (dopo slash) = OPERAZIONE.
+- Logica geografica: Incrocia nascita/operazione per spostamenti. Usa cultura storica per comuni/valli/zone operative (es. Gotica, valli alpine).
 
 RIGORE STORICO E PARITÀ DI DIGNITÀ:
-- Tutte le forme di Resistenza (armata, civile, passiva, deportati IMI) hanno PARI DIGNITÀ.
-- NON creare gerarchie. La deportazione è Resistenza. Evita comparazioni morali.
+- Resistenza armata, civile, IMI hanno PARI DIGNITÀ. No gerarchie.
 
-REGOLE COMPORTAMENTALI:
+REGOLE COMPORTAMENTALI (RISPETTA L'ORDINE):
 1. INIZIO IMMEDIATO: No preamboli.
-2. CONTESTUALIZZAZIONE: Connetti i dati in percorsi territoriali.
-3. SEZIONE 1: **FATTI ACCERTATI**. Nomi in [[Nome Cognome]].
-4. SEZIONE 2: **PERCORSI E RELAZIONI**. Legami per valli, brigate o eventi.
-5. GEOGRAFIA ESTERNA: Identifica nei dati forniti i partigiani pertinenti a zone citate dall'utente (es. "${userText}").
-6. LIMITI: Se mancano dati vicini, indica stessa provincia o area.
-7. INTEGRAZIONE LIBRO: Usa <libro-narrato> per sintesi e <libro-citazione> per citazioni testuali.
+2. SEZIONE 1: **FATTI ACCERTATI**. Presenta i dati in modo discorsivo citando i nomi in [[Nome Cognome]]. È la parte prioritaria.
+3. SEZIONE 2: **PERCORSI E RELAZIONI**. Approfondimenti che integrano collegamenti logici, storico-geografici, brigate e valli.
+4. INTEGRAZIONE LIBRO: Usa i tag <libro-narrato> e <libro-citazione> solo come integrazione se pertinente.
 
 DATI CSV:
 ${matches.map(d => `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | BIO: ${d.scheda?.substring(0,300)}]`).join("\n")}
@@ -629,26 +625,24 @@ DOMANDA: "${userText}"`
             });
         }
 
-        // --- POST-PROCESSING GRAFICO ---
+        // --- POST-PROCESSING GRAFICO (STILE IERI) ---
         let html = fullText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
-            // Grafica Libro Restaurata
-            .replace(/<libro-narrato>/g, '<div style="background:#f0f2f5; border-left:5px solid #6c757d; padding:12px; margin:15px 0; border-radius:4px; font-size:0.95em; color:#333;"><b>📜 Approfondimento storico:</b><br>')
+            .replace(/<libro-narrato>/g, '<div style="background:#f4f4f4; border-left:4px solid #7f8c8d; padding:10px; margin:10px 0; border-radius:0 4px 4px 0; font-size:0.95em;">')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50;"><b>💬 Citazione dal volume:</b><br>"')
-            .replace(/<\/libro-citazione>/g, '"</div>');
+            .replace(/<libro-citazione>/g, '<blockquote style="font-style:italic; color:#2c3e50; border-left:4px solid #e67e22; padding:10px; margin:10px 0; background:#fffcf9;">')
+            .replace(/<\/libro-citazione>/g, '</blockquote>');
 
-        // --- LINKER UNIVERSALE (Scansione dopo i tag libro) ---
+        // --- LINKER TOTALE ---
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             if (n.length < 3) return;
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Gestisce spazi extra e quadre
             const regex = new RegExp(`\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
             
             html = html.replace(regex, (match) => {
-                if (match.includes('onclick')) return match; // Evita loop
+                if (match.includes('onclick')) return match;
                 return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; border-bottom:1px dashed #e67e22;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
             });
         });
@@ -662,6 +656,7 @@ DOMANDA: "${userText}"`
 </script>
 </body>
 </html>
+
 
 
 
