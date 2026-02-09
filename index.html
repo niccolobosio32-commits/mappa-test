@@ -302,7 +302,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio 1</span>
+        <span>Assistente Archivio 0.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -633,7 +633,9 @@ DOMANDA: "${userText}"`
             });
         }
 
-        // 5. POST-PROCESSING ESTETICO (Solo alla fine)
+        // ... (parte iniziale del codice invariata fino al post-processing)
+
+        // 5. POST-PROCESSING POTENZIATO (Il "Linker Intelligente")
         let html = fullText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:12px; border-bottom:1px solid #eee;">$1</b>')
             .replace(/\n/g, '<br>')
@@ -642,13 +644,30 @@ DOMANDA: "${userText}"`
             .replace(/<libro-citazione>/g, '<blockquote style="font-style:italic; border-left:4px solid #e67e22; padding:10px; margin:10px 0; background:#fffbf0;">')
             .replace(/<\/libro-citazione>/g, '</blockquote>');
 
-        // Linker universale: cerca ogni nome del CSV nel testo finale
+        // Creiamo una lista di nomi puliti per evitare il "random"
         nomiDaLinkare.forEach(nome => {
-            const escaped = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\[{0,2}${escaped}\\]{0,2}`, 'gi');
-            html = html.replace(regex, `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`);
+            if (nome.length < 3) return;
+
+            // 1. Puliamo il nome da eventuali spazi bianchi ai lati nel CSV
+            const nomePulito = nome.trim();
+            
+            // 2. Creiamo una Regex che ignora:
+            //    - Le quadre [[ ]] se presenti
+            //    - Eventuali spazi doppi che Gemini potrebbe inserire
+            //    - Maiuscole/Minuscole
+            const escaped = nomePulito.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
+            
+            // 3. Applichiamo il link solo se non è già stato linkato (per evitare link annidati)
+            html = html.replace(regex, (match) => {
+                // Se il match contiene già "onclick", saltiamo per non sovrascrivere
+                if (match.includes('onclick')) return match;
+                
+                return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; border-bottom:1px dashed #e67e22;" onclick="apri('${nomePulito.replace(/'/g, "\\'")}')">${nomePulito}</span>`;
+            });
         });
 
+        // Pulizia finale per eventuali quadre rimaste sole
         aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
 
     } catch (e) { aiMsgElement.innerText = "Errore: " + e.message; }
@@ -657,6 +676,7 @@ DOMANDA: "${userText}"`
 </script>
 </body>
 </html>
+
 
 
 
