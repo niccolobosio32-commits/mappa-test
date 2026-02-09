@@ -542,18 +542,16 @@ function getDist(lat1, lon1, lat2, lon2) {
     
     const input = document.getElementById('ai-chat-input');
     const box = document.getElementById('ai-chat-messages');
-    let userText = input.value.trim(); // Copia modificabile per analisi
-    const originalText = userText;     // Copia fedele per la chat
+    let userText = input.value.trim();
+    const originalText = userText;
     
     if (!userText) return;
 
-    // UI Updates
     const pContainer = document.getElementById('ai-progress-container');
     const pBar = document.getElementById('ai-progress-bar');
     
     box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
     input.value = "";
-    input.style.height = 'auto'; // Reset altezza input
     
     const aiMsgId = "ai-" + Date.now();
     box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">...</div>`;
@@ -564,21 +562,16 @@ function getDist(lat1, lon1, lat2, lon2) {
     pBar.style.width = '10%';
 
     try {
-        pBar.style.width = '20%';
         let contextRecords = [];
-
-        // ---------------------------------------------------------
-        // FASE 1: INTELLIGENZA GEOGRAFICA (IL "GPS")
-        // ---------------------------------------------------------
-        
-        // 1a. Ricerca testuale diretta (nomi propri)
         let q = userText.toLowerCase();
+
+        // 1. FILTRO SEMANTICO E TESTUALE (Ricerca nel CSV)
         let directMatches = database.filter(d => {
             const contenuto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return q.split(/\s+/).some(p => p.length > 3 && contenuto.includes(p));
         });
 
-        // 1b. Geocoding GPS: Cerchiamo le coordinate del luogo (es: "Valle Imagna")
+        // 2. INTELLIGENZA GEOGRAFICA OTTIMIZZATA (FILTRO A IMBUTO)
         const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
         let cleanGeo = userText.toLowerCase();
         stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
@@ -586,70 +579,41 @@ function getDist(lat1, lon1, lat2, lon2) {
 
         if (cleanGeo.length > 2) {
             try {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&limit=1`);
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&addressdetails=1&limit=1`);
                 const geoData = await geoRes.json();
                 
                 if (geoData.length > 0) {
                     const cLat = parseFloat(geoData[0].lat);
                     const cLon = parseFloat(geoData[0].lon);
+                    const regionFound = geoData[0].address.state || "";
 
-                    // 1c. Selezione Radiale: prendiamo i partigiani entro 30km reali
                     contextRecords = database.filter(d => {
+                        // Salta record se regione non corrisponde (Ottimizzazione velocità)
+                        if (regionFound && d.regione && !d.regione.includes(regionFound)) return false;
                         if(!d.lat || !d.lon) return false;
                         const latP = parseFloat(d.lat.replace(',','.'));
                         const lonP = parseFloat(d.lon.replace(',','.'));
-                        // Usa la funzione getDist (assicurati di averla incollata sopra sendAIMessage)
-                        return getDist(cLat, cLon, latP, lonP) < 30; 
+                        return getDist(cLat, cLon, latP, lonP) < 35; 
                     });
-                    console.log(`GPS: Trovati ${contextRecords.length} partigiani nel raggio di 30km da ${cleanGeo}`);
                 }
-            } catch (e) {
-                console.log("Geocoding fallito, procedo con match diretti.");
-            }
+            } catch (e) { console.warn("Geo-skip"); }
         }
 
-        // Se il GPS non trova nulla o la ricerca era su un nome, uniamo i risultati
-        if (contextRecords.length === 0) {
-            contextRecords = directMatches;
-        } else {
-            // Uniamo i risultati GPS con quelli testuali per sicurezza
-            contextRecords = [...new Set([...contextRecords, ...directMatches])];
+        contextRecords = [...new Set([...contextRecords, ...directMatches])].slice(0, 60);
+        const nomiPerLink = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
+
+        // 3. RICERCA NEL LIBRO
+        let estrattiLibro = "";
+        if (typeof TESTO_LIBRO !== 'undefined') {
+            const paroleChiave = originalText.toLowerCase().split(/\s+/).filter(p => p.length > 4);
+            const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###").replace(/\n/g, " ").split("###");
+            const trovati = testoPulito.filter(p => paroleChiave.some(word => p.toLowerCase().includes(word))).slice(0, 5);
+            estrattiLibro = trovati.join('\n\n[---]\n\n');
         }
 
         pBar.style.width = '50%';
 
-  // 1. Formattazione del "Faldone" per il Prompt
-        const context = contextRecords.slice(0, 80).map(d => {
-            const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
-            return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${miniBio}...]`;
-        }).join("\n");
-
-        // 2. Ricerca nel Libro (Versione Pulita e Sicura)
-        const paroleChiave = originalText.toLowerCase().split(/\s+/).filter(p => p.length > 4);
-        let estrattiLibro = "";
-
-        if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
-            console.log("Ricerca nel libro in corso per:", paroleChiave);
-            
-            // Pulizia dei paragrafi
-            const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###")
-                                           .replace(/\n/g, " ")
-                                           .split("###");
-
-            const trovati = testoPulito.filter(p => 
-                paroleChiave.some(word => p.toLowerCase().includes(word))
-            ).slice(0, 5); 
-            
-            estrattiLibro = trovati.join('\n\n[---]\n\n');
-            console.log("Blocchi trovati:", trovati.length);
-        }
-
-        pBar.style.width = '70%';
-        pBar.classList.add('progress-active');
-
-        // ---------------------------------------------------------
-        // FASE 2: IL PROMPT CON LE TUE REGOLE STRETTE
-        // ---------------------------------------------------------
+        // 4. IL PROMPT INTEGRALE (REGOLE ORIGINALI + RIGORE STORICO)
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -664,6 +628,11 @@ ISTRUZIONI TECNICHE SUL CSV:
 - Incrocia questi dati: se l'utente chiede di "meridionali al nord", cerca chi ha una regione del sud come nascita e una del nord come operazione (o citata nella BIO).
 - Usa la tua cultura storica per associare comuni e paesi alle rispettive valli o province anche se non esplicitato.
 
+RIGORE STORICO E PARITÀ DI DIGNITÀ:
+- Tutte le forme di Resistenza (armata, civile, passiva, deportati IMI) hanno PARI DIGNITÀ.
+- NON creare mai gerarchie di merito o coraggio. 
+- La deportazione nei lager è Resistenza. Evita contrapposizioni morali o comparative (es. evitare frasi come "a differenza di chi scelse di combattere...") tra i diversi percorsi.
+
 REGOLE COMPORTAMENTALI:
 1. INIZIO IMMEDIATO: Rispondi subito senza preamboli o saluti.
 2. CONTESTUALIZZAZIONE: Usa le tue conoscenze storiche e geografiche come collante per connettere i dati del CSV in percorsi logici e territoriali.
@@ -671,87 +640,45 @@ REGOLE COMPORTAMENTALI:
 4. SEZIONE 2: **PERCORSI E RELAZIONI**. Identifica legami per vicinanza geografica (valli, comuni), brigate o eventi comuni.
 5. GEOGRAFIA ESTERNA: Se l'utente cita zone non esplicite nel CSV (es. "${originalText}"), usa la tua conoscenza per identificare nei dati forniti i partigiani pertinenti.
 6. LIMITI: Se tra i dati forniti non trovi riferimenti geografici vicini alla richiesta, indica i partigiani della stessa provincia o area geografica spiegando il collegamento.
-7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura:Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>.
-    Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. 
-    Non scrivere più "(Fonte: Libro)" alla fine, useremo i tag.
-Dati CSV Filtrati (Geograficamente Pertinenti): 
-${context}
+7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura: Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>. Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. Non scrivere più "(Fonte: Libro)" alla fine.
+
+Dati CSV Filtrati:
+${contextRecords.map(d => `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${d.scheda?.substring(0,300)}...]`).join("\n")}
 
 ESTRATTI DAL LIBRO:
 ${estrattiLibro || "Nessun dettaglio trovato."}
 
 Domanda Utente: "${originalText}"`
-
                     }] 
                 }] 
             })
         });
 
-        pBar.style.width = '90%';
+        pBar.style.width = '80%';
         const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        
         let aiText = data.candidates[0].content.parts[0].text;
 
-        // A. Trasformazione dei grassetti in TITOLI eleganti con linea
+        // 5. FORMATTAZIONE E SMART LINKING (VELOCIZZATO)
         let formattedText = aiText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
             .replace(/\n/g, '<br>');
 
-        // B. Creazione dei LINK ARANCIONI (Versione Anti-Falsi Positivi)
-        const tuttiINomi = database.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-        
-        tuttiINomi.forEach(nome => {
+        nomiPerLink.forEach(nome => {
             if (nome.length < 3) return;
-
-            // 1. Regex per catturare il nome con o senza quadre
-            // 2. (?<!San\s|Santa\s) -> Esclude il match se preceduto da "San " o "Santa "
             const regex = new RegExp(`(?<!San\\s|Santa\\s|\\bSanto\\b\\s)\\[{0,2}${nome}\\]{0,2}(?![a-zA-Z])`, 'gi');
-            
-            if (formattedText.includes(nome)) {
-                // Prepariamo il link pulito
-                const linkHTML = `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-                
-                // Usiamo un metodo di sostituzione sicuro per non creare loop infiniti
-                let tempDiv = document.createElement('div');
-                tempDiv.innerHTML = formattedText;
-                
-                const walk = (node) => {
-    if (node.nodeType === 3) { // Nodo di testo
-        const text = node.nodeValue;
-        if (regex.test(text)) {
-            const wrapper = document.createElement('span');
-            // La regex toglierà le doppie quadre [[ ]] e metterà il link
-            wrapper.innerHTML = text.replace(regex, linkHTML);
-            node.parentNode.replaceChild(wrapper, node);
-        }
-    } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-        // Entriamo in TUTTI i tag, inclusi quelli del libro. 
-        // L'unica eccezione è non entrare nei link già creati.
-        Array.from(node.childNodes).forEach(walk);
-    }
-};
-                
-                walk(tempDiv);
-                formattedText = tempDiv.innerHTML;
-            }
+            const linkHTML = `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
+            formattedText = formattedText.replace(regex, linkHTML);
         });
 
         aiMsgElement.innerHTML = formattedText;
-        aiMsgElement.classList.add('finished'); // Rimuove il cursore lampeggiante
-        
-        setTimeout(() => {
-            pContainer.style.display = 'none';
-            pBar.style.width = '0%';
-            pBar.classList.remove('progress-active');
-        }, 500);
-
+        aiMsgElement.classList.add('finished');
+        pContainer.style.display = 'none';
         box.scrollTop = box.scrollHeight;
 
-    } catch (e) { 
+    } catch (e) {
         console.error(e);
+        aiMsgElement.innerText = "Errore: " + e.message;
         pContainer.style.display = 'none';
-        aiMsgElement.innerText = "Errore: " + e.message; 
     }
 }
 
@@ -759,6 +686,7 @@ Domanda Utente: "${originalText}"`
 </script>
 </body>
 </html>
+
 
 
 
