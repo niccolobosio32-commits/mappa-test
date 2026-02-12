@@ -37,7 +37,7 @@ libro-citazione {
     width: 100%;
     height: 4px;
     background: rgba(0,0,0,0.05);
-    display: none; /* Nascosta di default */
+    display: none;
     overflow: hidden;
 }
 
@@ -48,7 +48,14 @@ libro-citazione {
     transition: width 0.3s ease;
 }
 
-/* Animazione pulsante per la barra mentre carica */
+#ai-status-text {
+    font-size: 11px;
+    color: #666;
+    padding: 5px 10px;
+    text-align: center;
+    display: none;
+}
+
 .progress-active {
     animation: pulse-progress 2s infinite ease-in-out;
 }
@@ -66,7 +73,6 @@ libro-citazione {
         --yellow: #ffcc00; 
     }
 
-    /* Animazione AI */
     .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
     .msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
     .msg-ai.finished:after { content: ''; }
@@ -74,7 +80,6 @@ libro-citazione {
 
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; position: fixed; }
 
-    /* FIX MAPPA MOBILE */
     #map { 
         width: 100%; 
         height: 100%; 
@@ -87,7 +92,6 @@ libro-citazione {
         background: #f0f0f0; 
     }
 
-    /* UI Superiore */
     #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
     #filter-bar { 
         background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -103,7 +107,6 @@ libro-citazione {
     .res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
     .res-item:hover { background: var(--blue); color: white; }
 
-    /* PANNELLO DETTAGLI */
     #details-panel { 
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
         width: 94%; max-width: 1100px; z-index: 4000; 
@@ -126,7 +129,6 @@ libro-citazione {
         text-align: justify;
         hyphens: auto;
     }
-    /* Effetto Cool: La prima lettera della biografia diventa elegante */
     #text-bio::first-letter {
         float: left;
         font-size: 3.5em;
@@ -144,75 +146,67 @@ libro-citazione {
     .social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
     .social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
 
-    /* AI CHAT */
     #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
-    /* --- NUOVA GRAFICA AI COLLABORATIVA --- */
+    
+    #ai-chat-window { 
+        position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
+        width: 400px; height: 550px; 
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
+        box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
+    }
 
-/* Finestra Chat Elegante */
-#ai-chat-window { 
-    position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
-    width: 400px; height: 550px; 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Fondo sfumato elegante */
-    border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
-    box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
-}
+    #ai-chat-messages { 
+        flex: 1; padding: 15px; overflow-y: auto; 
+        display: flex; flex-direction: column; gap: 12px;
+    }
 
-#ai-chat-messages { 
-    flex: 1; padding: 15px; overflow-y: auto; 
-    display: flex; flex-direction: column; gap: 12px;
-}
+    .msg { 
+        padding: 12px 16px; border-radius: 18px; max-width: 85%; 
+        font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
 
-/* Bolle Messaggi con effetto Glassmorphism */
-.msg { 
-    padding: 12px 16px; border-radius: 18px; max-width: 85%; 
-    font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
+    .msg-user { 
+        background: #1a2a3a; color: white; align-self: flex-end; 
+        border-bottom-right-radius: 2px;
+    }
 
-.msg-user { 
-    background: #1a2a3a; color: white; align-self: flex-end; 
-    border-bottom-right-radius: 2px;
-}
+    .msg-ai { 
+        background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
+        border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
+        backdrop-filter: blur(5px);
+    }
 
-.msg-ai { 
-    background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
-    border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
-    backdrop-filter: blur(5px);
-}
+    .msg-ai b[style*="color:var(--navy)"] {
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #1a2a3a !important;
+        border-bottom: 1px solid #eee;
+    }
 
-/* Titoli delle sezioni dentro la risposta AI (Fatti vs Percorsi) */
-.msg-ai b[style*="color:var(--navy)"] {
-    display: block;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: #1a2a3a !important;
-    border-bottom: 1px solid #eee;
-}
+    .link-partigiano {
+        color: #d35400;
+        text-decoration: none;
+        font-weight: 700;
+        cursor: pointer;
+        border-bottom: 1px solid transparent;
+        transition: 0.2s;
+    }
+    .link-partigiano:hover {
+        border-bottom: 1px solid #d35400;
+        background: rgba(211, 84, 0, 0.05);
+    }
 
-/* Link ai Partigiani */
-.link-partigiano {
-    color: #d35400; /* Un colore ruggine/storico invece del blu standard */
-    text-decoration: none;
-    font-weight: 700;
-    cursor: pointer;
-    border-bottom: 1px solid transparent;
-    transition: 0.2s;
-}
-.link-partigiano:hover {
-    border-bottom: 1px solid #d35400;
-    background: rgba(211, 84, 0, 0.05);
-}
+    #ai-chat-input-area { padding: 10px; background: #f4f4f4; border-top: 1px solid #ddd; display: flex; }
+    #ai-chat-input { 
+        flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 8px 12px; 
+        font-size: 14px; outline: none; 
+    }
 
-/* Area Input */
-#ai-chat-input-area { padding: 10px; background: #f4f4f4; border-top: 1px solid #ddd; display: flex; }
-#ai-chat-input { 
-    flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 8px 12px; 
-    font-size: 14px; outline: none; 
-}
-
-    /* 📱 OTTIMIZZAZIONE MOBILE */
     @media screen and (max-width: 768px) {
         #details-panel { 
             width: 100% !important; 
@@ -231,22 +225,21 @@ libro-citazione {
         .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
         .main-col { overflow-y: visible !important; }
         .bio-box { padding: 15px 25px; line-height: 1.4; }
-    #text-bio { 
-        font-family: 'Lora', serif; 
-        font-size: 16px; 
-        color: #1a1a1a; 
-        text-align: justify;
-    }
-    /* La prima lettera elegante */
-    #text-bio::first-letter {
-        float: left;
-        font-size: 3.5em;
-        line-height: 0.7;
-        padding-top: 4px;
-        padding-right: 8px;
-        color: #1a2a3a; /* Navy */
-        font-weight: 700;
-    }
+        #text-bio { 
+            font-family: 'Lora', serif; 
+            font-size: 16px; 
+            color: #1a1a1a; 
+            text-align: justify;
+        }
+        #text-bio::first-letter {
+            float: left;
+            font-size: 3.5em;
+            line-height: 0.7;
+            padding-top: 4px;
+            padding-right: 8px;
+            color: #1a2a3a;
+            font-weight: 700;
+        }
         .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
         #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
     }
@@ -302,7 +295,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio</span>
+        <span>Assistente Archivio a1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -310,6 +303,7 @@ libro-citazione {
     <div id="ai-progress-container">
         <div id="ai-progress-bar"></div>
     </div>
+    <div id="ai-status-text"></div>
 
     <div style="padding:10px; background:#fff; border-top:1px solid #eee; display:flex; align-items: flex-end; gap: 8px;">
         <textarea id="ai-chat-input" placeholder="Chiedi all'AI..." rows="1" 
@@ -328,7 +322,9 @@ libro-citazione {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="testo_libro.js"></script> 
 <script>
-    // Inizializzazione Mappa con fix per Tap su Mobile
+    // ═══════════════════════════════════════════════════════════════
+    // INIZIALIZZAZIONE MAPPA
+    // ═══════════════════════════════════════════════════════════════
     let map = L.map('map', { 
         zoomControl: false,
         tap: false 
@@ -338,7 +334,6 @@ libro-citazione {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // FIX DEFINITIVO PER MOBILE: Forza ricalcolo dimensioni
     function fixMapSize() {
         setTimeout(() => {
             map.invalidateSize();
@@ -358,6 +353,9 @@ libro-citazione {
     let database = [];
     let searchTimeout;
 
+    // ═══════════════════════════════════════════════════════════════
+    // CARICAMENTO DATABASE CSV
+    // ═══════════════════════════════════════════════════════════════
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
@@ -367,12 +365,55 @@ libro-citazione {
                 return clean;
             });
             caricaMarker();
+            
+            // Inizializza cache dopo caricamento database
+            CACHE.initCSV();
+            
             const urlParams = new URLSearchParams(window.location.search);
             const nomep = urlParams.get('p');
             if (nomep) setTimeout(() => apri(decodeURIComponent(nomep)), 1000);
         }
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // SISTEMA DI CACHE INTELLIGENTE
+    // ═══════════════════════════════════════════════════════════════
+    const CACHE = {
+        libroChunks: null,
+        libroEmbeddings: null,
+        csvEmbeddings: null,
+        
+        async initLibro() {
+            if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') return;
+            
+            console.log("🔄 Inizializzazione cache libro...");
+            
+            // Chunking del libro
+            this.libroChunks = TESTO_LIBRO
+                .replace(/\n\s*\n/g, "###")
+                .replace(/\n/g, " ")
+                .split("###")
+                .filter(p => p.length > 100);
+            
+            console.log(`✅ Cache libro pronta: ${this.libroChunks.length} chunks`);
+        },
+        
+        async initCSV() {
+            if (this.csvEmbeddings || database.length === 0) return;
+            
+            console.log("🔄 Inizializzazione cache CSV...");
+            console.log(`✅ Cache CSV pronta: ${database.length} record`);
+        }
+    };
+
+    // Inizializza cache libro all'avvio
+    window.addEventListener('load', () => {
+        setTimeout(() => CACHE.initLibro(), 2000);
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // MOTORE FILTRI
+    // ═══════════════════════════════════════════════════════════════
     const MotoreFiltri = {
         RAGGIO_MAX: 50000, 
         esegui: function(tipo) {
@@ -447,6 +488,9 @@ libro-citazione {
         map.flyTo(target, zoom, { duration: 3.5, easeLinearity: 0.1, noMoveStart: true }); 
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // GESTIONE MARKER
+    // ═══════════════════════════════════════════════════════════════
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
@@ -458,15 +502,12 @@ libro-citazione {
                     let m = L.marker([lat, lon], { icon: stellaIcon });
                     m.bindTooltip(`<b>${d.nominativo}</b>`, { direction: 'top', offset: [0, -10] });
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
-                    // --- HOVER: ACCENSIONE ROSSO VIVO ---
-                m.on('mouseover', function() {
-                    // Aumenta la luminosità e satura il colore esistente
-                    this.getElement().style.filter = "brightness(1.5) saturate(2)";
-                });
-                m.on('mouseout', function() {
-                    this.getElement().style.filter = "none";
-                });
-                // -----------------------------
+                    m.on('mouseover', function() {
+                        this.getElement().style.filter = "brightness(1.5) saturate(2)";
+                    });
+                    m.on('mouseout', function() {
+                        this.getElement().style.filter = "none";
+                    });
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
                     hasData = true;
@@ -476,24 +517,22 @@ libro-citazione {
         if (hasData && fit) map.flyToBounds(bounds, {padding: [50, 50], duration: 2.5});
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // PANNELLO DETTAGLI
+    // ═══════════════════════════════════════════════════════════════
     function openDetails(d) {
-        // 1. Pulizia: Se la bio inizia col nome, lo togliamo
         let bio = d.scheda || "Nessuna biografia disponibile.";
         if (bio.startsWith(d.nominativo)) {
             bio = bio.replace(d.nominativo, "").trim();
-            // Capitalizziamo la prima lettera rimasta (es: da "è nato" a "È nato")
             bio = bio.charAt(0).toUpperCase() + bio.slice(1);
         }
 
-        // 2. Formattazione: Va a capo dopo i punti (senza trattini o segni)
         let bioFormattata = bio.replace(/\. ?([A-Z])/g, '.<br><span style="display:block; margin-top:8px;"></span>$1');
 
-        // 3. Popolamento Header e Bio
         document.getElementById('h-nome').innerText = d.nominativo.toUpperCase();
         document.getElementById('h-reg').innerText = d.regione;
         document.getElementById('text-bio').innerHTML = bioFormattata;
         
-        // 4. Video e restanti funzioni
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 15);
@@ -510,7 +549,10 @@ libro-citazione {
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); }
+    function closeDetails() { 
+        document.getElementById('details-panel').classList.remove('open'); 
+        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); 
+    }
 
     function apri(nome) {
         const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase().trim()));
@@ -526,268 +568,419 @@ libro-citazione {
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
         if(win.style.display === 'flex') document.getElementById('ai-chat-input').focus();
     }
-// --- FUNZIONE DISTANZA GEO-RADIALE ---
-function getDist(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Raggio della Terra in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-    async function sendAIMessage() {
-    const key = localStorage.getItem('gemini_key') || prompt("API Key:");
-    if (!key) return; 
-    localStorage.setItem('gemini_key', key);
-    
-    const input = document.getElementById('ai-chat-input');
-    const box = document.getElementById('ai-chat-messages');
-    let userText = input.value.trim(); // Copia modificabile per analisi
-    const originalText = userText;     // Copia fedele per la chat
-    
-    if (!userText) return;
 
-    // UI Updates
-    const pContainer = document.getElementById('ai-progress-container');
-    const pBar = document.getElementById('ai-progress-bar');
-    
-    box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
-    input.value = "";
-    input.style.height = 'auto'; // Reset altezza input
-    
-    const aiMsgId = "ai-" + Date.now();
-    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">...</div>`;
-    const aiMsgElement = document.getElementById(aiMsgId);
-    box.scrollTop = box.scrollHeight;
-
-    pContainer.style.display = 'block';
-    pBar.style.width = '10%';
-
-    try {
-        pBar.style.width = '20%';
-        let contextRecords = [];
-
-        // ---------------------------------------------------------
-        // FASE 1: INTELLIGENZA GEOGRAFICA (IL "GPS")
-        // ---------------------------------------------------------
-        
-        // 1a. Ricerca testuale diretta (nomi propri)
-        let q = userText.toLowerCase();
-        let directMatches = database.filter(d => {
-            const contenuto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
-            return q.split(/\s+/).some(p => p.length > 3 && contenuto.includes(p));
-        });
-
-        // 1b. Geocoding GPS: Cerchiamo le coordinate del luogo (es: "Valle Imagna")
-        const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
-        let cleanGeo = userText.toLowerCase();
-        stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
-        cleanGeo = cleanGeo.trim();
-
-        if (cleanGeo.length > 2) {
-            try {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&limit=1`);
-                const geoData = await geoRes.json();
-                
-                if (geoData.length > 0) {
-                    const cLat = parseFloat(geoData[0].lat);
-                    const cLon = parseFloat(geoData[0].lon);
-
-                    // 1c. Selezione Radiale: prendiamo i partigiani entro 30km reali
-                    contextRecords = database.filter(d => {
-                        if(!d.lat || !d.lon) return false;
-                        const latP = parseFloat(d.lat.replace(',','.'));
-                        const lonP = parseFloat(d.lon.replace(',','.'));
-                        // Usa la funzione getDist (assicurati di averla incollata sopra sendAIMessage)
-                        return getDist(cLat, cLon, latP, lonP) < 30; 
-                    });
-                    console.log(`GPS: Trovati ${contextRecords.length} partigiani nel raggio di 30km da ${cleanGeo}`);
-                }
-            } catch (e) {
-                console.log("Geocoding fallito, procedo con match diretti.");
-            }
-        }
-
-        // Se il GPS non trova nulla o la ricerca era su un nome, uniamo i risultati
-        if (contextRecords.length === 0) {
-            contextRecords = directMatches;
-        } else {
-            // Uniamo i risultati GPS con quelli testuali per sicurezza
-            contextRecords = [...new Set([...contextRecords, ...directMatches])];
-        }
-
-        pBar.style.width = '50%';
-
-  // 1. Formattazione del "Faldone" per il Prompt
-        const context = contextRecords.slice(0, 80).map(d => {
-            const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
-            return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${miniBio}...]`;
-        }).join("\n");
-
-        // 2. Ricerca nel Libro (Versione Pulita e Sicura)
-        const paroleChiave = originalText.toLowerCase().split(/\s+/).filter(p => p.length > 4);
-        let estrattiLibro = "";
-
-        if (typeof TESTO_LIBRO !== 'undefined' && paroleChiave.length > 0) {
-            console.log("Ricerca nel libro in corso per:", paroleChiave);
-            
-            // Pulizia dei paragrafi
-            const testoPulito = TESTO_LIBRO.replace(/\n\s*\n/g, "###")
-                                           .replace(/\n/g, " ")
-                                           .split("###");
-
-            const trovati = testoPulito.filter(p => 
-                paroleChiave.some(word => p.toLowerCase().includes(word))
-            ).slice(0, 5); 
-            
-            estrattiLibro = trovati.join('\n\n[---]\n\n');
-            console.log("Blocchi trovati:", trovati.length);
-        }
-
-        pBar.style.width = '70%';
-        pBar.classList.add('progress-active');
-
-        // ---------------------------------------------------------
-        // FASE 2: IL PROMPT CON LE TUE REGOLE STRETTE
-        // ---------------------------------------------------------
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ 
-                    parts: [{ 
-                        text: `Agisci come Archivista Storico esperto del periodo 1943-45.
-
-ISTRUZIONI TECNICHE SUL CSV:
-- Colonna 'regione': indica la regione di nascita. Se contiene uno slash (es. "Sicilia / Piemonte"), il primo termine è la regione di NASCITA, il secondo è la regione dove il soggetto ha OPERATO.
-- Colonna 'città_nascita': indica esclusivamente la città di nascita.
-- Incrocia questi dati: se l'utente chiede di "meridionali al nord", cerca chi ha una regione del sud come nascita e una del nord come operazione (o citata nella BIO).
-- Usa la tua cultura storica per associare comuni e paesi alle rispettive valli o province anche se non esplicitato.
-
-REGOLE COMPORTAMENTALI:
-1. INIZIO IMMEDIATO: Rispondi subito senza preamboli o saluti.
-2. CONTESTUALIZZAZIONE: Usa le tue conoscenze storiche e geografiche come collante per connettere i dati del CSV in percorsi logici e territoriali.
-3. SEZIONE 1: **FATTI ACCERTATI**. Presenta i dati in modo discorsivo. Inizia subito con i nomi [[Nome Cognome]] (usa le quadre solo per i nomi presenti nei dati forniti).
-4. SEZIONE 2: **PERCORSI E RELAZIONI**. Identifica legami per vicinanza geografica (valli, comuni), brigate o eventi comuni.
-5. GEOGRAFIA ESTERNA: Se l'utente cita zone non esplicite nel CSV (es. "${originalText}"), usa la tua conoscenza per identificare nei dati forniti i partigiani pertinenti.
-6. LIMITI: Se tra i dati forniti non trovi riferimenti geografici vicini alla richiesta, indica i partigiani della stessa provincia o area geografica spiegando il collegamento.
-7. INTEGRAZIONE KB ESTERNA: Se usi dati dal libro, segui queste regole di marcatura:Per riassunti o fatti narrati basati sul libro, racchiudi il testo tra <libro-narrato> e </libro-narrato>.
-    Per citazioni testuali e dirette dal libro, racchiudi il testo tra <libro-citazione> e </libro-citazione>. 
-    Non scrivere più "(Fonte: Libro)" alla fine, useremo i tag.
-Dati CSV Filtrati (Geograficamente Pertinenti): 
-${context}
-
-ESTRATTI DAL LIBRO:
-${estrattiLibro || "Nessun dettaglio trovato."}
-
-Domanda Utente: "${originalText}"`
-
-                    }] 
-                }] 
-            })
-        });
-
-        pBar.style.width = '90%';
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        
-        let aiText = data.candidates[0].content.parts[0].text;
-
-        // A. Trasformazione dei grassetti in TITOLI eleganti con linea
-        let formattedText = aiText
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
-            .replace(/\n/g, '<br>');
-
-        // B. Creazione dei LINK ARANCIONI (Versione Anti-Falsi Positivi)
-        const tuttiINomi = database.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-        
-        tuttiINomi.forEach(nome => {
-            if (nome.length < 3) return;
-
-            // 1. Regex per catturare il nome con o senza quadre
-            // 2. (?<!San\s|Santa\s) -> Esclude il match se preceduto da "San " o "Santa "
-            const regex = new RegExp(`(?<!San\\s|Santa\\s|\\bSanto\\b\\s)\\[{0,2}${nome}\\]{0,2}(?![a-zA-Z])`, 'gi');
-            
-            if (formattedText.includes(nome)) {
-                // Prepariamo il link pulito
-                const linkHTML = `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-                
-                // Usiamo un metodo di sostituzione sicuro per non creare loop infiniti
-                let tempDiv = document.createElement('div');
-                tempDiv.innerHTML = formattedText;
-                
-                const walk = (node) => {
-    if (node.nodeType === 3) { // Nodo di testo
-        const text = node.nodeValue;
-        if (regex.test(text)) {
-            const wrapper = document.createElement('span');
-            // La regex toglierà le doppie quadre [[ ]] e metterà il link
-            wrapper.innerHTML = text.replace(regex, linkHTML);
-            node.parentNode.replaceChild(wrapper, node);
-        }
-    } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-        // Entriamo in TUTTI i tag, inclusi quelli del libro. 
-        // L'unica eccezione è non entrare nei link già creati.
-        Array.from(node.childNodes).forEach(walk);
+    // ═══════════════════════════════════════════════════════════════
+    // FUNZIONI UTILITY
+    // ═══════════════════════════════════════════════════════════════
+    function getDist(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-};
-                
-                walk(tempDiv);
-                formattedText = tempDiv.innerHTML;
-            }
-        });
 
-        aiMsgElement.innerHTML = formattedText;
-        aiMsgElement.classList.add('finished'); // Rimuove il cursore lampeggiante
+    function updateProgress(percent, message) {
+        const pBar = document.getElementById('ai-progress-bar');
+        const statusDiv = document.getElementById('ai-status-text');
+        pBar.style.width = percent + '%';
+        statusDiv.textContent = message;
+        statusDiv.style.display = 'block';
+    }
+
+    function cosineSimilarity(vecA, vecB) {
+        const dotProduct = vecA.reduce((sum, val, i) => sum + val * vecB[i], 0);
+        const normA = Math.sqrt(vecA.reduce((sum, val) => sum + val * val, 0));
+        const normB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
+        return dotProduct / (normA * normB);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // RERANK SEMANTICO DEI RISULTATI
+    // ═══════════════════════════════════════════════════════════════
+    async function semanticRerank(query, records, topK = 20) {
+        const key = localStorage.getItem('gemini_key');
+        if (!key || records.length <= topK) return records.slice(0, topK);
         
-        setTimeout(() => {
-            pContainer.style.display = 'none';
-            pBar.style.width = '0%';
-            pBar.classList.remove('progress-active');
-        }, 500);
+        try {
+            // 1. Genera embedding della query
+            const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "models/text-embedding-004",
+                    content: { parts: [{ text: query }] }
+                })
+            });
+            const queryData = await queryEmbedRes.json();
+            if (!queryData.embedding) return records.slice(0, topK);
+            const queryEmbed = queryData.embedding.values;
+            
+            // 2. Calcola similarità per ogni record (batch processing)
+            const batchSize = 5;
+            let scored = [];
+            
+            for (let i = 0; i < Math.min(records.length, 50); i += batchSize) {
+                const batch = records.slice(i, i + batchSize);
+                const batchScores = await Promise.all(batch.map(async (d) => {
+                    try {
+                        const docText = `${d.nominativo} ${d.scheda?.substring(0, 500) || ''} ${d.regione} ${d.città_nascita}`;
+                        const docEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: "models/text-embedding-004",
+                                content: { parts: [{ text: docText }] }
+                            })
+                        });
+                        const docData = await docEmbedRes.json();
+                        if (!docData.embedding) return { record: d, score: 0 };
+                        const docEmbed = docData.embedding.values;
+                        
+                        const similarity = cosineSimilarity(queryEmbed, docEmbed);
+                        return { record: d, score: similarity };
+                    } catch (e) {
+                        console.error("Errore embedding:", e);
+                        return { record: d, score: 0 };
+                    }
+                }));
+                scored.push(...batchScores);
+            }
+            
+            // 3. Ordina e restituisci i top K
+            return scored.sort((a, b) => b.score - a.score).slice(0, topK).map(s => s.record);
+        } catch (e) {
+            console.error("Errore rerank:", e);
+            return records.slice(0, topK);
+        }
+    }
 
+    // ═══════════════════════════════════════════════════════════════
+    // RICERCA SEMANTICA NEL LIBRO
+    // ═══════════════════════════════════════════════════════════════
+    async function searchLibroSemantico(query, topK = 3) {
+        if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
+            console.log("Cache libro non disponibile");
+            return "";
+        }
+        
+        const key = localStorage.getItem('gemini_key');
+        if (!key) return "";
+        
+        try {
+            // 1. Embedding della query
+            const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "models/text-embedding-004",
+                    content: { parts: [{ text: query }] }
+                })
+            });
+            const queryData = await queryEmbedRes.json();
+            if (!queryData.embedding) return "";
+            const queryEmbed = queryData.embedding.values;
+            
+            // 2. Score ogni chunk (batch processing)
+            const batchSize = 10;
+            let scoredChunks = [];
+            
+            for (let i = 0; i < Math.min(CACHE.libroChunks.length, 100); i += batchSize) {
+                const batch = CACHE.libroChunks.slice(i, i + batchSize);
+                const batchScores = await Promise.all(batch.map(async (chunk) => {
+                    try {
+                        const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: "models/text-embedding-004",
+                                content: { parts: [{ text: chunk.substring(0, 1000) }] }
+                            })
+                        });
+                        const chunkData = await chunkEmbedRes.json();
+                        if (!chunkData.embedding) return { chunk, score: 0 };
+                        const chunkEmbed = chunkData.embedding.values;
+                        
+                        const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
+                        return { chunk, score: similarity };
+                    } catch (e) {
+                        return { chunk, score: 0 };
+                    }
+                }));
+                scoredChunks.push(...batchScores);
+            }
+            
+            // 3. Restituisci i top K
+            const topChunks = scoredChunks
+                .sort((a, b) => b.score - a.score)
+                .slice(0, topK)
+                .filter(s => s.score > 0.3) // Soglia minima di rilevanza
+                .map(s => s.chunk)
+                .join('\n\n[---]\n\n');
+            
+            console.log(`Trovati ${topChunks.length > 0 ? topK : 0} chunk rilevanti dal libro`);
+            return topChunks;
+        } catch (e) {
+            console.error("Errore ricerca libro:", e);
+            return "";
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // AI CHAT - FUNZIONE PRINCIPALE
+    // ═══════════════════════════════════════════════════════════════
+    async function sendAIMessage() {
+        const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
+        if (!key) return; 
+        localStorage.setItem('gemini_key', key);
+        
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        let userText = input.value.trim();
+        const originalText = userText;
+        
+        if (!userText) return;
+
+        // UI Updates
+        const pContainer = document.getElementById('ai-progress-container');
+        const pBar = document.getElementById('ai-progress-bar');
+        
+        box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
+        input.value = "";
+        input.style.height = 'auto';
+        
+        const aiMsgId = "ai-" + Date.now();
+        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">Elaborazione in corso...</div>`;
+        const aiMsgElement = document.getElementById(aiMsgId);
         box.scrollTop = box.scrollHeight;
 
-    } catch (e) { 
-        console.error(e);
-        pContainer.style.display = 'none';
-        aiMsgElement.innerText = "Errore: " + e.message; 
-    }
-}
+        pContainer.style.display = 'block';
+        updateProgress(10, "Inizializzazione...");
 
-    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
+        try {
+            updateProgress(20, "Analisi geografica...");
+            let contextRecords = [];
+
+            // ─────────────────────────────────────────────────────────
+            // FASE 1: INTELLIGENZA GEOGRAFICA
+            // ─────────────────────────────────────────────────────────
+            
+            // 1a. Ricerca testuale diretta
+            let q = userText.toLowerCase();
+            let directMatches = database.filter(d => {
+                const contenuto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
+                return q.split(/\s+/).some(p => p.length > 3 && contenuto.includes(p));
+            });
+
+            // 1b. Geocoding GPS
+            const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
+            let cleanGeo = userText.toLowerCase();
+            stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
+            cleanGeo = cleanGeo.trim();
+
+            if (cleanGeo.length > 2) {
+                try {
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&limit=1`);
+                    const geoData = await geoRes.json();
+                    
+                    if (geoData.length > 0) {
+                        const cLat = parseFloat(geoData[0].lat);
+                        const cLon = parseFloat(geoData[0].lon);
+
+                        contextRecords = database.filter(d => {
+                            if(!d.lat || !d.lon) return false;
+                            const latP = parseFloat(d.lat.replace(',','.'));
+                            const lonP = parseFloat(d.lon.replace(',','.'));
+                            return getDist(cLat, cLon, latP, lonP) < 30; 
+                        });
+                        console.log(`GPS: Trovati ${contextRecords.length} partigiani nel raggio di 30km`);
+                    }
+                } catch (e) {
+                    console.log("Geocoding fallito, uso match diretti");
+                }
+            }
+
+            // Unione risultati
+            if (contextRecords.length === 0) {
+                contextRecords = directMatches;
+            } else {
+                contextRecords = [...new Set([...contextRecords, ...directMatches])];
+            }
+
+            updateProgress(40, "Reranking semantico...");
+            
+            // ─────────────────────────────────────────────────────────
+            // FASE 2: RERANK SEMANTICO
+            // ─────────────────────────────────────────────────────────
+            if (contextRecords.length > 20) {
+                console.log("Reranking semantico in corso...");
+                contextRecords = await semanticRerank(originalText, contextRecords, 20);
+            }
+
+            updateProgress(60, "Ricerca nel libro...");
+
+            // ─────────────────────────────────────────────────────────
+            // FASE 3: RICERCA SEMANTICA NEL LIBRO
+            // ─────────────────────────────────────────────────────────
+            let estrattiLibro = await searchLibroSemantico(originalText, 3);
+
+            updateProgress(70, "Preparazione contesto...");
+
+            // Formattazione contesto
+            const context = contextRecords.slice(0, 30).map(d => {
+                const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
+                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${miniBio}...]`;
+            }).join("\n");
+
+            updateProgress(80, "Generazione risposta AI...");
+            pBar.classList.add('progress-active');
+
+            // ─────────────────────────────────────────────────────────
+            // FASE 4: CHIAMATA API GEMINI CON PROMPT AVANZATO
+            // ─────────────────────────────────────────────────────────
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contents: [{ 
+                        parts: [{ 
+                            text: `Sei un Archivista Storico della Resistenza Italiana (1943-45) con accesso a un database di testimonianze partigiane.
+
+═══════════════════════════════════════════════════════════════
+ARCHITETTURA DEI DATI
+═══════════════════════════════════════════════════════════════
+1. CSV PARTIGIANI:
+   - 'regione': Se contiene "/" (es. "Sicilia / Piemonte"), il PRIMO termine è la regione di NASCITA, il SECONDO è dove ha OPERATO.
+   - 'città_nascita': Città di nascita (non di operazione).
+   - Per domande su "meridionali al nord", cerca: nascita=Sud + operazione=Nord.
+
+2. LIBRO STORICO:
+   - Contesto narrativo e dettagli storici.
+   - Usa <libro-narrato>testo</libro-narrato> per riassunti.
+   - Usa <libro-citazione>testo</libro-citazione> per citazioni dirette.
+
+═══════════════════════════════════════════════════════════════
+METODOLOGIA DI RISPOSTA
+═══════════════════════════════════════════════════════════════
+FASE 1 - ANALISI GEOGRAFICA:
+- Identifica la zona geografica richiesta (valle, comune, provincia).
+- Usa la tua conoscenza storica per associare località a valli/province anche se non esplicito.
+- Esempio: "Valle Imagna" → cerca comuni come Rota d'Imagna, Sant'Omobono, ecc.
+
+FASE 2 - SELEZIONE DATI:
+- Dai dati CSV forniti, seleziona SOLO i partigiani pertinenti alla zona.
+- Se la zona non ha match diretti, espandi alla provincia/regione più vicina.
+
+FASE 3 - STRUTTURA RISPOSTA:
+**🎯 FATTI ACCERTATI**
+- Elenca i partigiani trovati in formato: [[Nome Cognome]] (nato a X, operante in Y, brigata Z).
+- Usa le doppie quadre [[]] SOLO per nomi presenti nei dati forniti.
+- Inizia SUBITO con i nomi, senza preamboli.
+
+**🔗 PERCORSI E RELAZIONI**
+- Identifica legami: vicinanza geografica, stessa brigata, eventi comuni.
+- Usa il libro per contestualizzare storicamente.
+
+FASE 4 - LIMITI:
+- Se i dati forniti non coprono la zona richiesta, indica i partigiani della provincia/regione più vicina spiegando il collegamento geografico.
+- NON inventare nomi o dati non presenti nel contesto.
+
+═══════════════════════════════════════════════════════════════
+DATI DISPONIBILI (Filtrati Geograficamente e Rerankati Semanticamente)
+═══════════════════════════════════════════════════════════════
+${context}
+
+═══════════════════════════════════════════════════════════════
+ESTRATTI DAL LIBRO (Ricerca Semantica)
+═══════════════════════════════════════════════════════════════
+${estrattiLibro || "Nessun dettaglio trovato."}
+
+═══════════════════════════════════════════════════════════════
+DOMANDA UTENTE
+═══════════════════════════════════════════════════════════════
+"${originalText}"
+
+RISPONDI ORA:`
+                        }] 
+                    }] 
+                })
+            });
+
+            updateProgress(95, "Formattazione risposta...");
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+            
+            let aiText = data.candidates[0].content.parts[0].text;
+
+            // ─────────────────────────────────────────────────────────
+            // FASE 5: FORMATTAZIONE E LINK
+            // ─────────────────────────────────────────────────────────
+            
+            // A. Trasformazione grassetti in titoli
+            let formattedText = aiText
+                .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
+                .replace(/\n/g, '<br>');
+
+            // B. Creazione link ai partigiani
+            const tuttiINomi = database.map(d => d.nominativo).sort((a, b) => b.length - a.length);
+            
+            tuttiINomi.forEach(nome => {
+                if (nome.length < 3) return;
+
+                const regex = new RegExp(`(?<!San\\s|Santa\\s|\\bSanto\\b\\s)\\[{0,2}${nome}\\]{0,2}(?![a-zA-Z])`, 'gi');
+                
+                if (formattedText.includes(nome)) {
+                    const linkHTML = `<span class="link-partigiano" style="color:#e67e22; cursor:pointer; font-weight:bold; border-bottom:1px dashed #e67e22;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
+                    
+                    let tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = formattedText;
+                    
+                    const walk = (node) => {
+                        if (node.nodeType === 3) {
+                            const text = node.nodeValue;
+                            if (regex.test(text)) {
+                                const wrapper = document.createElement('span');
+                                wrapper.innerHTML = text.replace(regex, linkHTML);
+                                node.parentNode.replaceChild(wrapper, node);
+                            }
+                        } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
+                            Array.from(node.childNodes).forEach(walk);
+                        }
+                    };
+                    
+                    walk(tempDiv);
+                    formattedText = tempDiv.innerHTML;
+                }
+            });
+
+            aiMsgElement.innerHTML = formattedText;
+            aiMsgElement.classList.add('finished');
+            
+            updateProgress(100, "Completato!");
+            
+            setTimeout(() => {
+                pContainer.style.display = 'none';
+                document.getElementById('ai-status-text').style.display = 'none';
+                pBar.style.width = '0%';
+                pBar.classList.remove('progress-active');
+            }, 1000);
+
+            box.scrollTop = box.scrollHeight;
+
+        } catch (e) { 
+            console.error(e);
+            pContainer.style.display = 'none';
+            document.getElementById('ai-status-text').style.display = 'none';
+            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
+            aiMsgElement.classList.add('finished');
+        }
+    }
+
+    map.on('click', () => { 
+        closeDetails(); 
+        document.getElementById('results-dropdown').style.display = 'none'; 
+    });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
