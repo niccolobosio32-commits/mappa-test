@@ -302,7 +302,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio 1.9</span>
+        <span>Assistente Archivio 2.0</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -551,14 +551,38 @@ function getDist(lat1, lon1, lat2, lon2) {
     box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai"></div>`;
     const aiMsgElement = document.getElementById(aiMsgId);
 
+    const mappaSinonimi = {
+        "sud": ["sicilia", "calabria", "puglia", "campania", "basilicata", "abruzzo", "molise", "sardegna", "meridionale", "meridione", "napoli", "palermo"],
+        "nord": ["piemonte", "liguria", "lombardia", "veneto", "emilia", "toscana", "valle d'aosta", "torino", "genova", "milano"],
+        "donne": ["staffetta", "partigiana", "civile", "sorella", "madre", "femminile"],
+        "tedeschi": ["ss", "wehrmacht", "occupanti", "nazi", "rastrellamento", "tedesco"]
+    };
+
     try {
         let q = userText.toLowerCase();
+        let terminiRicerca = q.split(/\s+/).filter(p => p.length > 3);
         
-        // 1. FILTRO (Ridotto a 25 per velocità e precisione)
+        Object.keys(mappaSinonimi).forEach(chiave => {
+            if (q.includes(chiave)) terminiRicerca = terminiRicerca.concat(mappaSinonimi[chiave]);
+        });
+
+        // FILTRO LOGICO POTENZIATO
         let matches = database.filter(d => {
-            const t = `${d.nominativo} ${d.scheda} ${d.regione}`.toLowerCase();
-            return q.split(/\s+/).some(p => p.length > 3 && t.includes(p));
-        }).slice(0, 25);
+            const reg = (d.regione || "").toLowerCase();
+            const bio = (d.scheda || "").toLowerCase();
+            const nom = d.nominativo.toLowerCase();
+            
+            // Logica specifica Sud -> Nord: cerca lo slash e verifica la provenienza
+            if ((q.includes("sud") || q.includes("meridional")) && q.includes("nord")) {
+                const parti = reg.split("/");
+                if (parti.length > 1) {
+                    const nataSud = mappaSinonimi["sud"].some(s => parti[0].includes(s));
+                    const operaNord = mappaSinonimi["nord"].some(n => parti[1].includes(n));
+                    if (nataSud && operaNord) return true;
+                }
+            }
+            return terminiRicerca.some(t => bio.includes(t) || reg.includes(t) || nom.includes(t));
+        }).slice(0, 40);
 
         const nomiDaLinkare = matches.map(d => d.nominativo).sort((a, b) => b.length - a.length);
 
@@ -566,22 +590,22 @@ function getDist(lat1, lon1, lat2, lon2) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                contents: [{ parts: [{ text: `Agisci come Archivista Storico. No preamboli.
+                contents: [{ parts: [{ text: `Agisci come Storico Senior.
+                OBIETTIVO: Analisi corale della Resistenza. No convenevoli.
                 
                 STRUTTURA:
-                1. **TESTIMONIANZE INDIVIDUATE**: Elenco puntato nomi. Scrivi solo "Nome Cognome: fatto breve".
-                2. **ANALISI E CONNESSIONI**: Unisci i punti tra i nomi citati (brigate, valli, date). Sii colto e analitico.
-                3. **MEMORIA DAL VOLUME**: Usa <libro-citazione> per riportare TESTUALMENTE brani del libro.
+                1. **TESTIMONIANZE INDIVIDUATE**: Elenco puntato nomi. Per ogni riga: Regione Nascita/Operazione e fatto breve (max 12 parole).
+                2. **ANALISI STORICO-GEOGRAFICA**: Collega i nomi tra loro (stessa brigata, stessa valle, stesso flusso migratorio Sud-Nord). Spiega il contesto.
+                3. **MEMORIA DAL VOLUME**: Usa <libro-citazione> per brani del libro pertinenti ai nomi citati.
 
-                REGOLE: Pari dignità narrativa. Scrivi i nomi esattamente come forniti.
-                DATI: ${matches.map(d => `${d.nominativo} (${d.regione}): ${d.scheda?.substring(0,200)}`).join("\n")}` }] }]
+                REGOLE: Scrivi i nomi esattamente come forniti. Pari dignità tra civili, IMI e partigiani.
+                DATI CSV: ${matches.map(d => `${d.nominativo} (Regioni: ${d.regione}): ${d.scheda?.substring(0,250)}`).join("\n")}` }] }]
             })
         });
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let fullText = "";
-
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -599,20 +623,19 @@ function getDist(lat1, lon1, lat2, lon2) {
             }
         }
 
-        // --- RENDERER FINALE ---
+        // RENDERER FINALE
         let html = fullText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px;"><b>💬 DAL LIBRO:</b><br>')
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic;"><b>💬 TESTIMONIANZA:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // --- LINKER UNIVERSALE (Attiva i link ovunque, anche in Analisi e Libro) ---
+        // LINKER UNIVERSALE (Scansiona tutto l'HTML e attiva i nomi)
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Regex migliorata: evita di duplicare i nomi e non rompe i tag HTML
+            // La regex \b assicura che il nome sia una parola intera, (?![^<]*>) evita di rompere i tag HTML
             const regex = new RegExp(`(?![^<]*>)\\b${escaped.split(/\s+/).join('\\s+')}\\b`, 'gi');
-            
             html = html.replace(regex, (match) => {
                 return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${match}</span>`;
             });
@@ -627,6 +650,7 @@ function getDist(lat1, lon1, lat2, lon2) {
 </script>
 </body>
 </html>
+
 
 
 
