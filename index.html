@@ -535,6 +535,111 @@ function getDist(lat1, lon1, lat2, lon2) {
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+    // MODULO 1: SMART FILTER
+function smartFilter(query, maxResults = 40) {
+    const q = query.toLowerCase();
+    const parole = q.split(/\s+/).filter(p => p.length > 2);
+    
+    // DIZIONARIO GEOGRAFICO (zone storiche)
+    const zoneStoriche = {
+        'linea gotica': ['massa', 'carrara', 'lucca', 'pistoia', 'bologna', 'firenze', 'ravenna', 'forno'],
+        'val di susa': ['susa', 'bussoleno', 'avigliana', 'torino'],
+        'valli valdesi': ['torre pellice', 'pinerolo', 'luserna'],
+        'ossola': ['domodossola', 'verbania', 'gravellona', 'ornavasso'],
+        'langhe': ['alba', 'bra', 'mondovì', 'cuneo', 'canelli'],
+        'apuane': ['massa', 'carrara', 'forno', 'seravezza'],
+        'appennino': ['pontremoli', 'parma', 'modena', 'reggio'],
+        'friuli': ['udine', 'gorizia', 'trieste', 'pordenone'],
+        'liguria': ['genova', 'savona', 'imperia', 'la spezia', 'chiavari', 'rapallo'],
+        'piemonte': ['torino', 'cuneo', 'asti', 'alessandria', 'biella', 'novara', 'verbania']
+    };
+
+    // SCORING MULTI-CRITERIO
+    const scored = database.map(d => {
+        let score = 0;
+        const testoBio = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
+        
+        // 1. Match esatto nominativo (peso massimo)
+        if (d.nominativo.toLowerCase().includes(q)) score += 100;
+        
+        // 2. Match parole chiave nella bio
+        parole.forEach(p => {
+            if (p.length > 3 && testoBio.includes(p)) score += 10;
+            if (p.length > 5 && testoBio.includes(p)) score += 5; // Parole lunghe +boost
+        });
+        
+        // 3. Match geografico intelligente (zone storiche)
+        Object.entries(zoneStoriche).forEach(([zona, luoghi]) => {
+            if (q.includes(zona)) {
+                luoghi.forEach(luogo => {
+                    if (testoBio.includes(luogo)) score += 20;
+                });
+            }
+        });
+        
+        // 4. Boost per temi storici rilevanti
+        const temiStorici = {
+            'imi': /internato|lager|germania|deportat/i,
+            'strage': /strage|fucilat|nazi|rappresaglia/i,
+            'gap': /gap|gappista|sabotaggio/i,
+            'staffetta': /staffetta|corriere|collegamento/i,
+            'brigata': /brigata|divisione|battaglione/i
+        };
+        
+        Object.entries(temiStorici).forEach(([tema, regex]) => {
+            if (q.includes(tema) && regex.test(testoBio)) score += 15;
+        });
+        
+        // 5. Penalità per bio troppo brevi
+        if ((d.scheda || "").length < 50) score -= 5;
+        
+        return { ...d, score };
+    });
+
+    // Ordina per score decrescente e prendi top N
+    return scored
+        .filter(d => d.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, maxResults);
+}
+
+// MODULO 2: UNIVERSAL LINKER
+function universalLinker(html, nomiDatabase) {
+    // Ordina nomi per lunghezza (più lunghi prima)
+    const nomiOrdinati = nomiDatabase
+        .map(n => n.trim())
+        .filter(n => n.length >= 3)
+        .sort((a, b) => b.length - a.length);
+
+    nomiOrdinati.forEach(nome => {
+        // Escape caratteri speciali per regex
+        const escaped = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const paroleNome = escaped.split(/\s+/);
+        
+        // PATTERN MULTI-FORMATO
+        const patterns = [
+            `\\[\\[${paroleNome.join('\\s+')}\\]\\]`,  // [[Mario Rossi]]
+            `\\(${paroleNome.join('\\s+')}\\)`,        // (Mario Rossi)
+            `(?<![a-zA-Zàèéìòù])${paroleNome.join('\\s+')}(?![a-zA-Zàèéìòù])` // Mario Rossi
+        ];
+        
+        patterns.forEach(pattern => {
+            const regex = new RegExp(pattern, 'gi');
+            
+            html = html.replace(regex, (match) => {
+                // Non linkare se già dentro un tag
+                if (match.includes('onclick') || match.includes('<span')) return match;
+                
+                // Rimuovi parentesi/quadre
+                const displayName = match.replace(/[\[\]\(\)]/g, '');
+                
+                return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${nome.replace(/'/g, "\\'")}')">${displayName}</span>`;
+            });
+        });
+    });
+
+    return html;
+}
     async function sendAIMessage() {
     const key = localStorage.getItem('gemini_key') || prompt("API Key:");
     if (!key) return; 
@@ -653,6 +758,7 @@ ${estrattiLibro ? `LIBRO:\n${estrattiLibro}` : ""}`;
 </script>
 </body>
 </html>
+
 
 
 
