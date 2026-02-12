@@ -626,22 +626,32 @@ function getDist(lat1, lon1, lat2, lon2) {
             .replace(/<\/libro-citazione>/g, '</div>');
 
         // 2. Linker "Brute Force": ordiniamo i nomi dal più lungo al più corto per non sbagliare
+        // 2. Linker "Brute Force" con gestione Soprannomi
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             if (n.length < 3) return;
 
-            // Creiamo una Regex che ignora maiuscole/minuscole e spazi multipli
-            const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(escaped.split(/\s+/).join('\\s+'), 'gi');
+            // Creiamo una regex che cerca il nome e cognome
+            // ma permette che ci sia del testo in mezzo (come i soprannomi)
+            const parti = n.split(/\s+/);
+            let regexStr;
             
-            // Applichiamo il link solo se il testo non è già dentro un tag HTML
+            if (parti.length >= 2) {
+                // Cerca "Nome" + (qualsiasi cosa in mezzo) + "Cognome"
+                regexStr = parti[0] + ".*?" + parti[parti.length - 1];
+            } else {
+                regexStr = n;
+            }
+
+            const regex = new RegExp(regexStr, 'gi');
+            
             finalHtml = finalHtml.replace(regex, (match) => {
-                // Se siamo già dentro un onclick o uno span, restituiamo il match così com'è
+                // Evita di sovrapporre link
+                if (match.includes('onclick') || match.length > 50) return match; 
                 return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${match}</span>`;
             });
         });
 
-        // 3. Output finale
         aiMsgElement.innerHTML = finalHtml;
 
     } catch (e) { aiMsgElement.innerText = "Errore: " + e.message; }
@@ -651,6 +661,7 @@ function getDist(lat1, lon1, lat2, lon2) {
 </script>
 </body>
 </html>
+
 
 
 
