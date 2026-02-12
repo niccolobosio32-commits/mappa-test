@@ -11,29 +11,71 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
    <style>
-     libro-narrato {
+/* ═══════════════════════════════════════════════════════════════
+   TAG CUSTOM PER IL LIBRO
+   ═══════════════════════════════════════════════════════════════ */
+
+libro-narrato {
     display: block;
-    background: rgba(52, 152, 219, 0.08);
-    border-left: 3px solid var(--blue);
-    padding: 12px;
-    margin: 10px 0;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.08) 0%, rgba(52, 152, 219, 0.03) 100%);
+    border-left: 4px solid #3498db;
+    padding: 15px 15px 15px 45px;
+    margin: 15px 0;
     font-size: 14px;
-    border-radius: 0 8px 8px 0;
-    line-height: 1.5;
+    border-radius: 0 12px 12px 0;
+    line-height: 1.6;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+}
+
+libro-narrato::before {
+    content: '📖';
+    position: absolute;
+    left: 12px;
+    top: 15px;
+    font-size: 20px;
+    opacity: 0.7;
 }
 
 libro-citazione {
     display: block;
     font-family: 'Lora', serif;
     font-style: italic;
-    background: rgba(0, 0, 0, 0.04);
-    border-left: 3px double #1a2a3a;
-    padding: 14px;
-    margin: 12px 0;
-    color: #333;
-    line-height: 1.6;
+    background: linear-gradient(135deg, rgba(139, 69, 19, 0.06) 0%, rgba(139, 69, 19, 0.02) 100%);
+    border-left: 4px double #8b4513;
+    padding: 18px 18px 18px 50px;
+    margin: 15px 0;
+    color: #2c3e50;
+    line-height: 1.7;
+    border-radius: 0 12px 12px 0;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.08);
 }
-       #ai-progress-container {
+
+libro-citazione::before {
+    content: '📜';
+    position: absolute;
+    left: 15px;
+    top: 18px;
+    font-size: 22px;
+    opacity: 0.6;
+}
+
+/* Badge "Fonte: Libro" */
+.libro-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 8px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(139, 69, 19, 0.3);
+}
+
+#ai-progress-container {
     width: 100%;
     height: 4px;
     background: rgba(0,0,0,0.05);
@@ -65,69 +107,172 @@ libro-citazione {
     50% { opacity: 1; }
     100% { opacity: 0.6; }
 }
-    :root { 
-        --navy: #1a2a3a; 
-        --blue: #3498db; 
-        --glass: rgba(255, 255, 255, 0.4); 
-        --red: #e21118; 
-        --yellow: #ffcc00; 
-    }
 
-    .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
-    .msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
-    .msg-ai.finished:after { content: ''; }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+:root { 
+    --navy: #1a2a3a; 
+    --blue: #3498db; 
+    --glass: rgba(255, 255, 255, 0.4); 
+    --red: #e21118; 
+    --yellow: #ffcc00; 
+}
 
-    body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; position: fixed; }
+.msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
+.msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
+.msg-ai.finished:after { content: ''; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-    #map { 
-        width: 100%; 
-        height: 100%; 
-        position: fixed !important; 
-        top: 0; 
-        left: 0; 
-        bottom: 0;
-        right: 0;
-        z-index: 1; 
-        background: #f0f0f0; 
-    }
+body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; position: fixed; }
 
-    #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
-    #filter-bar { 
-        background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-        padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-        display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
-    }
-    #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
-    
-    #results-dropdown { 
-        background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
-        display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
-    }
-    .res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
-    .res-item:hover { background: var(--blue); color: white; }
+#map { 
+    width: 100%; 
+    height: 100%; 
+    position: fixed !important; 
+    top: 0; 
+    left: 0; 
+    bottom: 0;
+    right: 0;
+    z-index: 1; 
+    background: #f0f0f0; 
+}
 
+#ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
+#filter-bar { 
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+    display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
+}
+#filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
+
+#results-dropdown { 
+    background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
+    display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
+}
+.res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
+.res-item:hover { background: var(--blue); color: white; }
+
+#details-panel { 
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
+    width: 94%; max-width: 1100px; z-index: 4000; 
+    background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
+    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
+    border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
+    display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+    max-height: 85vh;
+}
+#details-panel.open { transform: translate(-50%, -50%); }
+#details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+#details-content { display: flex; overflow: hidden; flex: 1; }
+.main-col { flex: 1; overflow-y: auto; }
+.video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+.bio-box { padding: 15px 25px; line-height: 1.4; }
+#text-bio { 
+    font-family: 'Lora', serif; 
+    font-size: 16px; 
+    color: #1a1a1a; 
+    text-align: justify;
+    hyphens: auto;
+}
+#text-bio::first-letter {
+    float: left;
+    font-size: 3.5em;
+    line-height: 0.7;
+    padding-top: 4px;
+    padding-right: 8px;
+    color: var(--navy);
+    font-weight: 700;
+}
+
+.side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
+.rel-item { padding: 6px 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 11px; margin-bottom: 4px; cursor: pointer; font-weight: 600; }
+
+.social-box { display: flex; justify-content: center; gap: 15px; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
+.social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
+.social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
+
+#ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
+
+#ai-chat-window { 
+    position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
+    width: 400px; height: 550px; 
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
+}
+
+#ai-chat-messages { 
+    flex: 1; padding: 15px; overflow-y: auto; 
+    display: flex; flex-direction: column; gap: 12px;
+}
+
+.msg { 
+    padding: 12px 16px; border-radius: 18px; max-width: 85%; 
+    font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.msg-user { 
+    background: #1a2a3a; color: white; align-self: flex-end; 
+    border-bottom-right-radius: 2px;
+}
+
+.msg-ai { 
+    background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
+    border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
+    backdrop-filter: blur(5px);
+}
+
+.msg-ai b[style*="color:var(--navy)"] {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #1a2a3a !important;
+    border-bottom: 1px solid #eee;
+}
+
+.link-partigiano {
+    color: #d35400;
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: 0.2s;
+}
+.link-partigiano:hover {
+    border-bottom: 1px solid #d35400;
+    background: rgba(211, 84, 0, 0.05);
+}
+
+#ai-chat-input-area { padding: 10px; background: #f4f4f4; border-top: 1px solid #ddd; display: flex; }
+#ai-chat-input { 
+    flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 8px 12px; 
+    font-size: 14px; outline: none; 
+}
+
+@media screen and (max-width: 768px) {
     #details-panel { 
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
-        width: 94%; max-width: 1100px; z-index: 4000; 
-        background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
-        transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
-        border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
-        display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
-        max-height: 85vh;
+        width: 100% !important; 
+        height: 85vh !important; 
+        position: fixed !important; 
+        bottom: -100% !important; 
+        top: auto !important; 
+        left: 0 !important; 
+        transform: none !important; 
+        border-radius: 25px 25px 0 0 !important; 
+        transition: bottom 0.5s ease !important; 
+        z-index: 9999; 
     }
-    #details-panel.open { transform: translate(-50%, -50%); }
-    #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-    #details-content { display: flex; overflow: hidden; flex: 1; }
-    .main-col { flex: 1; overflow-y: auto; }
-    .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+    #details-panel.open { bottom: 0 !important; }
+    #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
+    .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
+    .main-col { overflow-y: visible !important; }
     .bio-box { padding: 15px 25px; line-height: 1.4; }
     #text-bio { 
         font-family: 'Lora', serif; 
         font-size: 16px; 
         color: #1a1a1a; 
         text-align: justify;
-        hyphens: auto;
     }
     #text-bio::first-letter {
         float: left;
@@ -135,114 +280,12 @@ libro-citazione {
         line-height: 0.7;
         padding-top: 4px;
         padding-right: 8px;
-        color: var(--navy);
+        color: #1a2a3a;
         font-weight: 700;
     }
-
-    .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
-    .rel-item { padding: 6px 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 11px; margin-bottom: 4px; cursor: pointer; font-weight: 600; }
-
-    .social-box { display: flex; justify-content: center; gap: 15px; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
-    .social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
-    .social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
-
-    #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
-    
-    #ai-chat-window { 
-        position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
-        width: 400px; height: 550px; 
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
-        box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
-    }
-
-    #ai-chat-messages { 
-        flex: 1; padding: 15px; overflow-y: auto; 
-        display: flex; flex-direction: column; gap: 12px;
-    }
-
-    .msg { 
-        padding: 12px 16px; border-radius: 18px; max-width: 85%; 
-        font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-
-    .msg-user { 
-        background: #1a2a3a; color: white; align-self: flex-end; 
-        border-bottom-right-radius: 2px;
-    }
-
-    .msg-ai { 
-        background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
-        border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
-        backdrop-filter: blur(5px);
-    }
-
-    .msg-ai b[style*="color:var(--navy)"] {
-        display: block;
-        margin-top: 15px;
-        margin-bottom: 5px;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: #1a2a3a !important;
-        border-bottom: 1px solid #eee;
-    }
-
-    .link-partigiano {
-        color: #d35400;
-        text-decoration: none;
-        font-weight: 700;
-        cursor: pointer;
-        border-bottom: 1px solid transparent;
-        transition: 0.2s;
-    }
-    .link-partigiano:hover {
-        border-bottom: 1px solid #d35400;
-        background: rgba(211, 84, 0, 0.05);
-    }
-
-    #ai-chat-input-area { padding: 10px; background: #f4f4f4; border-top: 1px solid #ddd; display: flex; }
-    #ai-chat-input { 
-        flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 8px 12px; 
-        font-size: 14px; outline: none; 
-    }
-
-    @media screen and (max-width: 768px) {
-        #details-panel { 
-            width: 100% !important; 
-            height: 85vh !important; 
-            position: fixed !important; 
-            bottom: -100% !important; 
-            top: auto !important; 
-            left: 0 !important; 
-            transform: none !important; 
-            border-radius: 25px 25px 0 0 !important; 
-            transition: bottom 0.5s ease !important; 
-            z-index: 9999; 
-        }
-        #details-panel.open { bottom: 0 !important; }
-        #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
-        .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
-        .main-col { overflow-y: visible !important; }
-        .bio-box { padding: 15px 25px; line-height: 1.4; }
-        #text-bio { 
-            font-family: 'Lora', serif; 
-            font-size: 16px; 
-            color: #1a1a1a; 
-            text-align: justify;
-        }
-        #text-bio::first-letter {
-            float: left;
-            font-size: 3.5em;
-            line-height: 0.7;
-            padding-top: 4px;
-            padding-right: 8px;
-            color: #1a2a3a;
-            font-weight: 700;
-        }
-        .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
-        #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
-    }
+    .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
+    #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
+}
 </style>
 </head>
 <body>
@@ -295,7 +338,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio a1.2</span>
+        <span>Assistente Archivio z1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -384,31 +427,35 @@ libro-citazione {
         csvEmbeddings: null,
         
         async initLibro() {
-            if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') return;
+            if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') {
+                console.log("📚 Libro non disponibile o già caricato");
+                return;
+            }
             
             console.log("🔄 Inizializzazione cache libro...");
             
-            // Chunking del libro
+            // Chunking del libro con filtro lunghezza minima
             this.libroChunks = TESTO_LIBRO
                 .replace(/\n\s*\n/g, "###")
                 .replace(/\n/g, " ")
                 .split("###")
-                .filter(p => p.length > 100);
+                .filter(p => p.length > 100) // Solo paragrafi sostanziosi
+                .map(p => p.trim());
             
             console.log(`✅ Cache libro pronta: ${this.libroChunks.length} chunks`);
         },
         
         async initCSV() {
             if (this.csvEmbeddings || database.length === 0) return;
-            
-            console.log("🔄 Inizializzazione cache CSV...");
             console.log(`✅ Cache CSV pronta: ${database.length} record`);
         }
     };
 
     // Inizializza cache libro all'avvio
     window.addEventListener('load', () => {
-        setTimeout(() => CACHE.initLibro(), 2000);
+        setTimeout(() => {
+            CACHE.initLibro();
+        }, 2000);
     });
 
     // ═══════════════════════════════════════════════════════════════
@@ -657,18 +704,20 @@ libro-citazione {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // RICERCA SEMANTICA NEL LIBRO
+    // RICERCA SEMANTICA NEL LIBRO (OTTIMIZZATA)
     // ═══════════════════════════════════════════════════════════════
-    async function searchLibroSemantico(query, topK = 3) {
+    async function searchLibroSemantico(query, topK = 2) {
         if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-            console.log("Cache libro non disponibile");
-            return "";
+            console.log("📚 Cache libro non disponibile");
+            return { text: "", maxScore: 0 };
         }
         
         const key = localStorage.getItem('gemini_key');
-        if (!key) return "";
+        if (!key) return { text: "", maxScore: 0 };
         
         try {
+            console.log("🔍 Ricerca semantica nel libro...");
+            
             // 1. Embedding della query
             const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                 method: 'POST',
@@ -679,17 +728,23 @@ libro-citazione {
                 })
             });
             const queryData = await queryEmbedRes.json();
-            if (!queryData.embedding) return "";
+            if (!queryData.embedding) return { text: "", maxScore: 0 };
             const queryEmbed = queryData.embedding.values;
             
             // 2. Score ogni chunk (batch processing)
             const batchSize = 10;
             let scoredChunks = [];
             
-            for (let i = 0; i < Math.min(CACHE.libroChunks.length, 100); i += batchSize) {
-                const batch = CACHE.libroChunks.slice(i, i + batchSize);
+            // Limita a 50 chunk per performance
+            const chunksToProcess = CACHE.libroChunks.slice(0, 50);
+            
+            for (let i = 0; i < chunksToProcess.length; i += batchSize) {
+                const batch = chunksToProcess.slice(i, i + batchSize);
                 const batchScores = await Promise.all(batch.map(async (chunk) => {
                     try {
+                        // Filtra chunk troppo corti
+                        if (chunk.length < 50) return { chunk, score: 0 };
+                        
                         const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -711,19 +766,29 @@ libro-citazione {
                 scoredChunks.push(...batchScores);
             }
             
-            // 3. Restituisci i top K
-            const topChunks = scoredChunks
+            // 3. Filtra con soglia alta (0.5) e prendi solo i top K
+            const relevantChunks = scoredChunks
+                .filter(s => s.score >= 0.5) // ⭐ SOGLIA ALTA: solo contenuti molto rilevanti
                 .sort((a, b) => b.score - a.score)
-                .slice(0, topK)
-                .filter(s => s.score > 0.3) // Soglia minima di rilevanza
+                .slice(0, topK);
+            
+            const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
+            
+            if (relevantChunks.length === 0) {
+                console.log("📚 Nessun contenuto rilevante trovato nel libro (soglia: 0.5)");
+                return { text: "", maxScore: 0 };
+            }
+            
+            const topChunks = relevantChunks
                 .map(s => s.chunk)
                 .join('\n\n[---]\n\n');
             
-            console.log(`Trovati ${topChunks.length > 0 ? topK : 0} chunk rilevanti dal libro`);
-            return topChunks;
+            console.log(`✅ Trovati ${relevantChunks.length} chunk rilevanti (max score: ${maxScore.toFixed(3)})`);
+            return { text: topChunks, maxScore };
+            
         } catch (e) {
-            console.error("Errore ricerca libro:", e);
-            return "";
+            console.error("❌ Errore ricerca libro:", e);
+            return { text: "", maxScore: 0 };
         }
     }
 
@@ -821,9 +886,21 @@ libro-citazione {
             updateProgress(60, "Ricerca nel libro...");
 
             // ─────────────────────────────────────────────────────────
-            // FASE 3: RICERCA SEMANTICA NEL LIBRO
+            // FASE 3: RICERCA SEMANTICA NEL LIBRO (CONDIZIONALE)
             // ─────────────────────────────────────────────────────────
-            let estrattiLibro = await searchLibroSemantico(originalText, 3);
+            let estrattiLibro = "";
+            let libroUsato = false;
+            let libroScore = 0;
+
+            const libroResult = await searchLibroSemantico(originalText, 2);
+            if (libroResult.maxScore >= 0.5 && libroResult.text.length > 0) {
+                estrattiLibro = libroResult.text;
+                libroUsato = true;
+                libroScore = libroResult.maxScore;
+                console.log(`📚 Libro integrato (rilevanza: ${(libroScore * 100).toFixed(1)}%)`);
+            } else {
+                console.log("📚 Libro non pertinente, escluso dalla risposta");
+            }
 
             updateProgress(70, "Preparazione contesto...");
 
@@ -837,15 +914,9 @@ libro-citazione {
             pBar.classList.add('progress-active');
 
             // ─────────────────────────────────────────────────────────
-            // FASE 4: CHIAMATA API GEMINI CON PROMPT AVANZATO
+            // FASE 4: CHIAMATA API GEMINI CON PROMPT CONDIZIONALE
             // ─────────────────────────────────────────────────────────
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ 
-                            text: `Sei un Archivista Storico della Resistenza Italiana (1943-45) con accesso a un database di testimonianze partigiane.
+            const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) con accesso a un database di testimonianze partigiane.
 
 ═══════════════════════════════════════════════════════════════
 ARCHITETTURA DEI DATI
@@ -855,10 +926,11 @@ ARCHITETTURA DEI DATI
    - 'città_nascita': Città di nascita (non di operazione).
    - Per domande su "meridionali al nord", cerca: nascita=Sud + operazione=Nord.
 
-2. LIBRO STORICO:
-   - Contesto narrativo e dettagli storici.
-   - Usa <libro-narrato>testo</libro-narrato> per riassunti.
-   - Usa <libro-citazione>testo</libro-citazione> per citazioni dirette.
+${libroUsato ? `2. LIBRO STORICO (RILEVANZA: ${(libroScore * 100).toFixed(0)}%):
+   - Contesto narrativo e dettagli storici VERIFICATI.
+   - Usa <libro-narrato>testo</libro-narrato> per riassunti basati sul libro.
+   - Usa <libro-citazione>testo</libro-citazione> per citazioni dirette dal libro.
+   - IMPORTANTE: Usa il libro SOLO per arricchire il contesto, non inventare collegamenti forzati.` : ''}
 
 ═══════════════════════════════════════════════════════════════
 METODOLOGIA DI RISPOSTA
@@ -866,7 +938,6 @@ METODOLOGIA DI RISPOSTA
 FASE 1 - ANALISI GEOGRAFICA:
 - Identifica la zona geografica richiesta (valle, comune, provincia).
 - Usa la tua conoscenza storica per associare località a valli/province anche se non esplicito.
-- Esempio: "Valle Imagna" → cerca comuni come Rota d'Imagna, Sant'Omobono, ecc.
 
 FASE 2 - SELEZIONE DATI:
 - Dai dati CSV forniti, seleziona SOLO i partigiani pertinenti alla zona.
@@ -880,51 +951,69 @@ FASE 3 - STRUTTURA RISPOSTA:
 
 **🔗 PERCORSI E RELAZIONI**
 - Identifica legami: vicinanza geografica, stessa brigata, eventi comuni.
-- Usa il libro per contestualizzare storicamente.
+${libroUsato ? '- Usa il libro per contestualizzare storicamente SOLO se pertinente.' : ''}
 
 FASE 4 - LIMITI:
-- Se i dati forniti non coprono la zona richiesta, indica i partigiani della provincia/regione più vicina spiegando il collegamento geografico.
+- Se i dati forniti non coprono la zona richiesta, indica i partigiani della provincia/regione più vicina.
 - NON inventare nomi o dati non presenti nel contesto.
 
 ═══════════════════════════════════════════════════════════════
-DATI DISPONIBILI (Filtrati Geograficamente e Rerankati Semanticamente)
+DATI DISPONIBILI (Filtrati Geograficamente e Rerankati)
 ═══════════════════════════════════════════════════════════════
 ${context}
 
+${libroUsato ? `═══════════════════════════════════════════════════════════════
+ESTRATTI DAL LIBRO (Ricerca Semantica - Score: ${(libroScore * 100).toFixed(0)}%)
 ═══════════════════════════════════════════════════════════════
-ESTRATTI DAL LIBRO (Ricerca Semantica)
-═══════════════════════════════════════════════════════════════
-${estrattiLibro || "Nessun dettaglio trovato."}
+${estrattiLibro}` : ''}
 
 ═══════════════════════════════════════════════════════════════
 DOMANDA UTENTE
 ═══════════════════════════════════════════════════════════════
 "${originalText}"
 
-RISPONDI ORA:`
-                        }] 
+RISPONDI ORA:`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contents: [{ 
+                        parts: [{ text: promptBase }] 
                     }] 
                 })
             });
 
             updateProgress(95, "Formattazione risposta...");
             const data = await response.json();
-            if (data.error) throw new Error(data.error.message);
-            
+
+            if (data.error) {
+                console.error("Errore API:", data.error);
+                throw new Error(data.error.message);
+            }
+
             let aiText = data.candidates[0].content.parts[0].text;
 
             // ─────────────────────────────────────────────────────────
             // FASE 5: FORMATTAZIONE E LINK
             // ─────────────────────────────────────────────────────────
-            
+
             // A. Trasformazione grassetti in titoli
             let formattedText = aiText
                 .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
                 .replace(/\n/g, '<br>');
 
-            // B. Creazione link ai partigiani
+            // B. Registra custom elements per i tag libro (solo una volta)
+            if (!customElements.get('libro-narrato')) {
+                customElements.define('libro-narrato', class extends HTMLElement {});
+            }
+            if (!customElements.get('libro-citazione')) {
+                customElements.define('libro-citazione', class extends HTMLElement {});
+            }
+
+            // C. Creazione link ai partigiani
             const tuttiINomi = database.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-            
+
             tuttiINomi.forEach(nome => {
                 if (nome.length < 3) return;
 
@@ -953,6 +1042,11 @@ RISPONDI ORA:`
                     formattedText = tempDiv.innerHTML;
                 }
             });
+
+            // D. Aggiungi badge se il libro è stato usato
+            if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
+                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
+            }
 
             aiMsgElement.innerHTML = formattedText;
             aiMsgElement.classList.add('finished');
@@ -984,5 +1078,3 @@ RISPONDI ORA:`
 </script>
 </body>
 </html>
-
-
