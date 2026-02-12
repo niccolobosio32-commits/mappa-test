@@ -338,7 +338,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A1</span>
+        <span>Assistente Archivio A1.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -395,7 +395,57 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     map.addLayer(markers);
     let database = [];
     let searchTimeout;
-
+// ═══════════════════════════════════════════════════════════════
+// DIZIONARIO SINONIMI PER ESPANSIONE QUERY AI
+// ═══════════════════════════════════════════════════════════════
+const DIZIONARIO_SINONIMI = {
+    "imi": "IMI internati militari italiani prigionia Germania lager Stammlager",
+    "cln": "CLN Comitato di Liberazione Nazionale resistenza antifascismo",
+    "gap": "GAP Gruppi di Azione Patriottica gappisti azioni urbane sabotaggio",
+    "sap": "SAP Squadre di Azione Patriottica staffette ausiliarie",
+    "rsi": "RSI Repubblica Sociale Italiana Salò fascismo repubblichini",
+    "lager": "lager campo di concentramento deportazione prigionia",
+    "mauthausen": "Mauthausen campo concentramento Austria deportati sterminio",
+    "partigiano": "partigiano partigiana resistente combattente patriota",
+    "staffetta": "staffetta staffettista collegamento messaggera portaordini",
+    "rastrellamento": "rastrellamento operazione polizia retata cattura arresto",
+    "rappresaglia": "rappresaglia ritorsione strage eccidio massacro",
+    "deportazione": "deportazione deportati trasferimento forzato tradotta",
+    "8 settembre": "8 settembre 1943 armistizio Badoglio sbandamento esercito",
+    "liberazione": "liberazione 25 aprile 1945 insurrezione fine guerra",
+    "caduto": "caduto morto deceduto ucciso vittima perito",
+    "brigata": "brigata divisione formazione partigiana banda gruppo armato"
+};
+    // ═══════════════════════════════════════════════════════════════
+// FUNZIONE ESPANSIONE QUERY CON SINONIMI
+// ═══════════════════════════════════════════════════════════════
+function espandiQueryConSinonimi(queryOriginale) {
+    let queryEspansa = queryOriginale;
+    let terminiAggiunti = [];
+    const queryLower = queryOriginale.toLowerCase().trim();
+    
+    // Cerca corrispondenze nel dizionario
+    for (const [chiave, espansione] of Object.entries(DIZIONARIO_SINONIMI)) {
+        const regex = new RegExp(`\\b${chiave.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        
+        if (regex.test(queryLower)) {
+            const nuoviTermini = espansione.split(' ').filter(termine => 
+                !queryLower.includes(termine.toLowerCase())
+            );
+            terminiAggiunti.push(...nuoviTermini);
+        }
+    }
+    
+    // Espandi la query se ci sono nuovi termini
+    if (terminiAggiunti.length > 0) {
+        const terminiUnici = [...new Set(terminiAggiunti)];
+        queryEspansa = `${queryOriginale} ${terminiUnici.join(' ')}`;
+        console.log('🔍 Query originale:', queryOriginale);
+        console.log('📚 Query espansa:', queryEspansa);
+    }
+    
+    return queryEspansa;
+}
     // ═══════════════════════════════════════════════════════════════
     // CARICAMENTO DATABASE CSV
     // ═══════════════════════════════════════════════════════════════
@@ -902,6 +952,10 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
         const box = document.getElementById('ai-chat-messages');
         let userText = input.value.trim();
         const originalText = userText;
+            // ═══════════════════════════════════════════════════════════════
+    // ESPANSIONE QUERY CON SINONIMI
+    // ═══════════════════════════════════════════════════════════════
+    userText = espandiQueryConSinonimi(userText);
         
         if (!userText) return;
 
@@ -1201,3 +1255,4 @@ RISPONDI ORA:`;
 </script>
 </body>
 </html>
+
