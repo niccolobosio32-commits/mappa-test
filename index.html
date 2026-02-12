@@ -613,7 +613,7 @@ function getDist(lat1, lon1, lat2, lon2) {
             });
         }
 
-        // 3. POST-PROCESSING (GRAFICA E LINKER BULLDOZER)
+       // 1. RENDERING GRAFICO
         let html = fullText
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
@@ -622,12 +622,16 @@ function getDist(lat1, lon1, lat2, lon2) {
             .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; font-size:0.9em;"><b>💬 TESTIMONIANZA:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // Linker Universale: Attiva i nomi e rimuove residui di parentesi/quadre
+        // 2. LINKER "TOTALE" (Risolve il problema Enrica Morbello)
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
+            if (n.length < 3) return;
+
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Questa regex cattura il nome anche se l'IA ha messo (Nome), [Nome] o [[Nome]]
-            const regex = new RegExp(`(?![^<]*>)[\\(\\[]{0,2}${escaped.split(/\s+/).join('\\s+')}[\\)\\]]{0,2}`, 'gi');
+            
+            // Questa regex cattura il nome ANCHE se circondato da [[ ]], [ ], o ( )
+            // e lo sostituisce con il link pulito
+            const regex = new RegExp(`[\\(\\[]{0,2}${escaped.split(/\s+/).join('\\s+')}[\\)\\]]{0,2}`, 'gi');
             
             html = html.replace(regex, (match) => {
                 if (match.includes('onclick')) return match;
@@ -635,7 +639,8 @@ function getDist(lat1, lon1, lat2, lon2) {
             });
         });
 
-        aiMsgElement.innerHTML = html;
+        // 3. PULIZIA FINALE (Rimuove eventuali quadre residue che l'IA potrebbe aver sparso)
+        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
 
     } catch (e) { aiMsgElement.innerText = "Errore: " + e.message; }
 }
@@ -644,5 +649,6 @@ function getDist(lat1, lon1, lat2, lon2) {
 </script>
 </body>
 </html>
+
 
 
