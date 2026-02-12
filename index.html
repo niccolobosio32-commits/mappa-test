@@ -338,7 +338,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio z1</span>
+        <span>Assistente Archivio A1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -428,11 +428,12 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
         
         async initLibro() {
             if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') {
-                console.log("📚 Libro non disponibile o già caricato");
+                console.log("📚 [DEBUG] Cache libro non disponibile");
+                console.log("📚 [DEBUG] typeof TESTO_LIBRO:", typeof TESTO_LIBRO);
                 return;
             }
             
-            console.log("🔄 Inizializzazione cache libro...");
+            console.log("🔄 [DEBUG] Inizializzazione cache libro...");
             
             // Chunking del libro con filtro lunghezza minima
             this.libroChunks = TESTO_LIBRO
@@ -442,12 +443,12 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
                 .filter(p => p.length > 100) // Solo paragrafi sostanziosi
                 .map(p => p.trim());
             
-            console.log(`✅ Cache libro pronta: ${this.libroChunks.length} chunks`);
+            console.log(`✅ [DEBUG] Cache libro pronta: ${this.libroChunks.length} chunks`);
         },
         
         async initCSV() {
             if (this.csvEmbeddings || database.length === 0) return;
-            console.log(`✅ Cache CSV pronta: ${database.length} record`);
+            console.log(`✅ [DEBUG] Cache CSV pronta: ${database.length} record`);
         }
     };
 
@@ -457,6 +458,91 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
             CACHE.initLibro();
         }, 2000);
     });
+
+    // ═══════════════════════════════════════════════════════════════
+    // INTELLIGENZA GEOGRAFICA AVANZATA
+    // ═══════════════════════════════════════════════════════════════
+    const GEO_INTELLIGENCE = {
+        NORD: ['piemonte', 'valle d\'aosta', 'lombardia', 'trentino', 'alto adige', 'veneto', 'friuli', 'liguria', 'emilia', 'romagna'],
+        CENTRO: ['toscana', 'umbria', 'marche', 'lazio', 'abruzzo', 'molise'],
+        SUD: ['campania', 'puglia', 'basilicata', 'calabria', 'sicilia', 'sardegna'],
+        
+        classificaRegione(regione) {
+            const r = regione.toLowerCase();
+            if (this.NORD.some(n => r.includes(n))) return 'nord';
+            if (this.CENTRO.some(c => r.includes(c))) return 'centro';
+            if (this.SUD.some(s => r.includes(s))) return 'sud';
+            return null;
+        },
+        
+        parseRegioneSlash(regioneField) {
+            // Formato: "Sicilia / Piemonte" → nascita=Sicilia, operazione=Piemonte
+            if (regioneField.includes('/')) {
+                const parts = regioneField.split('/').map(p => p.trim());
+                return {
+                    nascita: parts[0],
+                    operazione: parts[1] || parts[0]
+                };
+            }
+            return {
+                nascita: regioneField,
+                operazione: regioneField
+            };
+        },
+        
+        matchQueryGeografica(query) {
+            const q = query.toLowerCase();
+            
+            // Pattern: "nati al sud che hanno combattuto al nord"
+            const pattern1 = /nat[oi]\s+(?:al|in|nel|nella|nelle)\s+(nord|centro|sud).*(?:combat|operat|agit)[^\s]*\s+(?:al|in|nel|nella|nelle)\s+(nord|centro|sud)/i;
+            const match1 = q.match(pattern1);
+            if (match1) {
+                return {
+                    nascita: match1[1],
+                    operazione: match1[2]
+                };
+            }
+            
+            // Pattern: "meridionali al nord"
+            if (q.includes('meridional') && (q.includes('nord') || q.includes('settentrion'))) {
+                return {
+                    nascita: 'sud',
+                    operazione: 'nord'
+                };
+            }
+            
+            // Pattern: "siciliani in piemonte"
+            const pattern2 = /(\w+)(?:ani|esi|ini)\s+(?:in|al|nel|nella)\s+(\w+)/i;
+            const match2 = q.match(pattern2);
+            if (match2) {
+                return {
+                    nascita: match2[1],
+                    operazione: match2[2]
+                };
+            }
+            
+            return null;
+        },
+        
+        filtraPerGeografia(records, geoQuery) {
+            return records.filter(d => {
+                const parsed = this.parseRegioneSlash(d.regione);
+                const nascitaClass = this.classificaRegione(parsed.nascita);
+                const operazioneClass = this.classificaRegione(parsed.operazione);
+                
+                // Match esatto
+                if (geoQuery.nascita && geoQuery.operazione) {
+                    const nascitaMatch = nascitaClass === geoQuery.nascita.toLowerCase() || 
+                                        parsed.nascita.toLowerCase().includes(geoQuery.nascita.toLowerCase());
+                    const operazioneMatch = operazioneClass === geoQuery.operazione.toLowerCase() || 
+                                           parsed.operazione.toLowerCase().includes(geoQuery.operazione.toLowerCase());
+                    return nascitaMatch && operazioneMatch;
+                }
+                
+                return false;
+            });
+        }
+    };
 
     // ═══════════════════════════════════════════════════════════════
     // MOTORE FILTRI
@@ -704,11 +790,11 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // RICERCA SEMANTICA NEL LIBRO (OTTIMIZZATA)
+    // RICERCA SEMANTICA NEL LIBRO (OTTIMIZZATA CON SOGLIA ABBASSATA)
     // ═══════════════════════════════════════════════════════════════
-    async function searchLibroSemantico(query, topK = 2) {
+    async function searchLibroSemantico(query, topK = 4) {
         if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-            console.log("📚 Cache libro non disponibile");
+            console.log("📚 [DEBUG] Cache libro non disponibile");
             return { text: "", maxScore: 0 };
         }
         
@@ -716,7 +802,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
         if (!key) return { text: "", maxScore: 0 };
         
         try {
-            console.log("🔍 Ricerca semantica nel libro...");
+            console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
             
             // 1. Embedding della query
             const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
@@ -766,16 +852,28 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
                 scoredChunks.push(...batchScores);
             }
             
-            // 3. Filtra con soglia alta (0.5) e prendi solo i top K
-            const relevantChunks = scoredChunks
-                .filter(s => s.score >= 0.5) // ⭐ SOGLIA ALTA: solo contenuti molto rilevanti
+            // 3. Filtra con soglia ABBASSATA (0.35) e prendi solo i top K
+            const SOGLIA_PRIMARIA = 0.35; // ⭐ ABBASSATA da 0.5
+            const SOGLIA_FALLBACK = 0.25; // ⭐ FALLBACK: prende il migliore se nessuno supera 0.35
+            
+            let relevantChunks = scoredChunks
+                .filter(s => s.score >= SOGLIA_PRIMARIA)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, topK);
+            
+            // Fallback: se nessun chunk supera la soglia primaria, prendi i migliori sopra 0.25
+            if (relevantChunks.length === 0) {
+                console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
+                relevantChunks = scoredChunks
+                    .filter(s => s.score >= SOGLIA_FALLBACK)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, Math.min(2, topK)); // Prendi max 2 chunk nel fallback
+            }
             
             const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
             
             if (relevantChunks.length === 0) {
-                console.log("📚 Nessun contenuto rilevante trovato nel libro (soglia: 0.5)");
+                console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
                 return { text: "", maxScore: 0 };
             }
             
@@ -783,7 +881,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
                 .map(s => s.chunk)
                 .join('\n\n[---]\n\n');
             
-            console.log(`✅ Trovati ${relevantChunks.length} chunk rilevanti (max score: ${maxScore.toFixed(3)})`);
+            console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
             return { text: topChunks, maxScore };
             
         } catch (e) {
@@ -793,7 +891,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // AI CHAT - FUNZIONE PRINCIPALE
+    // AI CHAT - FUNZIONE PRINCIPALE CON FIX GEOGRAFICI
     // ═══════════════════════════════════════════════════════════════
     async function sendAIMessage() {
         const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
@@ -824,54 +922,71 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
         updateProgress(10, "Inizializzazione...");
 
         try {
+            console.log(`🔍 [DEBUG] Query originale: ${originalText}`);
             updateProgress(20, "Analisi geografica...");
             let contextRecords = [];
 
             // ─────────────────────────────────────────────────────────
-            // FASE 1: INTELLIGENZA GEOGRAFICA
+            // FASE 1: INTELLIGENZA GEOGRAFICA AVANZATA
             // ─────────────────────────────────────────────────────────
             
-            // 1a. Ricerca testuale diretta
+            // 1a. Riconoscimento pattern geografici complessi
+            const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
+            if (geoQuery) {
+                console.log(`🌍 [DEBUG] Query geografica rilevata:`, geoQuery);
+                contextRecords = GEO_INTELLIGENCE.filtraPerGeografia(database, geoQuery);
+                console.log(`📊 [DEBUG] Match geografici: ${contextRecords.length}`);
+            }
+            
+            // 1b. Ricerca testuale diretta (se non è query geografica o come integrazione)
             let q = userText.toLowerCase();
             let directMatches = database.filter(d => {
                 const contenuto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
                 return q.split(/\s+/).some(p => p.length > 3 && contenuto.includes(p));
             });
+            console.log(`📊 [DEBUG] Match diretti: ${directMatches.length}`);
 
-            // 1b. Geocoding GPS
-            const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
-            let cleanGeo = userText.toLowerCase();
-            stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
-            cleanGeo = cleanGeo.trim();
+            // 1c. Geocoding GPS (solo se non è query geografica complessa)
+            if (!geoQuery) {
+                const stopWords = ["partigiani", "partigiano", "nella", "nelle", "nel", "al", "a", "di", "in", "il", "la", "le", "gli", "i", "che", "hanno", "combattuto", "operato", "zona", "area", "provincia", "valle", "monte", "fiume", "città", "paese", "chi", "erano", "sono"];
+                let cleanGeo = userText.toLowerCase();
+                stopWords.forEach(w => { cleanGeo = cleanGeo.replace(new RegExp(`\\b${w}\\b`, 'g'), ''); });
+                cleanGeo = cleanGeo.trim();
 
-            if (cleanGeo.length > 2) {
-                try {
-                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&limit=1`);
-                    const geoData = await geoRes.json();
-                    
-                    if (geoData.length > 0) {
-                        const cLat = parseFloat(geoData[0].lat);
-                        const cLon = parseFloat(geoData[0].lon);
+                if (cleanGeo.length > 2) {
+                    try {
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${cleanGeo},Italy&format=json&limit=1`);
+                        const geoData = await geoRes.json();
+                        
+                        if (geoData.length > 0) {
+                            const cLat = parseFloat(geoData[0].lat);
+                            const cLon = parseFloat(geoData[0].lon);
 
-                        contextRecords = database.filter(d => {
-                            if(!d.lat || !d.lon) return false;
-                            const latP = parseFloat(d.lat.replace(',','.'));
-                            const lonP = parseFloat(d.lon.replace(',','.'));
-                            return getDist(cLat, cLon, latP, lonP) < 30; 
-                        });
-                        console.log(`GPS: Trovati ${contextRecords.length} partigiani nel raggio di 30km`);
+                            let gpsMatches = database.filter(d => {
+                                if(!d.lat || !d.lon) return false;
+                                const latP = parseFloat(d.lat.replace(',','.'));
+                                const lonP = parseFloat(d.lon.replace(',','.'));
+                                return getDist(cLat, cLon, latP, lonP) < 30; 
+                            });
+                            console.log(`🌍 [DEBUG] Match GPS (30km): ${gpsMatches.length}`);
+                            
+                            // Unisci con i match diretti
+                            contextRecords = [...new Set([...contextRecords, ...gpsMatches])];
+                        }
+                    } catch (e) {
+                        console.log("Geocoding fallito, uso match diretti");
                     }
-                } catch (e) {
-                    console.log("Geocoding fallito, uso match diretti");
                 }
             }
 
-            // Unione risultati
+            // Unione risultati finali
             if (contextRecords.length === 0) {
                 contextRecords = directMatches;
             } else {
                 contextRecords = [...new Set([...contextRecords, ...directMatches])];
             }
+            
+            console.log(`🌍 [DEBUG] Dopo filtro geografico: ${contextRecords.length}`);
 
             updateProgress(40, "Reranking semantico...");
             
@@ -892,14 +1007,20 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
             let libroUsato = false;
             let libroScore = 0;
 
-            const libroResult = await searchLibroSemantico(originalText, 2);
-            if (libroResult.maxScore >= 0.5 && libroResult.text.length > 0) {
+            const libroResult = await searchLibroSemantico(originalText, 4);
+            if (libroResult.maxScore >= 0.35 && libroResult.text.length > 0) {
                 estrattiLibro = libroResult.text;
                 libroUsato = true;
                 libroScore = libroResult.maxScore;
-                console.log(`📚 Libro integrato (rilevanza: ${(libroScore * 100).toFixed(1)}%)`);
+                console.log(`📚 [DEBUG] Libro integrato (rilevanza: ${(libroScore * 100).toFixed(1)}%)`);
+            } else if (libroResult.maxScore >= 0.25 && libroResult.text.length > 0) {
+                // Fallback: usa il libro anche con score più basso
+                estrattiLibro = libroResult.text;
+                libroUsato = true;
+                libroScore = libroResult.maxScore;
+                console.log(`📚 [DEBUG] Libro integrato (fallback, rilevanza: ${(libroScore * 100).toFixed(1)}%)`);
             } else {
-                console.log("📚 Libro non pertinente, escluso dalla risposta");
+                console.log(`📚 [DEBUG] Libro escluso (score: ${libroResult.maxScore.toFixed(3)}, soglia: 0.35)`);
             }
 
             updateProgress(70, "Preparazione contesto...");
@@ -914,7 +1035,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
             pBar.classList.add('progress-active');
 
             // ─────────────────────────────────────────────────────────
-            // FASE 4: CHIAMATA API GEMINI CON PROMPT CONDIZIONALE
+            // FASE 4: CHIAMATA API GEMINI CON PROMPT MIGLIORATO
             // ─────────────────────────────────────────────────────────
             const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) con accesso a un database di testimonianze partigiane.
 
@@ -925,6 +1046,7 @@ ARCHITETTURA DEI DATI
    - 'regione': Se contiene "/" (es. "Sicilia / Piemonte"), il PRIMO termine è la regione di NASCITA, il SECONDO è dove ha OPERATO.
    - 'città_nascita': Città di nascita (non di operazione).
    - Per domande su "meridionali al nord", cerca: nascita=Sud + operazione=Nord.
+   - IMPORTANTE: Analizza SEMPRE il campo regione per identificare migrazioni geografiche.
 
 ${libroUsato ? `2. LIBRO STORICO (RILEVANZA: ${(libroScore * 100).toFixed(0)}%):
    - Contesto narrativo e dettagli storici VERIFICATI.
@@ -938,6 +1060,7 @@ METODOLOGIA DI RISPOSTA
 FASE 1 - ANALISI GEOGRAFICA:
 - Identifica la zona geografica richiesta (valle, comune, provincia).
 - Usa la tua conoscenza storica per associare località a valli/province anche se non esplicito.
+- Per query tipo "nati al sud operanti al nord", analizza il campo regione con formato "Nascita / Operazione".
 
 FASE 2 - SELEZIONE DATI:
 - Dai dati CSV forniti, seleziona SOLO i partigiani pertinenti alla zona.
@@ -950,7 +1073,7 @@ FASE 3 - STRUTTURA RISPOSTA:
 - Inizia SUBITO con i nomi, senza preamboli.
 
 **🔗 PERCORSI E RELAZIONI**
-- Identifica legami: vicinanza geografica, stessa brigata, eventi comuni.
+- Identifica legami: vicinanza geografica, stessa brigata, eventi comuni, migrazioni geografiche.
 ${libroUsato ? '- Usa il libro per contestualizzare storicamente SOLO se pertinente.' : ''}
 
 FASE 4 - LIMITI:
