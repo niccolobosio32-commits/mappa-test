@@ -368,7 +368,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio z.0.1</span>
+        <span>Assistente Archivio v1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1721,8 +1721,8 @@ function espandiQueryConSinonimi(queryOriginale) {
             const nomiPartigiani = contextRecords.slice(0, 50).map(d => d.nominativo).join(', ');
             
             const context = contextRecords.map(d => {
-                const miniBio = d.scheda ? d.scheda.substring(0, 400) : "N/D";
-                return `[${d.nominativo} | ${d.regione} | ${d.città_nascita} | ${miniBio}]`;
+                const miniBio = d.scheda ? d.scheda.substring(0, 300) : "N/D";
+                return `[${d.nominativo} | ${d.regione} | ${miniBio}]`;
             }).join("\n");
             
             let estrattiLibro = "";
@@ -1730,109 +1730,43 @@ function espandiQueryConSinonimi(queryOriginale) {
                 estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n[---]\n\n');
             }
             
-            const promptBase = `Sei un Archivista della Resistenza. Rispondi con SOLO DUE SEZIONI. Niente altro.
-
-═══════════════════════════════════════════════════════════════
-STRUTTURA OBBLIGATORIA
-═══════════════════════════════════════════════════════════════
+            const promptBase = `Archivista della Resistenza. Risposta in DUE SEZIONI.
 
 **🎯 FATTI ACCERTATI**
 
-Prima riga: "Trovati ${contextRecords.length} partigiani:"
+Trovati ${contextRecords.length} partigiani:
 
-Poi SOLO l'elenco dei nomi in formato [[Nome Cognome]], separati da virgola:
-[[Nome1]], [[Nome2]], [[Nome3]], [[Nome4]], [[Nome5]], [[Nome6]]...
-
-Se sono molti (30+), puoi raggrupparli PER TEMA in elenchi:
-
-Deportati: [[Nome1]], [[Nome2]], [[Nome3]]...
-Caduti in combattimento: [[Nome4]], [[Nome5]]...
-Staffette: [[Nome6]], [[Nome7]]...
-
-IMPORTANTE:
-- Inserisci TUTTI i ${contextRecords.length} nomi
-- ZERO commenti, ZERO spiegazioni
-- Solo nomi con doppie quadre [[]]
+Elenca TUTTI i nomi: [[Nome1]], [[Nome2]], [[Nome3]]...
+Se molti, raggruppa: Deportati: [[Nome1]]... Caduti: [[Nome2]]...
 
 **🔗 APPROFONDIMENTI**
 
-Scrivi questa sezione SOLO se i dati mostrano collegamenti significativi.
-Usa i PERCORSI COMPLESSI forniti per creare una NARRATIVA che colleghi tutto.
+SOLO se trovi collegamenti:
+- Geografia: "Dal Sud al Nord: [[Nome1]], [[Nome2]]..."
+- Brigate: "Brigata X: [[Nome3]], [[Nome4]]..."
+- Zone: "Valsesia: [[Nome5]], [[Nome6]]..."
+- Eventi: "8 settembre: [[Nome7]], [[Nome8]]..."
+- Destini: "Mauthausen: [[Nome9]], [[Nome10]]..."
 
-STRUTTURA NARRATIVA (usa questo ordine):
+Concatena i livelli. Esempio: "[[Nome1]] dal Sud si unì alla Brigata X in Valsesia. Nel rastrellamento del '44 fu catturato con [[Nome2]]."
 
-1. **Geografia e Migrazioni** - Se ci sono percorsi geografici:
-   "Dal Sud al Nord Italia si spostarono [[Nome1]], [[Nome2]], [[Nome3]]. Tra loro, [[Nome1]] e [[Nome2]] finirono nella stessa Brigata Garibaldi..."
-
-2. **Formazioni e Brigate** - Se combatterono insieme:
-   "Nella Brigata X operarono [[Nome4]], [[Nome5]], [[Nome6]]. Tutti furono coinvolti nel rastrellamento di..."
-
-3. **Zone Operative** - Se condivisero territori:
-   "La Valsesia vide [[Nome7]], [[Nome8]] combattere fianco a fianco. [[Nome7]] operò come staffetta mentre..."
-
-4. **Eventi Cronologici** - Se vissero stessi eventi:
-   "L'8 settembre segnò [[Nome9]], [[Nome10]], [[Nome11]]. Dopo l'armistizio..."
-
-5. **Destini Comuni** - Se ebbero stesso destino:
-   "Il lager di Mauthausen accolse [[Nome12]], [[Nome13]], [[Nome14]]. [[Nome12]] morì a Gusen nel..."
-
-REGOLE PER COLLEGAMENTI:
-✅ Concatena i livelli: geografia → formazione → evento → destino
-✅ Esempio: "[[Nome1]] dal Piemonte si unì alla Brigata Garibaldi in Valsesia. Durante il rastrellamento del '44 fu catturato con [[Nome2]] e deportato a Mauthausen."
-✅ Usa i nomi SEMPRE con [[]]
-✅ Massimo 3-4 frasi per livello
-✅ Se un livello è vuoto, saltalo
-
-DATI DISPONIBILI:
+PERCORSI:
 ${percorsiTesto}
 
-Se NON trovi collegamenti multi-livello significativi → OMETTI questa sezione.
+${libroUsato ? `**📚 LIBRO** (se pertinente):
+<libro-narrato>Testo...</libro-narrato>
+<libro-citazione>Citazione...</libro-citazione>
 
-${libroUsato ? `**📚 CONTESTO STORICO** (solo se STRETTAMENTE pertinente):
-
-Se il libro fornisce contesto DIRETTO agli eventi menzionati nelle biografie, usalo così:
-
-<libro-narrato>Durante i rastrellamenti del 1944 nelle valli piemontesi...</libro-narrato>
-<libro-citazione>"I partigiani si rifugiavano nei casoni alpini..."</libro-citazione>
-
-Usa il libro SOLO per:
-- Eventi specifici (8 settembre, rastrellamenti, liberazione)
-- Contesto geografico (valli, città, zone operative)
-- Dettagli su formazioni/brigate menzionate
-
-NON usare il libro per:
-- Informazioni generiche sulla Resistenza
-- Fatti non collegati ai partigiani trovati
-
-Score rilevanza: ${(libroResult.maxScore * 100).toFixed(0)}%
+LIBRO:
+${estrattiLibro}
 ` : ''}
 
-═══════════════════════════════════════════════════════════════
-DATI
-═══════════════════════════════════════════════════════════════
-
-PARTIGIANI: ${contextRecords.length}
-
+DATI (${contextRecords.length} partigiani):
 ${context}
-
-RELAZIONI:
-${relazioni.geografiche.length > 0 ? relazioni.geografiche.map(r => `${r.conteggio} in ${r.valore}: ${r.membri.slice(0,5).join(', ')}...`).join('\n') : ''}
-${relazioni.migrazioni?.length > 0 ? relazioni.migrazioni.map(r => `${r.percorso}: ${r.membri.slice(0,5).join(', ')}...`).join('\n') : ''}
-${relazioni.tematiche.length > 0 ? relazioni.tematiche.slice(0,8).map(r => `${r.tema}: ${r.membri.slice(0,5).join(', ')}... (tot: ${r.conteggio})`).join('\n') : ''}
-${relazioni.organizzative.length > 0 ? relazioni.organizzative.slice(0,5).map(r => `${r.formazione}: ${r.membri.slice(0,3).join(', ')}...`).join('\n') : ''}
-
-${libroUsato ? `LIBRO:
-${estrattiLibro}` : ''}
 
 DOMANDA: "${originalText}"
 
-REGOLE FINALI:
-1. Inizia SUBITO con "**🎯 FATTI ACCERTATI**"
-2. Zero preamboli ("Ecco...", "Ho trovato...", "Dai dati...")
-3. Zero conclusioni ("In sintesi...", "Quindi...", "Questo dimostra...")
-4. Solo le DUE sezioni richieste (o UNA se non ci sono approfondimenti)
-
-RISPONDI:`;
+RISPONDI ORA (completo, tutti i ${contextRecords.length} nomi):`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
@@ -1845,7 +1779,7 @@ RISPONDI:`;
                         temperature: 0.5,
                         topP: 0.9,
                         topK: 50,
-                        maxOutputTokens: 4000
+                        maxOutputTokens: 8000
                     }
                 })
             });
