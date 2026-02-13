@@ -331,7 +331,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A2.3</span>
+        <span>Assistente Archivio A2.4</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1318,7 +1318,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // AI CHAT - VERSIONE OTTIMIZZATA CON RISPOSTE APPROFONDITE
+    // AI CHAT - VERSIONE RIFORMULATA (ZERO PREAMBOLI + NUOVE SEZIONI)
     // ═══════════════════════════════════════════════════════════════
     async function sendAIMessage() {
         const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
@@ -1334,11 +1334,9 @@ function espandiQueryConSinonimi(queryOriginale) {
 
         const cached = CACHE.getCachedQuery(originalText);
         if (cached) {
-            console.log("⚡ [CACHE] Risposta dalla cache!");
             box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
             box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
             input.value = "";
-            input.style.height = 'auto';
             box.scrollTop = box.scrollHeight;
             return;
         }
@@ -1353,372 +1351,122 @@ function espandiQueryConSinonimi(queryOriginale) {
         input.style.height = 'auto';
         
         const aiMsgId = "ai-" + Date.now();
-        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
+        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Elaborazione archivistica in corso...</div>`;
         const aiMsgElement = document.getElementById(aiMsgId);
         box.scrollTop = box.scrollHeight;
 
         pContainer.style.display = 'block';
-        updateProgress(10, "Inizializzazione...");
+        updateProgress(10, "Accesso archivi...");
 
         try {
-            console.log(`🔍 [QUERY] "${originalText}"`);
+            updateProgress(30, "Ricerca incrociata...");
+            let contextRecords = await hybridSearch(userText, 45);
             
-            updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
-            
-            let contextRecords = await hybridSearch(userText, 50);
-            
-            const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
-            if (geoQuery) {
-                console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
-                const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
-                if (geoFiltered.length > 0) {
-                    contextRecords = geoFiltered;
-                }
-            }
-            
-            console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
-            
-            updateProgress(40, "Analisi relazioni tra partigiani...");
-            
-            const relazioni = analizzaRelazioni(contextRecords);
-            const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
-            
-            console.log("🔗 [RELAZIONI] Analisi completata:");
-            console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
-            console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
-            console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
-            console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
-            
-            updateProgress(60, "Ricerca nel libro storico...");
-            
+            // Gestione Libro con soglia abbassata per evitare esclusioni
             let estrattiLibro = "";
             let libroUsato = false;
-            let libroScore = 0;
+            let queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: originalText }] } })
+            });
+            const queryData = await queryEmbedRes.json();
             
-            if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
-                console.log("📚 [LIBRO] Ricerca con embeddings cached...");
-                
-                try {
-                    const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: "models/text-embedding-004",
-                            content: { parts: [{ text: originalText }] }
-                        })
-                    });
-                    const queryData = await queryEmbedRes.json();
-                    
-                    if (queryData.embedding) {
-                        const queryEmbed = queryData.embedding.values;
-                        
-                        let scoredChunks = CACHE.libroEmbeddings
-                            .map((embed, i) => ({
-                                chunk: CACHE.libroChunks[i],
-                                score: cosineSimilarity(queryEmbed, embed)
-                            }))
-                            .filter(s => s.score >= 0.20)
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 5);
-                        
-                        if (scoredChunks.length === 0) {
-                            console.log("📚 [LIBRO] Attivo fallback (soglia: 0.15)");
-                            scoredChunks = CACHE.libroEmbeddings
-                                .map((embed, i) => ({
-                                    chunk: CACHE.libroChunks[i],
-                                    score: cosineSimilarity(queryEmbed, embed)
-                                }))
-                                .filter(s => s.score >= 0.15)
-                                .sort((a, b) => b.score - a.score)
-                                .slice(0, 3);
-                        }
-                        
-                        if (scoredChunks.length > 0) {
-                            libroUsato = true;
-                            libroScore = scoredChunks[0].score;
-                            estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
-                            console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
-                        } else {
-                            console.log("📚 [LIBRO] Nessun chunk rilevante trovato");
-                        }
-                    }
-                } catch (e) {
-                    console.error("❌ [LIBRO] Errore:", e);
-                }
-            } else {
-                const libroResult = await searchLibroSemantico(originalText, 5);
-                if (libroResult.maxScore >= 0.20) {
-                    estrattiLibro = libroResult.text;
+            if (queryData.embedding && CACHE.libroEmbeddings) {
+                const queryEmbed = queryData.embedding.values;
+                const scoredChunks = CACHE.libroEmbeddings
+                    .map((embed, i) => ({ chunk: CACHE.libroChunks[i], score: cosineSimilarity(queryEmbed, embed) }))
+                    .filter(s => s.score >= 0.18) // Soglia inclusiva
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 4);
+
+                if (scoredChunks.length > 0) {
                     libroUsato = true;
-                    libroScore = libroResult.maxScore;
+                    estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n');
                 }
             }
-            
-            updateProgress(70, "Formattazione dati...");
-            
-            const context = contextRecords.slice(0, 50).map(d => {
-                const miniBio = d.scheda ? d.scheda.substring(0, 500) : "N/D";
-                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
+
+            const context = contextRecords.map(d => {
+                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIO: ${d.scheda ? d.scheda.substring(0, 250) : "N/D"}]`;
             }).join("\n");
-            
-            updateProgress(80, "Generazione risposta AI...");
-            pBar.classList.add('progress-active');
-            
-            const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) esperto e appassionato, con accesso a un database di testimonianze partigiane e a un libro storico sulla Resistenza.
 
-═══════════════════════════════════════════════════════════════
-PRINCIPI GUIDA
-═══════════════════════════════════════════════════════════════
-1. **Completezza**: Includi TUTTI i partigiani rilevanti trovati nei dati (fino a 50 persone)
-2. **Profondità**: Scrivi risposte brevi e storicamente contestualizzate ma senza commenti personali o giri di paorole, rispondi subito senza premesse o conclusioni
-3. **Analisi**: Nella sezione "PERCORSI E RELAZIONI", vai oltre l'elenco - racconta storie, individua pattern, crea connessioni significative sempre e solo se strettamente inerenti con la domanda
-4. **Fonti**: Usa SOLO i dati forniti, ma arricchiscili con il libro quando pertinente
-5. **Onestà**: Se i dati sono insufficienti, ammettilo, ma fornisci comunque il massimo possibile
+            const relazioni = analizzaRelazioni(contextRecords);
+            const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
 
-═══════════════════════════════════════════════════════════════
-STRUTTURA DELLA RISPOSTA
-═══════════════════════════════════════════════════════════════
+            updateProgress(80, "Generazione Risposta...");
+
+            const promptBase = `Sei un Archivista Storico. RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE. VIETATO DIRE "CERTAMENTE" O "ECCO I RISULTATI".
+
+STRUTTURA OBBLIGATORIA:
 
 **🎯 FATTI ACCERTATI**
+- Elenca SUBITO i partigiani direttamente correlati alla domanda estratti dal CSV.
+- Formato: [[Nome Cognome]] (Dettaglio sintetico bio).
+- Se non ci sono risultati esatti, dichiaralo e passa agli approfondimenti.
 
-Questa sezione deve essere SOSTANZIOSA e BEN ARTICOLATA:
-
-1. **INIZIA SUBITO CON I NOMI trovati** (RISPONDI IMMEDIATAMENTE. NO PREAMBOLI):
-   - Quanti partigiani sono stati trovati
-   - Qual è il filo conduttore della domanda
-   - Eventuali pattern storici/geografici/temporali evidenti
-
-2. **Elenco completo dei partigiani** (formato: [[Nome Cognome]]):
-   - Includi TUTTI i partigiani trovati (fino a 50)
-   - Per ognuno aggiungi 1-2 dettagli chiave dalle biografie
-   - Esempio: "[[Mario Rossi]] (Torino, deportato a Mauthausen nel 1944)"
-   - Raggruppa per temi se sono molti (es. "Deportati", "Caduti in combattimento", "Staffette")
-
-3. **Sintesi quantitativa**:
-   - Quanti in totale
-   - Suddivisione per regione se significativa
-   - Suddivisione per ruolo/esperienza se evidente
-
-**🔗 PERCORSI E RELAZIONI**
-
-Questa è la sezione CHIAVE - richiede intelligenza analitica e capacità narrativa:
-
-NON limitarti a elencare connessioni meccaniche. RACCONTA storie attraverso i dati:
-
-1. **Migrazioni geografiche** (se presenti):
-   - "La resistenza fu anche un fenomeno di migrazione: [[Nome1]], [[Nome2]], [[Nome3]] nacquero in Sicilia ma combatterono in Piemonte. Questo riflette..."
-   - Spiega il PERCHÉ storico (8 settembre, richiami, sbandamenti)
-
-2. **Reti locali**:
-   - "A Torino si concentrarono [[Nome1]], [[Nome2]], [[Nome3]]. Questa densità suggerisce reti clandestine urbane ben organizzate..."
-
-3. **Esperienze condivise**:
-   - "La deportazione accomuna [[Nome1]], [[Nome2]], [[Nome3]], tutti internati a Mauthausen. Le loro testimonianze..."
-   - Cita DETTAGLI dalle biografie (date, luoghi, eventi specifici)
-
-4. **Ruoli e formazioni**:
-   - "Le staffette furono fondamentali: [[Nome1]] e [[Nome2]] operarono come collegamento tra..."
-   - "La Brigata Garibaldi vide tra le sue file [[Nome1]], [[Nome2]]..."
-
-5. **Cronologie incrociate**:
-   - "L'8 settembre 1943 segnò un momento critico: [[Nome1]] fu catturato, [[Nome2]] si unì alla resistenza, [[Nome3]]..."
-
-6. **Pattern tematici**:
-   - "Il tema del tradimento ricorre: [[Nome1]] fu catturato a causa di una spiata, [[Nome2]] subì lo stesso destino..."
-
-IMPORTANTE:
-- Ogni connessione deve citare 3-6 nomi concreti con le doppie quadre [[]]
-- Ogni connessione deve spiegare il SIGNIFICATO STORICO
-- Usa frasi narrative, non elenchi puntati sterili
-- Attingi a DETTAGLI SPECIFICI dalle biografie fornite
+**🔗 APPROFONDIMENTI**
+- Crea connessioni geografiche, storiche, territoriali e cronologiche.
+- Collega i nomi trovati ad altri testimoni presenti nel CSV fornito.
+- Evidenzia pattern: "stessa città di nascita", "stessa brigata", "stesso periodo di arresto".
+- Mantieni un tono analitico e orizzontale tra i movimenti.
 
 ${libroUsato ? `
-**📚 CONTESTO STORICO DAL LIBRO**
-
-Hai accesso a estratti dal libro storico sulla Resistenza (rilevanza: ${(libroScore * 100).toFixed(0)}%).
-
-USA IL LIBRO PER:
-- Contestualizzare storicamente le testimonianze
-- Spiegare eventi menzionati nelle biografie (8 settembre, rastrellamenti, etc.)
-- Arricchire la narrazione con dettagli d'epoca
-- Collegare esperienze individuali a dinamiche più ampie
-
-FORMATO:
-- Per narrazioni: <libro-narrato>Il libro descrive come durante i rastrellamenti del 1944...</libro-narrato>
-- Per citazioni dirette: <libro-citazione>"I partigiani si rifugiavano nelle valli alpine..."</libro-citazione>
-
-NON forzare il libro se non è pertinente, ma usalo generosamente quando lo è.
-` : ''}
+**📚 CONTESTO DAL LIBRO STORICO**
+- Integra qui le informazioni del libro.
+- Usa <libro-narrato>per sintesi storiche</libro-narrato> e <libro-citazione>per passaggi esatti</libro-citazione>.` : ''}
 
 ═══════════════════════════════════════════════════════════════
-DATI DISPONIBILI
+DATI CSV (FONTE PRIMARIA)
 ═══════════════════════════════════════════════════════════════
-
-**PARTIGIANI TROVATI: ${contextRecords.length} testimonianze**
-
 ${context}
 
 ═══════════════════════════════════════════════════════════════
-RELAZIONI GIÀ IDENTIFICATE (da integrare nella tua risposta)
+RELAZIONI RILEVATE
 ═══════════════════════════════════════════════════════════════
-
 ${relazioniPrompt}
 
 ${libroUsato ? `═══════════════════════════════════════════════════════════════
-ESTRATTI DAL LIBRO STORICO (Score rilevanza: ${(libroScore * 100).toFixed(0)}%)
+ESTRATTI LIBRO (FONTE INTEGRATIVA)
 ═══════════════════════════════════════════════════════════════
+${estrattiLibro}` : ''}
 
-${estrattiLibro}
-` : ''}
-
-═══════════════════════════════════════════════════════════════
-DOMANDA UTENTE
-═══════════════════════════════════════════════════════════════
-
-"${originalText}"
-
-═══════════════════════════════════════════════════════════════
-ISTRUZIONI FINALI
-═══════════════════════════════════════════════════════════════
-
-Scrivi una risposta RICCA, APPROFONDITA e BEN STRUTTURATA.
-
-LUNGHEZZA MINIMA:
-- Sezione "FATTI ACCERTATI": almeno 300 parole
-- Sezione "PERCORSI E RELAZIONI": almeno 400 parole
-
-NON essere sintetico. Espandi, racconta, contestualizza.
-
-RISPONDI ORA:`;
+DOMANDA UTENTE: "${originalText}"
+RISPOSTA (Inizia direttamente con **🎯 FATTI ACCERTATI**):`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ text: promptBase }] 
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topP: 0.9,
-                        topK: 50,
-                        maxOutputTokens: 4096
-                    }
+                    contents: [{ parts: [{ text: promptBase }] }],
+                    generationConfig: { temperature: 0.3, maxOutputTokens: 2500 }
                 })
             });
 
-            updateProgress(95, "Formattazione risposta...");
             const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error.message);
-            }
-
             let aiText = data.candidates[0].content.parts[0].text;
 
-            if (!customElements.get('libro-narrato')) {
-                customElements.define('libro-narrato', class extends HTMLElement {});
-            }
-            if (!customElements.get('libro-citazione')) {
-                customElements.define('libro-citazione', class extends HTMLElement {});
-            }
-
+            // Formattazione finale (Markdown -> HTML)
             let formattedText = aiText
                 .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; margin-bottom:5px; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid #eee;">$1</b>')
                 .replace(/\n/g, '<br>');
 
-            const tuttiINomi = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-
-            tuttiINomi.forEach(nome => {
+            // Link automatici ai nomi
+            contextRecords.forEach(d => {
+                const nome = d.nominativo;
                 if (nome.length < 3) return;
-                const regex = new RegExp(`(?<!San\\s|Santa\\s|Santo\\s)\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}(?![a-zA-Z])`, 'gi');
-                
-                if (formattedText.includes(nome)) {
-                    const linkHTML = `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-                    
-                    let tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = formattedText;
-                    
-                    const walk = (node) => {
-                        if (node.nodeType === 3) {
-                            const text = node.nodeValue;
-                            if (regex.test(text)) {
-                                const wrapper = document.createElement('span');
-                                wrapper.innerHTML = text.replace(regex, linkHTML);
-                                node.parentNode.replaceChild(wrapper, node);
-                            }
-                        } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-                            Array.from(node.childNodes).forEach(walk);
-                        }
-                    };
-                    
-                    walk(tempDiv);
-                    formattedText = tempDiv.innerHTML;
-                }
+                const regex = new RegExp(`(?<!["'\\>])\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}`, 'gi');
+                formattedText = formattedText.replace(regex, `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`);
             });
-
-            if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
-                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
-            }
 
             aiMsgElement.innerHTML = formattedText;
             aiMsgElement.classList.add('finished');
-            
             CACHE.setCachedQuery(originalText, formattedText);
-            
-            updateProgress(100, "Completato!");
-            
-            setTimeout(() => {
-                pContainer.style.display = 'none';
-                document.getElementById('ai-status-text').style.display = 'none';
-                pBar.style.width = '0%';
-                pBar.classList.remove('progress-active');
-            }, 1000);
+            updateProgress(100, "Risposta pronta.");
+            setTimeout(() => pContainer.style.display = 'none', 1000);
 
-            box.scrollTop = box.scrollHeight;
-
-        } catch (e) { 
-            console.error("❌ [ERROR]", e);
-            pContainer.style.display = 'none';
-            document.getElementById('ai-status-text').style.display = 'none';
-            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
-            aiMsgElement.classList.add('finished');
-        }
-    }
-
-    map.on('click', () => { 
-        closeDetails(); 
-        document.getElementById('results-dropdown').style.display = 'none'; 
-    });
-    
-    // ⭐ PULSANTE PRE-CALCOLO EMBEDDINGS
-    async function precomputeAllEmbeddings() {
-        const btn = document.getElementById('embed-btn');
-        if (!btn) return;
-        
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Calcolo in corso...';
-        
-        try {
-            await CACHE.initCSV();
-            
-            if (!CACHE.libroEmbeddings) {
-                await CACHE.initLibro();
-            }
-            
-            btn.innerHTML = '✅ Completato!';
-            btn.style.background = '#27ae60';
-            
-            setTimeout(() => {
-                btn.style.display = 'none';
-            }, 2000);
-            
-            alert('✅ Embeddings pre-calcolati!\n\nOra le ricerche saranno molto più veloci.');
         } catch (e) {
-            btn.innerHTML = '❌ Errore';
-            btn.style.background = '#e74c3c';
-            btn.disabled = false;
-            alert('Errore durante il pre-calcolo: ' + e.message);
+            console.error(e);
+            aiMsgElement.innerHTML = "❌ Errore nella generazione della risposta.";
         }
     }
     
@@ -1737,6 +1485,7 @@ RISPONDI ORA:`;
 </script>
 </body>
 </html>
+
 
 
 
