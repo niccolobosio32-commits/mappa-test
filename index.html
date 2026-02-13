@@ -331,7 +331,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A2.0</span>
+        <span>Assistente Archivio A2.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1225,449 +1225,503 @@ function espandiQueryConSinonimi(queryOriginale) {
         return output;
     }
 
-    async function searchLibroSemantico(query, topK = 4) {
-        if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-            console.log("📚 [DEBUG] Cache libro non disponibile");
-            return { text: "", maxScore: 0 };
-        }
-        
-        const key = localStorage.getItem('gemini_key');
-        if (!key) return { text: "", maxScore: 0 };
-        
-        try {
-            console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
-            
-            const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "models/text-embedding-004",
-                    content: { parts: [{ text: query }] }
-                })
-            });
-            const queryData = await queryEmbedRes.json();
-            if (!queryData.embedding) return { text: "", maxScore: 0 };
-            const queryEmbed = queryData.embedding.values;
-            
-            const batchSize = 10;
-            let scoredChunks = [];
-            
-            const chunksToProcess = CACHE.libroChunks.slice(0, 50);
-            
-            for (let i = 0; i < chunksToProcess.length; i += batchSize) {
-                const batch = chunksToProcess.slice(i, i + batchSize);
-                const batchScores = await Promise.all(batch.map(async (chunk) => {
-                    try {
-                        if (chunk.length < 50) return { chunk, score: 0 };
-                        
-                        const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: "models/text-embedding-004",
-                                content: { parts: [{ text: chunk.substring(0, 1000) }] }
-                            })
-                        });
-                        const chunkData = await chunkEmbedRes.json();
-                        if (!chunkData.embedding) return { chunk, score: 0 };
-                        const chunkEmbed = chunkData.embedding.values;
-                        
-                        const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
-                        return { chunk, score: similarity };
-                    } catch (e) {
-                        return { chunk, score: 0 };
-                    }
-                }));
-                scoredChunks.push(...batchScores);
-            }
-            
-            const SOGLIA_PRIMARIA = 0.35;
-            const SOGLIA_FALLBACK = 0.25;
-            
-            let relevantChunks = scoredChunks
-                .filter(s => s.score >= SOGLIA_PRIMARIA)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, topK);
-            
-            if (relevantChunks.length === 0) {
-                console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
-                relevantChunks = scoredChunks
-                    .filter(s => s.score >= SOGLIA_FALLBACK)
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, Math.min(2, topK));
-            }
-            
-            const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
-            
-            if (relevantChunks.length === 0) {
-                console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
-                return { text: "", maxScore: 0 };
-            }
-            
-            const topChunks = relevantChunks
-                .map(s => s.chunk)
-                .join('\n\n[---]\n\n');
-            
-            console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
-            return { text: topChunks, maxScore };
-            
-        } catch (e) {
-            console.error("❌ Errore ricerca libro:", e);
-            return { text: "", maxScore: 0 };
-        }
+    async function searchLibroSemantico e sostituisci le soglie:
+javascriptasync function searchLibroSemantico(query, topK = 4) {
+    if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
+        console.log("📚 [DEBUG] Cache libro non disponibile");
+        return { text: "", maxScore: 0 };
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // AI CHAT - VERSIONE OTTIMIZZATA
-    // ═══════════════════════════════════════════════════════════════
-    async function sendAIMessage() {
-        const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
-        if (!key) return; 
-        localStorage.setItem('gemini_key', key);
+    
+    const key = localStorage.getItem('gemini_key');
+    if (!key) return { text: "", maxScore: 0 };
+    
+    try {
+        console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
         
-        const input = document.getElementById('ai-chat-input');
-        const box = document.getElementById('ai-chat-messages');
-        let userText = input.value.trim();
-        const originalText = userText;
+        const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: "models/text-embedding-004",
+                content: { parts: [{ text: query }] }
+            })
+        });
+        const queryData = await queryEmbedRes.json();
+        if (!queryData.embedding) return { text: "", maxScore: 0 };
+        const queryEmbed = queryData.embedding.values;
         
-        if (!userText) return;
-
-        const cached = CACHE.getCachedQuery(originalText);
-        if (cached) {
-            console.log("⚡ [CACHE] Risposta dalla cache!");
-            box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
-            box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
-            input.value = "";
-            input.style.height = 'auto';
-            box.scrollTop = box.scrollHeight;
-            return;
-        }
-
-        userText = espandiQueryConSinonimi(userText);
+        const batchSize = 10;
+        let scoredChunks = [];
         
-        const pContainer = document.getElementById('ai-progress-container');
-        const pBar = document.getElementById('ai-progress-bar');
+        const chunksToProcess = CACHE.libroChunks.slice(0, 50);
         
-        box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
-        input.value = "";
-        input.style.height = 'auto';
-        
-        const aiMsgId = "ai-" + Date.now();
-        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
-        const aiMsgElement = document.getElementById(aiMsgId);
-        box.scrollTop = box.scrollHeight;
-
-        pContainer.style.display = 'block';
-        updateProgress(10, "Inizializzazione...");
-
-        try {
-            console.log(`🔍 [QUERY] "${originalText}"`);
-            
-            updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
-            
-            let contextRecords = await hybridSearch(userText, 40);
-            
-            const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
-            if (geoQuery) {
-                console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
-                const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
-                if (geoFiltered.length > 0) {
-                    contextRecords = geoFiltered;
-                }
-            }
-            
-            console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
-            
-            updateProgress(40, "Analisi relazioni tra partigiani...");
-            
-            const relazioni = analizzaRelazioni(contextRecords);
-            const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
-            
-            console.log("🔗 [RELAZIONI] Analisi completata:");
-            console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
-            console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
-            console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
-            console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
-            
-            updateProgress(60, "Ricerca nel libro storico...");
-            
-            let estrattiLibro = "";
-            let libroUsato = false;
-            let libroScore = 0;
-            
-            if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
-                console.log("📚 [LIBRO] Ricerca con embeddings cached...");
-                
+        for (let i = 0; i < chunksToProcess.length; i += batchSize) {
+            const batch = chunksToProcess.slice(i, i + batchSize);
+            const batchScores = await Promise.all(batch.map(async (chunk) => {
                 try {
-                    const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                    if (chunk.length < 50) return { chunk, score: 0 };
+                    
+                    const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             model: "models/text-embedding-004",
-                            content: { parts: [{ text: originalText }] }
+                            content: { parts: [{ text: chunk.substring(0, 1000) }] }
                         })
                     });
-                    const queryData = await queryEmbedRes.json();
+                    const chunkData = await chunkEmbedRes.json();
+                    if (!chunkData.embedding) return { chunk, score: 0 };
+                    const chunkEmbed = chunkData.embedding.values;
                     
-                    if (queryData.embedding) {
-                        const queryEmbed = queryData.embedding.values;
-                        
-                        const scoredChunks = CACHE.libroEmbeddings
+                    const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
+                    return { chunk, score: similarity };
+                } catch (e) {
+                    return { chunk, score: 0 };
+                }
+            }));
+            scoredChunks.push(...batchScores);
+        }
+        
+        // ⭐ SOGLIE ABBASSATE
+        const SOGLIA_PRIMARIA = 0.20; // ⭐ DA 0.35 A 0.20
+        const SOGLIA_FALLBACK = 0.15; // ⭐ DA 0.25 A 0.15
+        
+        let relevantChunks = scoredChunks
+            .filter(s => s.score >= SOGLIA_PRIMARIA)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, topK);
+        
+        if (relevantChunks.length === 0) {
+            console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
+            relevantChunks = scoredChunks
+                .filter(s => s.score >= SOGLIA_FALLBACK)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, Math.min(3, topK));
+        }
+        
+        const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
+        
+        if (relevantChunks.length === 0) {
+            console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
+            return { text: "", maxScore: 0 };
+        }
+        
+        const topChunks = relevantChunks
+            .map(s => s.chunk)
+            .join('\n\n[---]\n\n');
+        
+        console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
+        return { text: topChunks, maxScore };
+        
+    } catch (e) {
+        console.error("❌ Errore ricerca libro:", e);
+        return { text: "", maxScore: 0 };
+    }
+}
+
+   // ═══════════════════════════════════════════════════════════════
+// AI CHAT - VERSIONE OTTIMIZZATA CON RISPOSTE APPROFONDITE
+// ═══════════════════════════════════════════════════════════════
+async function sendAIMessage() {
+    const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
+    if (!key) return; 
+    localStorage.setItem('gemini_key', key);
+    
+    const input = document.getElementById('ai-chat-input');
+    const box = document.getElementById('ai-chat-messages');
+    let userText = input.value.trim();
+    const originalText = userText;
+    
+    if (!userText) return;
+
+    // Verifica cache query
+    const cached = CACHE.getCachedQuery(originalText);
+    if (cached) {
+        console.log("⚡ [CACHE] Risposta dalla cache!");
+        box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
+        box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
+        input.value = "";
+        input.style.height = 'auto';
+        box.scrollTop = box.scrollHeight;
+        return;
+    }
+
+    // Espansione query
+    userText = espandiQueryConSinonimi(userText);
+    
+    // UI Updates
+    const pContainer = document.getElementById('ai-progress-container');
+    const pBar = document.getElementById('ai-progress-bar');
+    
+    box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
+    input.value = "";
+    input.style.height = 'auto';
+    
+    const aiMsgId = "ai-" + Date.now();
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
+    const aiMsgElement = document.getElementById(aiMsgId);
+    box.scrollTop = box.scrollHeight;
+
+    pContainer.style.display = 'block';
+    updateProgress(10, "Inizializzazione...");
+
+    try {
+        console.log(`🔍 [QUERY] "${originalText}"`);
+        
+        // ═════════════════════════════════════════════════════════
+        // FASE 1: RICERCA IBRIDA (BM25 + SEMANTICA) - AUMENTATO A 50
+        // ═════════════════════════════════════════════════════════
+        updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
+        
+        let contextRecords = await hybridSearch(userText, 50); // ⭐ DA 40 A 50
+        
+        // Integrazione filtri geografici se necessario
+        const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
+        if (geoQuery) {
+            console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
+            const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
+            if (geoFiltered.length > 0) {
+                contextRecords = geoFiltered;
+            }
+        }
+        
+        console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
+        
+        // ═════════════════════════════════════════════════════════
+        // FASE 2: ANALISI RELAZIONI
+        // ═════════════════════════════════════════════════════════
+        updateProgress(40, "Analisi relazioni tra partigiani...");
+        
+        const relazioni = analizzaRelazioni(contextRecords);
+        const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
+        
+        console.log("🔗 [RELAZIONI] Analisi completata:");
+        console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
+        console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
+        console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
+        console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
+        
+        // ═════════════════════════════════════════════════════════
+        // FASE 3: RICERCA NEL LIBRO (SOGLIA ABBASSATA + FALLBACK)
+        // ═════════════════════════════════════════════════════════
+        updateProgress(60, "Ricerca nel libro storico...");
+        
+        let estrattiLibro = "";
+        let libroUsato = false;
+        let libroScore = 0;
+        
+        // Usa cache se disponibile
+        if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
+            console.log("📚 [LIBRO] Ricerca con embeddings cached...");
+            
+            try {
+                const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "models/text-embedding-004",
+                        content: { parts: [{ text: originalText }] }
+                    })
+                });
+                const queryData = await queryEmbedRes.json();
+                
+                if (queryData.embedding) {
+                    const queryEmbed = queryData.embedding.values;
+                    
+                    // ⭐ SOGLIA ABBASSATA DA 0.30 A 0.20 CON FALLBACK
+                    let scoredChunks = CACHE.libroEmbeddings
+                        .map((embed, i) => ({
+                            chunk: CACHE.libroChunks[i],
+                            score: cosineSimilarity(queryEmbed, embed)
+                        }))
+                        .filter(s => s.score >= 0.20) // ⭐ SOGLIA PRIMARIA 0.20
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 5); // ⭐ AUMENTATO DA 4 A 5 CHUNK
+                    
+                    // ⭐ FALLBACK: Se nessuno sopra 0.20, prendi i migliori sopra 0.15
+                    if (scoredChunks.length === 0) {
+                        console.log("📚 [LIBRO] Attivo fallback (soglia: 0.15)");
+                        scoredChunks = CACHE.libroEmbeddings
                             .map((embed, i) => ({
                                 chunk: CACHE.libroChunks[i],
                                 score: cosineSimilarity(queryEmbed, embed)
                             }))
-                            .filter(s => s.score >= 0.30)
+                            .filter(s => s.score >= 0.15)
                             .sort((a, b) => b.score - a.score)
-                            .slice(0, 4);
-                        
-                        if (scoredChunks.length > 0) {
-                            libroUsato = true;
-                            libroScore = scoredChunks[0].score;
-                            estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
-                            console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
-                        }
+                            .slice(0, 3);
                     }
-                } catch (e) {
-                    console.error("❌ [LIBRO] Errore:", e);
+                    
+                    if (scoredChunks.length > 0) {
+                        libroUsato = true;
+                        libroScore = scoredChunks[0].score;
+                        estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
+                        console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
+                    } else {
+                        console.log("📚 [LIBRO] Nessun chunk rilevante trovato");
+                    }
                 }
-            } else {
-                const libroResult = await searchLibroSemantico(originalText, 4);
-                if (libroResult.maxScore >= 0.30) {
-                    estrattiLibro = libroResult.text;
-                    libroUsato = true;
-                    libroScore = libroResult.maxScore;
-                }
+            } catch (e) {
+                console.error("❌ [LIBRO] Errore:", e);
             }
-            
-            updateProgress(70, "Formattazione dati...");
-            
-            const context = contextRecords.slice(0, 35).map(d => {
-                const miniBio = d.scheda ? d.scheda.substring(0, 400) : "N/D";
-                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
-            }).join("\n");
-            
-            updateProgress(80, "Generazione risposta AI...");
-            pBar.classList.add('progress-active');
-            
-            const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) con accesso a testimonianze partigiane verificate.
+        } else {
+            // Fallback: ricerca tradizionale con soglia abbassata
+            const libroResult = await searchLibroSemantico(originalText, 5);
+            if (libroResult.maxScore >= 0.20) { // ⭐ SOGLIA ABBASSATA
+                estrattiLibro = libroResult.text;
+                libroUsato = true;
+                libroScore = libroResult.maxScore;
+            }
+        }
+        
+        // ═════════════════════════════════════════════════════════
+        // FASE 4: PREPARAZIONE CONTESTO CSV - AUMENTATO A 50
+        // ═════════════════════════════════════════════════════════
+        updateProgress(70, "Formattazione dati...");
+        
+        const context = contextRecords.slice(0, 50).map(d => { // ⭐ DA 35 A 50
+            const miniBio = d.scheda ? d.scheda.substring(0, 500) : "N/D"; // ⭐ DA 400 A 500 CARATTERI
+            return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
+        }).join("\n");
+        
+        // ═════════════════════════════════════════════════════════
+        // FASE 5: PROMPT ENGINEERING MIGLIORATO
+        // ═════════════════════════════════════════════════════════
+        updateProgress(80, "Generazione risposta AI...");
+        pBar.classList.add('progress-active');
+        
+        const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) esperto e appassionato, con accesso a un database di testimonianze partigiane e a un libro storico sulla Resistenza.
 
 ═══════════════════════════════════════════════════════════════
-REGOLE FONDAMENTALI (PRIORITÀ ASSOLUTA)
+PRINCIPI GUIDA
 ═══════════════════════════════════════════════════════════════
-1. USA SOLO I DATI FORNITI - Non inventare nomi, date, luoghi o eventi.
-2. Se le informazioni sono insufficienti per rispondere, ammettilo esplicitamente.
-3. Ogni affermazione DEVE essere tracciabile ai dati forniti.
-4. Le relazioni nella sezione "🔗 PERCORSI E RELAZIONI" DEVONO essere basate su:
-   - Co-occorrenza geografica verificata (stessa regione/città)
-   - Temi ricorrenti documentati nelle biografie
-   - Formazioni/brigate esplicitamente menzionate
-   - Migrazioni geografiche (campo regione con formato "Nascita / Operazione")
+1. **Completezza**: Includi TUTTI i partigiani rilevanti trovati nei dati (fino a 50 persone)
+2. **Profondità**: Scrivi risposte ricche, dettagliate e storicamente contestualizzate
+3. **Analisi**: Nella sezione "PERCORSI E RELAZIONI", vai oltre l'elenco - racconta storie, individua pattern, crea connessioni significative
+4. **Fonti**: Usa SOLO i dati forniti, ma arricchiscili con il libro quando pertinente
+5. **Onestà**: Se i dati sono insufficienti, ammettilo, ma fornisci comunque il massimo possibile
 
 ═══════════════════════════════════════════════════════════════
-STRUTTURA OBBLIGATORIA DELLA RISPOSTA
+STRUTTURA DELLA RISPOSTA
 ═══════════════════════════════════════════════════════════════
 
 **🎯 FATTI ACCERTATI**
-- Elenca i partigiani pertinenti in formato: [[Nome Cognome]] (nato a X, operante in Y)
-- Inizia SUBITO con l'elenco, senza introduzioni generiche
-- Usa le doppie quadre [[]] SOLO per nomi presenti nei DATI CSV forniti
-- Ordina per rilevanza rispetto alla domanda
+
+Questa sezione deve essere SOSTANZIOSA e BEN ARTICOLATA:
+
+1. **Introduzione contestuale** (2-3 frasi):
+   - Quanti partigiani sono stati trovati
+   - Qual è il filo conduttore della domanda
+   - Eventuali pattern geografici/temporali evidenti
+
+2. **Elenco completo dei partigiani** (formato: [[Nome Cognome]]):
+   - Includi TUTTI i partigiani trovati (fino a 50)
+   - Per ognuno aggiungi 1-2 dettagli chiave dalle biografie
+   - Esempio: "[[Mario Rossi]] (Torino, deportato a Mauthausen nel 1944)"
+   - Raggruppa per temi se sono molti (es. "Deportati", "Caduti in combattimento", "Staffette")
+
+3. **Sintesi quantitativa**:
+   - Quanti in totale
+   - Suddivisione per regione se significativa
+   - Suddivisione per ruolo/esperienza se evidente
 
 **🔗 PERCORSI E RELAZIONI**
-IMPORTANTE: Questa sezione richiede la massima intelligenza analitica.
 
-Analizza i DATI FORNITI per identificare:
+Questa è la sezione CHIAVE - richiede intelligenza analitica e capacità narrativa:
 
-1. CONNESSIONI GEOGRAFICHE VERIFICATE:
-   - Partigiani nati nella stessa città (controlla città_nascita)
-   - Partigiani operanti nella stessa regione (controlla regione)
-   - Migrazioni documentate (es. "Sicilia / Piemonte" = nato in Sicilia, combattuto in Piemonte)
-   
-2. TEMI RICORRENTI DOCUMENTATI:
-   - Se 3+ biografie menzionano "deportazione" → connessione tematica
-   - Se 2+ parlano di "8 settembre" → evento comune
-   - Cerca pattern nelle parole chiave: IMI, GAP, SAP, CLN, lager, rastrellamento, etc.
-   
-3. FORMAZIONI MILITARI ESPLICITE:
-   - Solo se le biografie menzionano la STESSA brigata/divisione/battaglione
-   - Esempio: "Brigata Garibaldi" citata da 4 persone → connessione organizzativa
-   
-4. CRONOLOGIE INCROCIATE:
-   - Eventi temporali comuni (es. tutti arrestati nel 1944)
-   - Periodi storici condivisi (es. tutti deportati dopo l'8 settembre)
+NON limitarti a elencare connessioni meccaniche. RACCONTA storie attraverso i dati:
 
-FORMATO PER OGNI RELAZIONE:
-- Tipo di connessione (geografica/tematica/organizzativa/cronologica)
-- Nomi coinvolti (massimo 5-6 per leggibilità)
-- Base documentale (cita i campi: regione, città_nascita, o frasi chiave dalle biografie)
-- Significato storico della connessione
+1. **Migrazioni geografiche** (se presenti):
+   - "La resistenza fu anche un fenomeno di migrazione: [[Nome1]], [[Nome2]], [[Nome3]] nacquero in Sicilia ma combatterono in Piemonte. Questo riflette..."
+   - Spiega il PERCHÉ storico (8 settembre, richiami, sbandamenti)
 
-ESEMPIO CORRETTO:
-"🗺️ Connessione Geografica: [[Mario Rossi]], [[Luigi Bianchi]], [[Anna Verdi]] risultano tutti nati a Torino (campo città_nascita) e operanti in Piemonte (campo regione). Questa concentrazione suggerisce reti locali di resistenza urbana."
+2. **Reti locali**:
+   - "A Torino si concentrarono [[Nome1]], [[Nome2]], [[Nome3]]. Questa densità suggerisce reti clandestine urbane ben organizzate..."
 
-ESEMPIO SCORRETTO:
-"Probabilmente si conoscevano" ❌ (speculazione senza base)
-"Potrebbero aver combattuto insieme" ❌ (ipotesi non verificabile)
+3. **Esperienze condivise**:
+   - "La deportazione accomuna [[Nome1]], [[Nome2]], [[Nome3]], tutti internati a Mauthausen. Le loro testimonianze..."
+   - Cita DETTAGLI dalle biografie (date, luoghi, eventi specifici)
+
+4. **Ruoli e formazioni**:
+   - "Le staffette furono fondamentali: [[Nome1]] e [[Nome2]] operarono come collegamento tra..."
+   - "La Brigata Garibaldi vide tra le sue file [[Nome1]], [[Nome2]]..."
+
+5. **Cronologie incrociate**:
+   - "L'8 settembre 1943 segnò un momento critico: [[Nome1]] fu catturato, [[Nome2]] si unì alla resistenza, [[Nome3]]..."
+
+6. **Pattern tematici**:
+   - "Il tema del tradimento ricorre: [[Nome1]] fu catturato a causa di una spiata, [[Nome2]] subì lo stesso destino..."
+
+IMPORTANTE:
+- Ogni connessione deve citare 3-6 nomi concreti con le doppie quadre [[]]
+- Ogni connessione deve spiegare il SIGNIFICATO STORICO
+- Usa frasi narrative, non elenchi puntati sterili
+- Attingi a DETTAGLI SPECIFICI dalle biografie fornite
 
 ${libroUsato ? `
 **📚 CONTESTO STORICO DAL LIBRO**
-- Usa SOLO se DIRETTAMENTE pertinente alla domanda
-- Formato: <libro-narrato>testo riassuntivo</libro-narrato>
-- Per citazioni dirette: <libro-citazione>testo esatto</libro-citazione>
-- NON forzare il libro se non aggiunge valore documentato
+
+Hai accesso a estratti dal libro storico sulla Resistenza (rilevanza: ${(libroScore * 100).toFixed(0)}%).
+
+USA IL LIBRO PER:
+- Contestualizzare storicamente le testimonianze
+- Spiegare eventi menzionati nelle biografie (8 settembre, rastrellamenti, etc.)
+- Arricchire la narrazione con dettagli d'epoca
+- Collegare esperienze individuali a dinamiche più ampie
+
+FORMATO:
+- Per narrazioni: <libro-narrato>Il libro descrive come durante i rastrellamenti del 1944...</libro-narrato>
+- Per citazioni dirette: <libro-citazione>"I partigiani si rifugiavano nelle valli alpine..."</libro-citazione>
+
+NON forzare il libro se non è pertinente, ma usalo generosamente quando lo è.
 ` : ''}
 
 ═══════════════════════════════════════════════════════════════
-DATI CSV DISPONIBILI (${contextRecords.length} partigiani trovati)
+DATI DISPONIBILI
 ═══════════════════════════════════════════════════════════════
+
+**PARTIGIANI TROVATI: ${contextRecords.length} testimonianze**
+
 ${context}
+
+═══════════════════════════════════════════════════════════════
+RELAZIONI GIÀ IDENTIFICATE (da integrare nella tua risposta)
+═══════════════════════════════════════════════════════════════
 
 ${relazioniPrompt}
 
 ${libroUsato ? `═══════════════════════════════════════════════════════════════
-ESTRATTI DAL LIBRO STORICO (Rilevanza: ${(libroScore * 100).toFixed(0)}%)
+ESTRATTI DAL LIBRO STORICO (Score rilevanza: ${(libroScore * 100).toFixed(0)}%)
 ═══════════════════════════════════════════════════════════════
+
 ${estrattiLibro}
 ` : ''}
 
 ═══════════════════════════════════════════════════════════════
 DOMANDA UTENTE
 ═══════════════════════════════════════════════════════════════
+
 "${originalText}"
 
-RISPONDI ORA (segui ESATTAMENTE la struttura richiesta):`;
+═══════════════════════════════════════════════════════════════
+ISTRUZIONI FINALI
+═══════════════════════════════════════════════════════════════
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ 
-                        parts: [{ text: promptBase }] 
-                    }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        topP: 0.8,
-                        topK: 40,
-                        maxOutputTokens: 2048
-                    }
-                })
-            });
+Scrivi una risposta RICCA, APPROFONDITA e BEN STRUTTURATA.
 
-            updateProgress(95, "Formattazione risposta...");
-            const data = await response.json();
+LUNGHEZZA MINIMA:
+- Sezione "FATTI ACCERTATI": almeno 300 parole
+- Sezione "PERCORSI E RELAZIONI": almeno 400 parole
 
-            if (data.error) {
-                throw new Error(data.error.message);
-            }
+NON essere sintetico. Espandi, racconta, contestualizza.
 
-            let aiText = data.candidates[0].content.parts[0].text;
+RISPONDI ORA:`;
 
-            if (!customElements.get('libro-narrato')) {
-                customElements.define('libro-narrato', class extends HTMLElement {});
-            }
-            if (!customElements.get('libro-citazione')) {
-                customElements.define('libro-citazione', class extends HTMLElement {});
-            }
-
-            let formattedText = aiText
-                .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; margin-bottom:5px; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid #eee;">$1</b>')
-                .replace(/\n/g, '<br>');
-
-            const tuttiINomi = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-
-            tuttiINomi.forEach(nome => {
-                if (nome.length < 3) return;
-                const regex = new RegExp(`(?<!San\\s|Santa\\s|Santo\\s)\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}(?![a-zA-Z])`, 'gi');
-                
-                if (formattedText.includes(nome)) {
-                    const linkHTML = `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-                    
-                    let tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = formattedText;
-                    
-                    const walk = (node) => {
-                        if (node.nodeType === 3) {
-                            const text = node.nodeValue;
-                            if (regex.test(text)) {
-                                const wrapper = document.createElement('span');
-                                wrapper.innerHTML = text.replace(regex, linkHTML);
-                                node.parentNode.replaceChild(wrapper, node);
-                            }
-                        } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-                            Array.from(node.childNodes).forEach(walk);
-                        }
-                    };
-                    
-                    walk(tempDiv);
-                    formattedText = tempDiv.innerHTML;
+        // ═════════════════════════════════════════════════════════
+        // FASE 6: CHIAMATA API GEMINI CON PARAMETRI MODIFICATI
+        // ═════════════════════════════════════════════════════════
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ text: promptBase }] 
+                }],
+                generationConfig: {
+                    temperature: 0.7, // ⭐ AUMENTATA DA 0.4 A 0.7 (più creativa)
+                    topP: 0.9, // ⭐ AUMENTATA DA 0.8 A 0.9
+                    topK: 50, // ⭐ AUMENTATA DA 40 A 50
+                    maxOutputTokens: 4096 // ⭐ RADDOPPIATO DA 2048 A 4096
                 }
-            });
+            })
+        });
 
-            if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
-                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
+        updateProgress(95, "Formattazione risposta...");
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        let aiText = data.candidates[0].content.parts[0].text;
+
+        // ═════════════════════════════════════════════════════════
+        // FASE 7: POST-PROCESSING E LINK
+        // ═════════════════════════════════════════════════════════
+
+        // Registra custom elements
+        if (!customElements.get('libro-narrato')) {
+            customElements.define('libro-narrato', class extends HTMLElement {});
+        }
+        if (!customElements.get('libro-citazione')) {
+            customElements.define('libro-citazione', class extends HTMLElement {});
+        }
+
+        // Formattazione base
+        let formattedText = aiText
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; margin-bottom:5px; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid #eee;">$1</b>')
+            .replace(/\n/g, '<br>');
+
+        // Link ai partigiani
+        const tuttiINomi = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
+
+        tuttiINomi.forEach(nome => {
+            if (nome.length < 3) return;
+            const regex = new RegExp(`(?<!San\\s|Santa\\s|Santo\\s)\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}(?![a-zA-Z])`, 'gi');
+            
+            if (formattedText.includes(nome)) {
+                const linkHTML = `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
+                
+                let tempDiv = document.createElement('div');
+                tempDiv.innerHTML = formattedText;
+                
+                const walk = (node) => {
+                    if (node.nodeType === 3) {
+                        const text = node.nodeValue;
+                        if (regex.test(text)) {
+                            const wrapper = document.createElement('span');
+                            wrapper.innerHTML = text.replace(regex, linkHTML);
+                            node.parentNode.replaceChild(wrapper, node);
+                        }
+                    } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
+                        Array.from(node.childNodes).forEach(walk);
+                    }
+                };
+                
+                walk(tempDiv);
+                formattedText = tempDiv.innerHTML;
             }
+        });
 
-            aiMsgElement.innerHTML = formattedText;
-            aiMsgElement.classList.add('finished');
-            
-            CACHE.setCachedQuery(originalText, formattedText);
-            
-            updateProgress(100, "Completato!");
-            
-            setTimeout(() => {
-                pContainer.style.display = 'none';
-                document.getElementById('ai-status-text').style.display = 'none';
-                pBar.style.width = '0%';
-                pBar.classList.remove('progress-active');
-            }, 1000);
+        // Badge libro
+        if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
+            formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
+        }
 
-            box.scrollTop = box.scrollHeight;
-
-        } catch (e) { 
-            console.error("❌ [ERROR]", e);
+        aiMsgElement.innerHTML = formattedText;
+        aiMsgElement.classList.add('finished');
+        
+        // Salva in cache
+        CACHE.setCachedQuery(originalText, formattedText);
+        
+        updateProgress(100, "Completato!");
+        
+        setTimeout(() => {
             pContainer.style.display = 'none';
             document.getElementById('ai-status-text').style.display = 'none';
-            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
-            aiMsgElement.classList.add('finished');
-        }
-    }
+            pBar.style.width = '0%';
+            pBar.classList.remove('progress-active');
+        }, 1000);
 
-    map.on('click', () => { 
-        closeDetails(); 
-        document.getElementById('results-dropdown').style.display = 'none'; 
-    });
-    
-    // ⭐ PULSANTE PRE-CALCOLO EMBEDDINGS (SPOSTATO DOPO LA DEFINIZIONE DI CACHE)
-    async function precomputeAllEmbeddings() {
-        const btn = document.getElementById('embed-btn');
-        if (!btn) return;
-        
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Calcolo in corso...';
-        
-        try {
-            await CACHE.initCSV();
-            
-            if (!CACHE.libroEmbeddings) {
-                await CACHE.initLibro();
-            }
-            
-            btn.innerHTML = '✅ Completato!';
-            btn.style.background = '#27ae60';
-            
-            setTimeout(() => {
-                btn.style.display = 'none';
-            }, 2000);
-            
-            alert('✅ Embeddings pre-calcolati!\n\nOra le ricerche saranno molto più veloci.');
-        } catch (e) {
-            btn.innerHTML = '❌ Errore';
-            btn.style.background = '#e74c3c';
-            btn.disabled = false;
-            alert('Errore durante il pre-calcolo: ' + e.message);
-        }
+        box.scrollTop = box.scrollHeight;
+
+    } catch (e) { 
+        console.error("❌ [ERROR]", e);
+        pContainer.style.display = 'none';
+        document.getElementById('ai-status-text').style.display = 'none';
+        aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
+        aiMsgElement.classList.add('finished');
     }
+}
     
     // Crea pulsante dopo caricamento pagina
     window.addEventListener('load', () => {
@@ -1684,3 +1738,4 @@ RISPONDI ORA (segui ESATTAMENTE la struttura richiesta):`;
 </script>
 </body>
 </html>
+
