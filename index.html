@@ -375,7 +375,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio zx1</span>
+        <span>Assistente Archivio zx2</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1655,7 +1655,10 @@ function espandiQueryConSinonimi(queryOriginale) {
         }
     }
 
-   async function sendAIMessage() {
+// ═══════════════════════════════════════════════════════════════
+// AI CHAT - VERSIONE ANALITICA (NO FLUFF, NO INTRO, SOLO FATTI)
+// ═══════════════════════════════════════════════════════════════
+async function sendAIMessage() {
     const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
     if (!key) return; 
     localStorage.setItem('gemini_key', key);
@@ -1667,15 +1670,14 @@ function espandiQueryConSinonimi(queryOriginale) {
     
     if (!userText) return;
 
-    // 1. Espansione intelligente della query
-    const queryEspansa = espandiQueryConSinonimi(userText);
+    userText = espandiQueryConSinonimi(userText);
     
     box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
     input.value = "";
     input.style.height = 'auto';
     
     const aiMsgId = "ai-" + Date.now();
-    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Elaborazione dati...</div>`;
     const aiMsgElement = document.getElementById(aiMsgId);
     box.scrollTop = box.scrollHeight;
 
@@ -1684,59 +1686,68 @@ function espandiQueryConSinonimi(queryOriginale) {
     pContainer.style.display = 'block';
 
     try {
-        // 2. RICERCA NEL DATABASE (Velocissima)
-        updateProgress(30, "Consultazione archivio...");
-        let contextRecords = await hybridSearch(queryEspansa, 40);
+        updateProgress(30, "Analisi database...");
+        let contextRecords = await hybridSearch(userText, 50);
 
-        // 3. RICERCA NEL LIBRO (Solo se inerente ai risultati)
-        // Usiamo i nomi delle brigate e i luoghi trovati per interrogare il libro
-        updateProgress(60, "Verifica inerenze nel libro...");
-        const focusPunti = contextRecords.slice(0, 5).map(d => `${d.regione} ${d.scheda.substring(0, 100)}`).join(" ");
+        updateProgress(60, "Cross-referencing libro...");
+        const focusPunti = contextRecords.slice(0, 5).map(d => `${d.regione} ${d.nominativo}`).join(" ");
         const libroResult = await searchLibroSemantico(focusPunti + " " + userText, 3);
         
         let estrattiLibro = "";
-        if (libroResult.maxScore > 0.45) { // Alziamo la soglia: deve essere molto pertinente
+        if (libroResult.maxScore > 0.45) { 
             estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n');
         }
 
-        updateProgress(85, "Tessitura della risposta...");
+        const percorsi = analizzaPercorsiComplessi(contextRecords);
+        const percorsiTesto = generaTestoPercorsi(percorsi);
 
-        // 4. GENERAZIONE IN STREAMING (Evita troncamenti)
-      
+        updateProgress(85, "Sintesi dei fatti...");
+
+        // Chiamata streaming a Gemini 2.0 Flash
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Sei un Archivista Storico. Il tuo compito è narrare le vite dei partigiani trovati nel database, integrandole con il libro solo se strettamente pertinente.
+                        text: `Agisci come un Sistema di Analisi Storica. Rispondi esclusivamente con dati ed evidenze. 
 
-DATI ARCHIVIO (Fatti Accertati):
-${contextRecords.map(d => `[[${d.nominativo}]] | Regione: ${d.regione} | Bio: ${d.scheda}`).join('\n')}
+REGOLE ASSOLUTE:
+- ZERO introduzioni (es: "Certamente", "Ecco i risultati").
+- ZERO conclusioni (es: "Queste storie mostrano", "In sintesi").
+- ZERO giudizi di valore o commenti emotivi.
+- Inizia IMMEDIATAMENTE con la sezione **FATTI ACCERTATI**.
 
-ESTRATTI LIBRO (Da usare solo come integrazione contestuale):
-${estrattiLibro || "Nessun estratto pertinente."}
+DATI ARCHIVIO:
+${contextRecords.map(d => `[[${d.nominativo}]] | ${d.regione} | ${d.scheda}`).join('\n')}
 
-REGOLE DI RISPOSTA:
-1. ELEGANZA: Scrivi in modo fluido. Non fare elenchi puntati freddi.
-2. NOMI: Ogni volta che citi un partigiano presente nei dati, scrivilo come [[Nome Cognome]].
-3. INTEGRAZIONE LIBRO: Se l'estratto del libro parla di una zona, una battaglia o una brigata che riguarda i partigiani trovati, inserisci un approfondimento usando i tag:
-   <libro-narrato>Testo per contestualizzare fatti e luoghi</libro-narrato>
-   <libro-citazione>"Citazione testuale dal libro"</libro-citazione>
-4. NO TRONCAMENTI: Sii esaustivo ma non ripetitivo.
-5. INIZIO: Parti direttamente con i fatti, senza introduzioni di cortesia.
+ESTRATTI LIBRO:
+${estrattiLibro || "N/A"}
 
-DOMANDA UTENTE: "${originalText}"`
+RELAZIONI RILEVATE:
+${percorsiTesto}
+
+STRUTTURA OBBLIGATORIA:
+
+1. **FATTI ACCERTATI**
+Elenco dei partigiani trovati (usando [[Nome Cognome]]) raggruppati per criteri oggettivi. Brevissima descrizione tecnica per ognuno.
+
+2. **COLLEGAMENTI E ANALISI**
+Spiega le connessioni evidenziate nelle "RELAZIONI RILEVATE". Usa un linguaggio narrativo SOLO per descrivere movimenti geografici, contemporaneità di eventi o appartenenza alle stesse formazioni.
+
+3. **INTEGRAZIONE LIBRO**
+Usa <libro-narrato> per fatti storici contestuali e <libro-citazione> per estratti diretti. Inserisci questa sezione solo se i dati del libro sono direttamente collegabili ai partigiani in analisi.
+
+DOMANDA: "${originalText}"`
                     }]
                 }]
             })
         });
 
-        // 5. GESTIONE FLUSSO DATI (SSE)
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
-        aiMsgElement.innerHTML = ""; // Puliamo il testo di caricamento
+        aiMsgElement.innerHTML = ""; 
 
         while (true) {
             const { done, value } = await reader.read();
@@ -1750,10 +1761,7 @@ DOMANDA UTENTE: "${originalText}"`
                     try {
                         const json = JSON.parse(line.substring(6));
                         if (json.candidates && json.candidates[0].content.parts[0].text) {
-                            const chunkText = json.candidates[0].content.parts[0].text;
-                            fullText += chunkText;
-                            
-                            // Formattazione "al volo"
+                            fullText += json.candidates[0].content.parts[0].text;
                             aiMsgElement.innerHTML = formattaRispostaStreaming(fullText, contextRecords);
                             box.scrollTop = box.scrollHeight;
                         }
@@ -1767,42 +1775,100 @@ DOMANDA UTENTE: "${originalText}"`
         setTimeout(() => pContainer.style.display = 'none', 1000);
 
     } catch (e) {
-        console.error(e);
-        aiMsgElement.innerHTML = "❌ Errore nella generazione: " + e.message;
+        aiMsgElement.innerHTML = "❌ Errore: " + e.message;
         pContainer.style.display = 'none';
     }
 }
 
-// Funzione per formattare il testo mentre fluisce, gestendo link e titoli
 function formattaRispostaStreaming(text, records) {
     let html = text
-        // Trasforma i titoli in grassetti eleganti con linea
-        .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:18px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; text-transform:uppercase; letter-spacing:1px;">$1</b>')
-        // Gestisce i ritorni a capo
+        .replace(/\*\?(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:20px; margin-bottom:10px; padding-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #3498db; font-weight:700;">$1</b>')
         .replace(/\n/g, '<br>');
 
-    // Applica i link arancioni ai nomi tra [[ ]]
     records.forEach(r => {
-        const nomeSenzaParentesi = r.nominativo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`\\[\\[${nomeSenzaParentesi}\\]\\]`, 'gi');
-        const linkHTML = `<span class="link-partigiano" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</span>`;
-        html = html.replace(regex, linkHTML);
+        const nomeReg = r.nominativo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\[\\[${nomeReg}\\]\\]`, 'gi');
+        html = html.replace(regex, `<span class="link-partigiano" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</span>`);
     });
 
     return html;
 }
-    
-    window.addEventListener('load', () => {
-        const btnHTML = `
-            <div id="embed-precompute-btn" style="position:fixed; top:80px; right:25px; z-index:6000;">
-                <button id="embed-btn" onclick="precomputeAllEmbeddings()" 
-                        style="background:#2ecc71; color:white; border:none; border-radius:12px; padding:10px 15px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 4px 10px rgba(0,0,0,0.2);">
-                    🚀 Pre-calcola Embeddings
-                </button>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', btnHTML);
-    });
+
+// ═══════════════════════════════════════════════════════════════
+// FUNZIONI DI PRE-CALCOLO EMBEDDING (RIPRISTINATE)
+// ═══════════════════════════════════════════════════════════════
+async function precomputeAllEmbeddings() {
+    const key = localStorage.getItem('gemini_key') || prompt("Inserisci API Key Gemini:");
+    if (!key) return;
+    localStorage.setItem('gemini_key', key);
+
+    const btn = document.getElementById('embed-btn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Elaborazione in corso...';
+
+    const monitor = document.createElement('div');
+    monitor.id = 'embed-monitor';
+    monitor.innerHTML = `<div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:white; border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,0.3); width:400px; font-family:sans-serif;">
+        <h3 style="margin-top:0;">🔄 Sincronizzazione AI</h3>
+        <p id="csv-stat">Elaborazione Archivio...</p>
+        <p id="libro-stat">Elaborazione Libro...</p>
+        <button onclick="this.parentElement.parentElement.remove()" style="display:none; width:100%; padding:10px; border-radius:10px; border:none; background:#1a2a3a; color:white; cursor:pointer;" id="close-monitor">Chiudi e Inizia</button>
+    </div>`;
+    document.body.appendChild(monitor);
+
+    try {
+        CACHE.csvEmbeddings = [];
+        for (let i = 0; i < database.length; i += 10) {
+            const batch = database.slice(i, i + 10);
+            const embs = await Promise.all(batch.map(async (d) => {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: `${d.nominativo} ${d.scheda}` }] } })
+                });
+                const data = await res.json();
+                return data.embedding ? data.embedding.values : null;
+            }));
+            CACHE.csvEmbeddings.push(...embs.filter(e => e !== null));
+            document.getElementById('csv-stat').innerText = `✅ Archivio: ${CACHE.csvEmbeddings.length} profili pronti`;
+        }
+        localStorage.setItem('csv_embeddings_v2', JSON.stringify(CACHE.csvEmbeddings));
+
+        if (CACHE.libroChunks) {
+            CACHE.libroEmbeddings = [];
+            const max = Math.min(CACHE.libroChunks.length, 100);
+            for (let i = 0; i < max; i += 5) {
+                const batch = CACHE.libroChunks.slice(i, i + 5);
+                const embs = await Promise.all(batch.map(async (chunk) => {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: chunk.substring(0, 2000) }] } })
+                    });
+                    const data = await res.json();
+                    return data.embedding ? data.embedding.values : null;
+                }));
+                CACHE.libroEmbeddings.push(...embs.filter(e => e !== null));
+                document.getElementById('libro-stat').innerText = `✅ Libro: ${CACHE.libroEmbeddings.length} sezioni pronte`;
+            }
+            localStorage.setItem('libro_embeddings_v2', JSON.stringify(CACHE.libroEmbeddings));
+        }
+        document.getElementById('close-monitor').style.display = 'block';
+        btn.innerHTML = '✅ AI Sincronizzata';
+    } catch (e) {
+        alert("Errore: " + e.message);
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Riprova Calcolo';
+    }
+}
+
+map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
+
+window.addEventListener('load', () => {
+    const btnHTML = `<div style="position:fixed; top:80px; right:25px; z-index:6000;">
+        <button id="embed-btn" onclick="precomputeAllEmbeddings()" style="background:#2ecc71; color:white; border:none; border-radius:12px; padding:10px 15px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 4px 10px rgba(0,0,0,0.2);">🚀 Sincronizza AI (Embeddings)</button>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', btnHTML);
+});
 </script>
 </body>
 </html>
+
