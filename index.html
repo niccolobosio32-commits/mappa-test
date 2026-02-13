@@ -251,20 +251,27 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 }
 
 .msg-ai { 
-    background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
-    border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
+    background: rgba(255, 255, 255, 0.9); 
+    color: #2c3e50; 
+    align-self: flex-start; 
+    border-bottom-left-radius: 2px; 
+    border: 1px solid rgba(0,0,0,0.05);
     backdrop-filter: blur(5px);
+    line-height: 1.7;
+    white-space: normal;
 }
 
 .msg-ai b[style*="color:var(--navy)"] {
     display: block;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    font-size: 11px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.5px;
     color: #1a2a3a !important;
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid #3498db;
+    font-weight: 700;
 }
 
 .link-partigiano {
@@ -368,7 +375,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio v1</span>
+        <span>Assistente Archivio ez.0.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1730,43 +1737,117 @@ function espandiQueryConSinonimi(queryOriginale) {
                 estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n[---]\n\n');
             }
             
-            const promptBase = `Archivista della Resistenza. Risposta in DUE SEZIONI.
+            const promptBase = `Sei un Archivista della Resistenza. Rispondi SOLO con fatti verificati dal database.
 
-**🎯 FATTI ACCERTATI**
+═══════════════════════════════════════════════════════════════
+🎯 FATTI ACCERTATI
+═══════════════════════════════════════════════════════════════
 
-Trovati ${contextRecords.length} partigiani:
+REGOLA: Zero introduzioni. Inizia SUBITO con i nomi.
 
-Elenca TUTTI i nomi: [[Nome1]], [[Nome2]], [[Nome3]]...
-Se molti, raggruppa: Deportati: [[Nome1]]... Caduti: [[Nome2]]...
+Se pochi (meno di 20): elenca tutti separati da virgola
+[[Nome1]], [[Nome2]], [[Nome3]], [[Nome4]], [[Nome5]]...
 
-**🔗 APPROFONDIMENTI**
+Se molti (20+): raggruppa per categoria
+Deportati a Mauthausen: [[Nome1]], [[Nome2]], [[Nome3]]...
+Caduti in combattimento: [[Nome4]], [[Nome5]]...
+Staffette: [[Nome6]], [[Nome7]]...
+Brigata Garibaldi: [[Nome8]], [[Nome9]]...
 
-SOLO se trovi collegamenti:
-- Geografia: "Dal Sud al Nord: [[Nome1]], [[Nome2]]..."
-- Brigate: "Brigata X: [[Nome3]], [[Nome4]]..."
-- Zone: "Valsesia: [[Nome5]], [[Nome6]]..."
-- Eventi: "8 settembre: [[Nome7]], [[Nome8]]..."
-- Destini: "Mauthausen: [[Nome9]], [[Nome10]]..."
+VIETATO scrivere: "Ho trovato", "Ecco l'elenco", "I partigiani sono"
+PARTI DIRETTAMENTE con i nomi o le categorie.
 
-Concatena i livelli. Esempio: "[[Nome1]] dal Sud si unì alla Brigata X in Valsesia. Nel rastrellamento del '44 fu catturato con [[Nome2]]."
+═══════════════════════════════════════════════════════════════
+🔗 APPROFONDIMENTI
+═══════════════════════════════════════════════════════════════
 
-PERCORSI:
-${percorsiTesto}
+Scrivi una NARRATIVA che intrecci tutti i livelli di connessione.
+Obiettivo: massimizzare i nomi cliccabili [[Nome]] mostrando percorsi reali.
 
-${libroUsato ? `**📚 LIBRO** (se pertinente):
-<libro-narrato>Testo...</libro-narrato>
-<libro-citazione>Citazione...</libro-citazione>
+STRUTTURA NARRATIVA (segui questo flusso):
+
+**1. PERCORSI GEOGRAFICI** (se presenti nel database)
+Racconta le migrazioni usando i dati PERCORSI GEOGRAFICI.
+Esempio: "Dal Sud al Nord si spostarono [[Nome1]] (Palermo→Torino), [[Nome2]] (Catania→Cuneo), [[Nome3]] (Messina→Novara). [[Nome1]] e [[Nome2]] finirono entrambi nella Brigata Garibaldi operativa in Valsesia."
+
+**2. FORMAZIONI E ZONE OPERATIVE** (se presenti nel database)
+Racconta chi combatté insieme e dove.
+Esempio: "La Valsesia vide concentrarsi [[Nome4]], [[Nome5]], [[Nome6]]. Tutti operarono nella Divisione Alpina. [[Nome4]] fu staffetta, [[Nome5]] combattente."
+
+**3. CRONOLOGIE ED EVENTI** (se presenti nel database)
+Racconta eventi condivisi con date precise dalle biografie.
+Esempio: "L'8 settembre 1943 segnò il destino di [[Nome7]], [[Nome8]], [[Nome9]]. [[Nome7]] fu catturato a Bologna, [[Nome8]] si unì alla Resistenza, [[Nome9]] optò per i lager tedeschi."
+
+**4. DESTINI COMUNI** (se presenti nel database)
+Racconta chi condivise la stessa sorte.
+Esempio: "Il lager di Mauthausen accolse [[Nome10]], [[Nome11]], [[Nome12]]. [[Nome10]] morì a Gusen nel febbraio 1945, pochi giorni prima della liberazione. [[Nome11]] e [[Nome12]] sopravvissero e testimoniarono."
+
+**5. COLLEGAMENTI INCROCIATI**
+Connetti i livelli precedenti in un'unica narrazione.
+Esempio: "[[Nome1]], nato in Sicilia, si spostò in Piemonte dove incontrò [[Nome4]] della Valsesia. Insieme entrarono nella Brigata Garibaldi. Durante il rastrellamento del luglio 1944 furono catturati insieme a [[Nome10]]. [[Nome1]] e [[Nome10]] finirono a Mauthausen, [[Nome4]] fu fucilato sul posto."
+
+REGOLE FERREE:
+✅ USA SOLO dati dal database (nomi, luoghi, date, eventi dalle biografie)
+✅ MASSIMIZZA i link [[Nome]] - ogni nome deve apparire almeno 2 volte
+✅ NARRA in modo fluido, non elencare meccanicamente
+✅ CITA dettagli specifici dalle biografie (mesi, luoghi precisi, formazioni)
+✅ SE un livello è vuoto nei dati, SALTALO
+❌ VIETATO inventare date, luoghi o eventi non presenti nel database
+❌ VIETATO scrivere "è interessante notare", "dai dati emerge"
+
+${libroUsato ? `
+═══════════════════════════════════════════════════════════════
+📚 LIBRO STORICO
+═══════════════════════════════════════════════════════════════
+
+Il libro ha score ${(libroResult.maxScore * 100).toFixed(0)}%. Usalo SOLO se pertinente.
+
+QUANDO USARLO:
+✅ Per contestualizzare eventi menzionati nelle biografie (8 settembre, rastrellamenti)
+✅ Per descrivere zone operative menzionate (Valsesia, Ossola, ecc.)
+✅ Per spiegare formazioni/brigate citate
+
+COME USARLO:
+<libro-narrato>Contestualizzazione dell'evento o luogo...</libro-narrato>
+<libro-citazione>"Citazione diretta breve dal libro"</libro-citazione>
+
+QUANDO NON USARLO:
+❌ Se il libro parla di cose generiche non legate ai partigiani trovati
+❌ Se il libro non aggiunge informazioni utili
 
 LIBRO:
 ${estrattiLibro}
 ` : ''}
 
-DATI (${contextRecords.length} partigiani):
+═══════════════════════════════════════════════════════════════
+DATABASE (${contextRecords.length} partigiani trovati)
+═══════════════════════════════════════════════════════════════
+
 ${context}
 
-DOMANDA: "${originalText}"
+═══════════════════════════════════════════════════════════════
+PERCORSI E RELAZIONI VERIFICATI
+═══════════════════════════════════════════════════════════════
 
-RISPONDI ORA (completo, tutti i ${contextRecords.length} nomi):`;
+${percorsiTesto}
+
+═══════════════════════════════════════════════════════════════
+DOMANDA UTENTE
+═══════════════════════════════════════════════════════════════
+
+"${originalText}"
+
+═══════════════════════════════════════════════════════════════
+ISTRUZIONI FINALI
+═══════════════════════════════════════════════════════════════
+
+1. FATTI ACCERTATI: Inizia SUBITO con i nomi (zero introduzioni)
+2. APPROFONDIMENTI: Narrativa fluida che massimizza i collegamenti e i nomi [[]]
+3. USA SOLO dati verificati dal database
+4. Formattazione impeccabile con spazi e interruzioni di riga
+5. INCLUDI TUTTI i ${contextRecords.length} nomi trovati
+
+RISPONDI ORA:`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
@@ -1776,7 +1857,7 @@ RISPONDI ORA (completo, tutti i ${contextRecords.length} nomi):`;
                         parts: [{ text: promptBase }] 
                     }],
                     generationConfig: {
-                        temperature: 0.5,
+                        temperature: 0.7,
                         topP: 0.9,
                         topK: 50,
                         maxOutputTokens: 8000
