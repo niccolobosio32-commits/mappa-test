@@ -331,7 +331,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A2.1</span>
+        <span>Assistente Archivio A2.2</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1225,271 +1225,246 @@ function espandiQueryConSinonimi(queryOriginale) {
         return output;
     }
 
-    async function searchLibroSemantico e sostituisci le soglie:
-javascriptasync function searchLibroSemantico(query, topK = 4) {
-    if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-        console.log("📚 [DEBUG] Cache libro non disponibile");
-        return { text: "", maxScore: 0 };
+    async function searchLibroSemantico(query, topK = 5) {
+        if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
+            console.log("📚 [DEBUG] Cache libro non disponibile");
+            return { text: "", maxScore: 0 };
+        }
+        
+        const key = localStorage.getItem('gemini_key');
+        if (!key) return { text: "", maxScore: 0 };
+        
+        try {
+            console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
+            
+            const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "models/text-embedding-004",
+                    content: { parts: [{ text: query }] }
+                })
+            });
+            const queryData = await queryEmbedRes.json();
+            if (!queryData.embedding) return { text: "", maxScore: 0 };
+            const queryEmbed = queryData.embedding.values;
+            
+            const batchSize = 10;
+            let scoredChunks = [];
+            
+            const chunksToProcess = CACHE.libroChunks.slice(0, 50);
+            
+            for (let i = 0; i < chunksToProcess.length; i += batchSize) {
+                const batch = chunksToProcess.slice(i, i + batchSize);
+                const batchScores = await Promise.all(batch.map(async (chunk) => {
+                    try {
+                        if (chunk.length < 50) return { chunk, score: 0 };
+                        
+                        const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: "models/text-embedding-004",
+                                content: { parts: [{ text: chunk.substring(0, 1000) }] }
+                            })
+                        });
+                        const chunkData = await chunkEmbedRes.json();
+                        if (!chunkData.embedding) return { chunk, score: 0 };
+                        const chunkEmbed = chunkData.embedding.values;
+                        
+                        const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
+                        return { chunk, score: similarity };
+                    } catch (e) {
+                        return { chunk, score: 0 };
+                    }
+                }));
+                scoredChunks.push(...batchScores);
+            }
+            
+            const SOGLIA_PRIMARIA = 0.20;
+            const SOGLIA_FALLBACK = 0.15;
+            
+            let relevantChunks = scoredChunks
+                .filter(s => s.score >= SOGLIA_PRIMARIA)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, topK);
+            
+            if (relevantChunks.length === 0) {
+                console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
+                relevantChunks = scoredChunks
+                    .filter(s => s.score >= SOGLIA_FALLBACK)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, Math.min(3, topK));
+            }
+            
+            const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
+            
+            if (relevantChunks.length === 0) {
+                console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
+                return { text: "", maxScore: 0 };
+            }
+            
+            const topChunks = relevantChunks
+                .map(s => s.chunk)
+                .join('\n\n[---]\n\n');
+            
+            console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
+            return { text: topChunks, maxScore };
+            
+        } catch (e) {
+            console.error("❌ Errore ricerca libro:", e);
+            return { text: "", maxScore: 0 };
+        }
     }
-    
-    const key = localStorage.getItem('gemini_key');
-    if (!key) return { text: "", maxScore: 0 };
-    
-    try {
-        console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
+
+    // ═══════════════════════════════════════════════════════════════
+    // AI CHAT - VERSIONE OTTIMIZZATA CON RISPOSTE APPROFONDITE
+    // ═══════════════════════════════════════════════════════════════
+    async function sendAIMessage() {
+        const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
+        if (!key) return; 
+        localStorage.setItem('gemini_key', key);
         
-        const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: "models/text-embedding-004",
-                content: { parts: [{ text: query }] }
-            })
-        });
-        const queryData = await queryEmbedRes.json();
-        if (!queryData.embedding) return { text: "", maxScore: 0 };
-        const queryEmbed = queryData.embedding.values;
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        let userText = input.value.trim();
+        const originalText = userText;
         
-        const batchSize = 10;
-        let scoredChunks = [];
+        if (!userText) return;
+
+        const cached = CACHE.getCachedQuery(originalText);
+        if (cached) {
+            console.log("⚡ [CACHE] Risposta dalla cache!");
+            box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
+            box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
+            input.value = "";
+            input.style.height = 'auto';
+            box.scrollTop = box.scrollHeight;
+            return;
+        }
+
+        userText = espandiQueryConSinonimi(userText);
         
-        const chunksToProcess = CACHE.libroChunks.slice(0, 50);
+        const pContainer = document.getElementById('ai-progress-container');
+        const pBar = document.getElementById('ai-progress-bar');
         
-        for (let i = 0; i < chunksToProcess.length; i += batchSize) {
-            const batch = chunksToProcess.slice(i, i + batchSize);
-            const batchScores = await Promise.all(batch.map(async (chunk) => {
+        box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
+        input.value = "";
+        input.style.height = 'auto';
+        
+        const aiMsgId = "ai-" + Date.now();
+        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
+        const aiMsgElement = document.getElementById(aiMsgId);
+        box.scrollTop = box.scrollHeight;
+
+        pContainer.style.display = 'block';
+        updateProgress(10, "Inizializzazione...");
+
+        try {
+            console.log(`🔍 [QUERY] "${originalText}"`);
+            
+            updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
+            
+            let contextRecords = await hybridSearch(userText, 50);
+            
+            const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
+            if (geoQuery) {
+                console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
+                const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
+                if (geoFiltered.length > 0) {
+                    contextRecords = geoFiltered;
+                }
+            }
+            
+            console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
+            
+            updateProgress(40, "Analisi relazioni tra partigiani...");
+            
+            const relazioni = analizzaRelazioni(contextRecords);
+            const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
+            
+            console.log("🔗 [RELAZIONI] Analisi completata:");
+            console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
+            console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
+            console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
+            console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
+            
+            updateProgress(60, "Ricerca nel libro storico...");
+            
+            let estrattiLibro = "";
+            let libroUsato = false;
+            let libroScore = 0;
+            
+            if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
+                console.log("📚 [LIBRO] Ricerca con embeddings cached...");
+                
                 try {
-                    if (chunk.length < 50) return { chunk, score: 0 };
-                    
-                    const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                    const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             model: "models/text-embedding-004",
-                            content: { parts: [{ text: chunk.substring(0, 1000) }] }
+                            content: { parts: [{ text: originalText }] }
                         })
                     });
-                    const chunkData = await chunkEmbedRes.json();
-                    if (!chunkData.embedding) return { chunk, score: 0 };
-                    const chunkEmbed = chunkData.embedding.values;
+                    const queryData = await queryEmbedRes.json();
                     
-                    const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
-                    return { chunk, score: similarity };
-                } catch (e) {
-                    return { chunk, score: 0 };
-                }
-            }));
-            scoredChunks.push(...batchScores);
-        }
-        
-        // ⭐ SOGLIE ABBASSATE
-        const SOGLIA_PRIMARIA = 0.20; // ⭐ DA 0.35 A 0.20
-        const SOGLIA_FALLBACK = 0.15; // ⭐ DA 0.25 A 0.15
-        
-        let relevantChunks = scoredChunks
-            .filter(s => s.score >= SOGLIA_PRIMARIA)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, topK);
-        
-        if (relevantChunks.length === 0) {
-            console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
-            relevantChunks = scoredChunks
-                .filter(s => s.score >= SOGLIA_FALLBACK)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, Math.min(3, topK));
-        }
-        
-        const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
-        
-        if (relevantChunks.length === 0) {
-            console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
-            return { text: "", maxScore: 0 };
-        }
-        
-        const topChunks = relevantChunks
-            .map(s => s.chunk)
-            .join('\n\n[---]\n\n');
-        
-        console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
-        return { text: topChunks, maxScore };
-        
-    } catch (e) {
-        console.error("❌ Errore ricerca libro:", e);
-        return { text: "", maxScore: 0 };
-    }
-}
-
-   // ═══════════════════════════════════════════════════════════════
-// AI CHAT - VERSIONE OTTIMIZZATA CON RISPOSTE APPROFONDITE
-// ═══════════════════════════════════════════════════════════════
-async function sendAIMessage() {
-    const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
-    if (!key) return; 
-    localStorage.setItem('gemini_key', key);
-    
-    const input = document.getElementById('ai-chat-input');
-    const box = document.getElementById('ai-chat-messages');
-    let userText = input.value.trim();
-    const originalText = userText;
-    
-    if (!userText) return;
-
-    // Verifica cache query
-    const cached = CACHE.getCachedQuery(originalText);
-    if (cached) {
-        console.log("⚡ [CACHE] Risposta dalla cache!");
-        box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
-        box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
-        input.value = "";
-        input.style.height = 'auto';
-        box.scrollTop = box.scrollHeight;
-        return;
-    }
-
-    // Espansione query
-    userText = espandiQueryConSinonimi(userText);
-    
-    // UI Updates
-    const pContainer = document.getElementById('ai-progress-container');
-    const pBar = document.getElementById('ai-progress-bar');
-    
-    box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
-    input.value = "";
-    input.style.height = 'auto';
-    
-    const aiMsgId = "ai-" + Date.now();
-    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
-    const aiMsgElement = document.getElementById(aiMsgId);
-    box.scrollTop = box.scrollHeight;
-
-    pContainer.style.display = 'block';
-    updateProgress(10, "Inizializzazione...");
-
-    try {
-        console.log(`🔍 [QUERY] "${originalText}"`);
-        
-        // ═════════════════════════════════════════════════════════
-        // FASE 1: RICERCA IBRIDA (BM25 + SEMANTICA) - AUMENTATO A 50
-        // ═════════════════════════════════════════════════════════
-        updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
-        
-        let contextRecords = await hybridSearch(userText, 50); // ⭐ DA 40 A 50
-        
-        // Integrazione filtri geografici se necessario
-        const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
-        if (geoQuery) {
-            console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
-            const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
-            if (geoFiltered.length > 0) {
-                contextRecords = geoFiltered;
-            }
-        }
-        
-        console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
-        
-        // ═════════════════════════════════════════════════════════
-        // FASE 2: ANALISI RELAZIONI
-        // ═════════════════════════════════════════════════════════
-        updateProgress(40, "Analisi relazioni tra partigiani...");
-        
-        const relazioni = analizzaRelazioni(contextRecords);
-        const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
-        
-        console.log("🔗 [RELAZIONI] Analisi completata:");
-        console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
-        console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
-        console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
-        console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
-        
-        // ═════════════════════════════════════════════════════════
-        // FASE 3: RICERCA NEL LIBRO (SOGLIA ABBASSATA + FALLBACK)
-        // ═════════════════════════════════════════════════════════
-        updateProgress(60, "Ricerca nel libro storico...");
-        
-        let estrattiLibro = "";
-        let libroUsato = false;
-        let libroScore = 0;
-        
-        // Usa cache se disponibile
-        if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
-            console.log("📚 [LIBRO] Ricerca con embeddings cached...");
-            
-            try {
-                const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: "models/text-embedding-004",
-                        content: { parts: [{ text: originalText }] }
-                    })
-                });
-                const queryData = await queryEmbedRes.json();
-                
-                if (queryData.embedding) {
-                    const queryEmbed = queryData.embedding.values;
-                    
-                    // ⭐ SOGLIA ABBASSATA DA 0.30 A 0.20 CON FALLBACK
-                    let scoredChunks = CACHE.libroEmbeddings
-                        .map((embed, i) => ({
-                            chunk: CACHE.libroChunks[i],
-                            score: cosineSimilarity(queryEmbed, embed)
-                        }))
-                        .filter(s => s.score >= 0.20) // ⭐ SOGLIA PRIMARIA 0.20
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, 5); // ⭐ AUMENTATO DA 4 A 5 CHUNK
-                    
-                    // ⭐ FALLBACK: Se nessuno sopra 0.20, prendi i migliori sopra 0.15
-                    if (scoredChunks.length === 0) {
-                        console.log("📚 [LIBRO] Attivo fallback (soglia: 0.15)");
-                        scoredChunks = CACHE.libroEmbeddings
+                    if (queryData.embedding) {
+                        const queryEmbed = queryData.embedding.values;
+                        
+                        let scoredChunks = CACHE.libroEmbeddings
                             .map((embed, i) => ({
                                 chunk: CACHE.libroChunks[i],
                                 score: cosineSimilarity(queryEmbed, embed)
                             }))
-                            .filter(s => s.score >= 0.15)
+                            .filter(s => s.score >= 0.20)
                             .sort((a, b) => b.score - a.score)
-                            .slice(0, 3);
+                            .slice(0, 5);
+                        
+                        if (scoredChunks.length === 0) {
+                            console.log("📚 [LIBRO] Attivo fallback (soglia: 0.15)");
+                            scoredChunks = CACHE.libroEmbeddings
+                                .map((embed, i) => ({
+                                    chunk: CACHE.libroChunks[i],
+                                    score: cosineSimilarity(queryEmbed, embed)
+                                }))
+                                .filter(s => s.score >= 0.15)
+                                .sort((a, b) => b.score - a.score)
+                                .slice(0, 3);
+                        }
+                        
+                        if (scoredChunks.length > 0) {
+                            libroUsato = true;
+                            libroScore = scoredChunks[0].score;
+                            estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
+                            console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
+                        } else {
+                            console.log("📚 [LIBRO] Nessun chunk rilevante trovato");
+                        }
                     }
-                    
-                    if (scoredChunks.length > 0) {
-                        libroUsato = true;
-                        libroScore = scoredChunks[0].score;
-                        estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
-                        console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
-                    } else {
-                        console.log("📚 [LIBRO] Nessun chunk rilevante trovato");
-                    }
+                } catch (e) {
+                    console.error("❌ [LIBRO] Errore:", e);
                 }
-            } catch (e) {
-                console.error("❌ [LIBRO] Errore:", e);
+            } else {
+                const libroResult = await searchLibroSemantico(originalText, 5);
+                if (libroResult.maxScore >= 0.20) {
+                    estrattiLibro = libroResult.text;
+                    libroUsato = true;
+                    libroScore = libroResult.maxScore;
+                }
             }
-        } else {
-            // Fallback: ricerca tradizionale con soglia abbassata
-            const libroResult = await searchLibroSemantico(originalText, 5);
-            if (libroResult.maxScore >= 0.20) { // ⭐ SOGLIA ABBASSATA
-                estrattiLibro = libroResult.text;
-                libroUsato = true;
-                libroScore = libroResult.maxScore;
-            }
-        }
-        
-        // ═════════════════════════════════════════════════════════
-        // FASE 4: PREPARAZIONE CONTESTO CSV - AUMENTATO A 50
-        // ═════════════════════════════════════════════════════════
-        updateProgress(70, "Formattazione dati...");
-        
-        const context = contextRecords.slice(0, 50).map(d => { // ⭐ DA 35 A 50
-            const miniBio = d.scheda ? d.scheda.substring(0, 500) : "N/D"; // ⭐ DA 400 A 500 CARATTERI
-            return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
-        }).join("\n");
-        
-        // ═════════════════════════════════════════════════════════
-        // FASE 5: PROMPT ENGINEERING MIGLIORATO
-        // ═════════════════════════════════════════════════════════
-        updateProgress(80, "Generazione risposta AI...");
-        pBar.classList.add('progress-active');
-        
-        const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) esperto e appassionato, con accesso a un database di testimonianze partigiane e a un libro storico sulla Resistenza.
+            
+            updateProgress(70, "Formattazione dati...");
+            
+            const context = contextRecords.slice(0, 50).map(d => {
+                const miniBio = d.scheda ? d.scheda.substring(0, 500) : "N/D";
+                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
+            }).join("\n");
+            
+            updateProgress(80, "Generazione risposta AI...");
+            pBar.classList.add('progress-active');
+            
+            const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) esperto e appassionato, con accesso a un database di testimonianze partigiane e a un libro storico sulla Resistenza.
 
 ═══════════════════════════════════════════════════════════════
 PRINCIPI GUIDA
@@ -1616,112 +1591,136 @@ NON essere sintetico. Espandi, racconta, contestualizza.
 
 RISPONDI ORA:`;
 
-        // ═════════════════════════════════════════════════════════
-        // FASE 6: CHIAMATA API GEMINI CON PARAMETRI MODIFICATI
-        // ═════════════════════════════════════════════════════════
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ 
-                    parts: [{ text: promptBase }] 
-                }],
-                generationConfig: {
-                    temperature: 0.7, // ⭐ AUMENTATA DA 0.4 A 0.7 (più creativa)
-                    topP: 0.9, // ⭐ AUMENTATA DA 0.8 A 0.9
-                    topK: 50, // ⭐ AUMENTATA DA 40 A 50
-                    maxOutputTokens: 4096 // ⭐ RADDOPPIATO DA 2048 A 4096
-                }
-            })
-        });
-
-        updateProgress(95, "Formattazione risposta...");
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        let aiText = data.candidates[0].content.parts[0].text;
-
-        // ═════════════════════════════════════════════════════════
-        // FASE 7: POST-PROCESSING E LINK
-        // ═════════════════════════════════════════════════════════
-
-        // Registra custom elements
-        if (!customElements.get('libro-narrato')) {
-            customElements.define('libro-narrato', class extends HTMLElement {});
-        }
-        if (!customElements.get('libro-citazione')) {
-            customElements.define('libro-citazione', class extends HTMLElement {});
-        }
-
-        // Formattazione base
-        let formattedText = aiText
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; margin-bottom:5px; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid #eee;">$1</b>')
-            .replace(/\n/g, '<br>');
-
-        // Link ai partigiani
-        const tuttiINomi = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
-
-        tuttiINomi.forEach(nome => {
-            if (nome.length < 3) return;
-            const regex = new RegExp(`(?<!San\\s|Santa\\s|Santo\\s)\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}(?![a-zA-Z])`, 'gi');
-            
-            if (formattedText.includes(nome)) {
-                const linkHTML = `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
-                
-                let tempDiv = document.createElement('div');
-                tempDiv.innerHTML = formattedText;
-                
-                const walk = (node) => {
-                    if (node.nodeType === 3) {
-                        const text = node.nodeValue;
-                        if (regex.test(text)) {
-                            const wrapper = document.createElement('span');
-                            wrapper.innerHTML = text.replace(regex, linkHTML);
-                            node.parentNode.replaceChild(wrapper, node);
-                        }
-                    } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
-                        Array.from(node.childNodes).forEach(walk);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contents: [{ 
+                        parts: [{ text: promptBase }] 
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        topP: 0.9,
+                        topK: 50,
+                        maxOutputTokens: 4096
                     }
-                };
-                
-                walk(tempDiv);
-                formattedText = tempDiv.innerHTML;
+                })
+            });
+
+            updateProgress(95, "Formattazione risposta...");
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message);
             }
-        });
 
-        // Badge libro
-        if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
-            formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
-        }
+            let aiText = data.candidates[0].content.parts[0].text;
 
-        aiMsgElement.innerHTML = formattedText;
-        aiMsgElement.classList.add('finished');
-        
-        // Salva in cache
-        CACHE.setCachedQuery(originalText, formattedText);
-        
-        updateProgress(100, "Completato!");
-        
-        setTimeout(() => {
+            if (!customElements.get('libro-narrato')) {
+                customElements.define('libro-narrato', class extends HTMLElement {});
+            }
+            if (!customElements.get('libro-citazione')) {
+                customElements.define('libro-citazione', class extends HTMLElement {});
+            }
+
+            let formattedText = aiText
+                .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; margin-bottom:5px; font-size:11px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid #eee;">$1</b>')
+                .replace(/\n/g, '<br>');
+
+            const tuttiINomi = contextRecords.map(d => d.nominativo).sort((a, b) => b.length - a.length);
+
+            tuttiINomi.forEach(nome => {
+                if (nome.length < 3) return;
+                const regex = new RegExp(`(?<!San\\s|Santa\\s|Santo\\s)\\[{0,2}${nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]{0,2}(?![a-zA-Z])`, 'gi');
+                
+                if (formattedText.includes(nome)) {
+                    const linkHTML = `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
+                    
+                    let tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = formattedText;
+                    
+                    const walk = (node) => {
+                        if (node.nodeType === 3) {
+                            const text = node.nodeValue;
+                            if (regex.test(text)) {
+                                const wrapper = document.createElement('span');
+                                wrapper.innerHTML = text.replace(regex, linkHTML);
+                                node.parentNode.replaceChild(wrapper, node);
+                            }
+                        } else if (node.nodeType === 1 && node.className !== 'link-partigiano') {
+                            Array.from(node.childNodes).forEach(walk);
+                        }
+                    };
+                    
+                    walk(tempDiv);
+                    formattedText = tempDiv.innerHTML;
+                }
+            });
+
+            if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
+                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
+            }
+
+            aiMsgElement.innerHTML = formattedText;
+            aiMsgElement.classList.add('finished');
+            
+            CACHE.setCachedQuery(originalText, formattedText);
+            
+            updateProgress(100, "Completato!");
+            
+            setTimeout(() => {
+                pContainer.style.display = 'none';
+                document.getElementById('ai-status-text').style.display = 'none';
+                pBar.style.width = '0%';
+                pBar.classList.remove('progress-active');
+            }, 1000);
+
+            box.scrollTop = box.scrollHeight;
+
+        } catch (e) { 
+            console.error("❌ [ERROR]", e);
             pContainer.style.display = 'none';
             document.getElementById('ai-status-text').style.display = 'none';
-            pBar.style.width = '0%';
-            pBar.classList.remove('progress-active');
-        }, 1000);
-
-        box.scrollTop = box.scrollHeight;
-
-    } catch (e) { 
-        console.error("❌ [ERROR]", e);
-        pContainer.style.display = 'none';
-        document.getElementById('ai-status-text').style.display = 'none';
-        aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
-        aiMsgElement.classList.add('finished');
+            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
+            aiMsgElement.classList.add('finished');
+        }
     }
-}
+
+    map.on('click', () => { 
+        closeDetails(); 
+        document.getElementById('results-dropdown').style.display = 'none'; 
+    });
+    
+    // ⭐ PULSANTE PRE-CALCOLO EMBEDDINGS
+    async function precomputeAllEmbeddings() {
+        const btn = document.getElementById('embed-btn');
+        if (!btn) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Calcolo in corso...';
+        
+        try {
+            await CACHE.initCSV();
+            
+            if (!CACHE.libroEmbeddings) {
+                await CACHE.initLibro();
+            }
+            
+            btn.innerHTML = '✅ Completato!';
+            btn.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                btn.style.display = 'none';
+            }, 2000);
+            
+            alert('✅ Embeddings pre-calcolati!\n\nOra le ricerche saranno molto più veloci.');
+        } catch (e) {
+            btn.innerHTML = '❌ Errore';
+            btn.style.background = '#e74c3c';
+            btn.disabled = false;
+            alert('Errore durante il pre-calcolo: ' + e.message);
+        }
+    }
     
     // Crea pulsante dopo caricamento pagina
     window.addEventListener('load', () => {
@@ -1738,4 +1737,5 @@ RISPONDI ORA:`;
 </script>
 </body>
 </html>
+
 
