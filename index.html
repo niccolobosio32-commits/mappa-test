@@ -331,7 +331,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A2.5</span>
+        <span>Assistente Archivio b1.0</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -411,7 +411,157 @@ const DIZIONARIO_SINONIMI = {
     "brigata": "brigata divisione formazione partigiana banda gruppo armato"
 };
 
+// ═══════════════════════════════════════════════════════════════
+// MOTORE DI INFERENZA STORICA AVANZATO
+// ═══════════════════════════════════════════════════════════════
+const INFERENZA_STORICA = {
+    // Mappa lager → località geografiche
+    LAGER_GEOGRAFIA: {
+        "mauthausen": ["austria", "linz", "gusen"],
+        "dachau": ["germania", "monaco", "baviera"],
+        "auschwitz": ["polonia", "oswiecim"],
+        "buchenwald": ["germania", "weimar", "turingia"],
+        "flossenbürg": ["germania", "baviera"],
+        "sachsenhausen": ["germania", "berlino"],
+        "ravensbrück": ["germania", "berlino"],
+        "dora": ["germania", "nordhausen"]
+    },
+    
+    // Eventi storici → periodi temporali
+    EVENTI_CRONOLOGIA: {
+        "8 settembre": ["settembre 1943", "armistizio", "badoglio", "sbandamento"],
+        "25 aprile": ["aprile 1945", "liberazione", "insurrezione"],
+        "repubblica sociale": ["1943", "1944", "1945", "salò"],
+        "rastrellamenti": ["1944", "inverno 1944", "estate 1944"],
+        "deportazioni": ["1943", "1944", "tradotte"]
+    },
+    
+    // Ruoli → implicazioni operative
+    RUOLI_ATTIVITA: {
+        "staffetta": ["collegamento", "messaggi", "portaordini", "ausiliaria", "donna", "giovane"],
+        "gap": ["azioni urbane", "sabotaggio", "attentati", "città"],
+        "sap": ["difesa", "ausiliaria", "supporto", "logistica"],
+        "comandante": ["brigata", "divisione", "gruppo", "formazione"],
+        "commissario": ["politico", "cln", "comitato"]
+    },
+    
+    // Zone operative → regioni correlate
+    ZONE_OPERATIVE: {
+        "valli valdesi": ["piemonte", "torino", "pinerolo"],
+        "valsesia": ["piemonte", "vercelli", "novara"],
+        "ossola": ["piemonte", "verbano", "svizzera"],
+        "langhe": ["piemonte", "cuneo", "alba"],
+        "appenino tosco-emiliano": ["emilia", "toscana", "modena", "bologna"],
+        "carnia": ["friuli", "udine", "slovenia"],
+        "val di fiemme": ["trentino", "trento"]
+    },
+    
+    // Inferenze logiche: se query contiene X, aggiungi Y
+    INFERENZE: [
+        {
+            pattern: /deport.*austria/i,
+            aggiungi: ["mauthausen", "gusen", "linz", "deportati", "lager"],
+            motivo: "Austria → Mauthausen (principale lager)"
+        },
+        {
+            pattern: /deport.*germania/i,
+            aggiungi: ["dachau", "buchenwald", "flossenbürg", "deportati", "lager"],
+            motivo: "Germania → lager tedeschi"
+        },
+        {
+            pattern: /(donna|donne|femminil)/i,
+            aggiungi: ["staffetta", "staffettista", "ausiliaria", "partigiana"],
+            motivo: "Donne → ruoli tipici nella resistenza"
+        },
+        {
+            pattern: /città|urban/i,
+            aggiungi: ["gap", "azioni urbane", "sabotaggio", "attentati"],
+            motivo: "Contesto urbano → GAP"
+        },
+        {
+            pattern: /montagna|valli|alpini/i,
+            aggiungi: ["brigata", "formazione", "bande", "rastrellamenti"],
+            motivo: "Montagna → formazioni partigiane"
+        },
+        {
+            pattern: /settembre.*1943|armistizio/i,
+            aggiungi: ["8 settembre", "sbandamento", "scelta", "badoglio"],
+            motivo: "Armistizio → momento cruciale"
+        },
+        {
+            pattern: /imi|internati.*militari/i,
+            aggiungi: ["germania", "lager", "stammlager", "prigionia", "8 settembre"],
+            motivo: "IMI → deportazione post-armistizio"
+        },
+        {
+            pattern: /fucilat|uccis|cadut/i,
+            aggiungi: ["rappresaglia", "rastrellamento", "catturato", "arrestato"],
+            motivo: "Morte → contesto di cattura"
+        }
+    ],
+    
+    // Espande la query con inferenze storiche
+    espandiQuery(queryOriginale) {
+        let terminiAggiuntivi = [];
+        const queryLower = queryOriginale.toLowerCase();
+        
+        console.log("🧠 [INFERENZA] Analisi query:", queryOriginale);
+        
+        // 1. Applica inferenze logiche
+        this.INFERENZE.forEach(inferenza => {
+            if (inferenza.pattern.test(queryOriginale)) {
+                console.log(`  ✅ ${inferenza.motivo}`);
+                terminiAggiuntivi.push(...inferenza.aggiungi);
+            }
+        });
+        
+        // 2. Espandi lager → geografia
+        for (const [lager, luoghi] of Object.entries(this.LAGER_GEOGRAFIA)) {
+            if (queryLower.includes(lager)) {
+                console.log(`  📍 ${lager} → ${luoghi.join(', ')}`);
+                terminiAggiuntivi.push(...luoghi);
+            }
+        }
+        
+        // 3. Espandi eventi → cronologia
+        for (const [evento, periodi] of Object.entries(this.EVENTI_CRONOLOGIA)) {
+            if (queryLower.includes(evento)) {
+                console.log(`  📅 ${evento} → ${periodi.join(', ')}`);
+                terminiAggiuntivi.push(...periodi);
+            }
+        }
+        
+        // 4. Espandi ruoli → attività
+        for (const [ruolo, attivita] of Object.entries(this.RUOLI_ATTIVITA)) {
+            if (queryLower.includes(ruolo)) {
+                console.log(`  👤 ${ruolo} → ${attivita.join(', ')}`);
+                terminiAggiuntivi.push(...attivita);
+            }
+        }
+        
+        // 5. Espandi zone → regioni
+        for (const [zona, regioni] of Object.entries(this.ZONE_OPERATIVE)) {
+            if (queryLower.includes(zona)) {
+                console.log(`  🗺️ ${zona} → ${regioni.join(', ')}`);
+                terminiAggiuntivi.push(...regioni);
+            }
+        }
+        
+        // Rimuovi duplicati
+        terminiAggiuntivi = [...new Set(terminiAggiuntivi)];
+        
+        if (terminiAggiuntivi.length > 0) {
+            const queryEspansa = `${queryOriginale} ${terminiAggiuntivi.join(' ')}`;
+            console.log(`🔍 [INFERENZA] Query espansa con ${terminiAggiuntivi.length} termini`);
+            return queryEspansa;
+        }
+        
+        return queryOriginale;
+    }
+};
+
 function espandiQueryConSinonimi(queryOriginale) {
+    // Prima espandi con sinonimi
     let queryEspansa = queryOriginale;
     let terminiAggiunti = [];
     const queryLower = queryOriginale.toLowerCase().trim();
@@ -430,8 +580,11 @@ function espandiQueryConSinonimi(queryOriginale) {
     if (terminiAggiunti.length > 0) {
         const terminiUnici = [...new Set(terminiAggiunti)];
         queryEspansa = `${queryOriginale} ${terminiUnici.join(' ')}`;
-        console.log('🔍 Query espansa:', queryEspansa);
+        console.log('📚 [SINONIMI] Espansione:', terminiUnici.join(', '));
     }
+    
+    // Poi applica inferenze storiche
+    queryEspansa = INFERENZA_STORICA.espandiQuery(queryEspansa);
     
     return queryEspansa;
 }
@@ -960,7 +1113,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     async function hybridSearch(query, topK = 30) {
         initBM25();
         
-        const bm25Results = bm25Index.search(query, 50);
+        const bm25Results = bm25Index.search(query, 100);
         
         let semanticResults = [];
         if (CACHE.csvEmbeddings && CACHE.csvEmbeddings.length > 0) {
@@ -985,9 +1138,9 @@ function espandiQueryConSinonimi(queryOriginale) {
                                 index: i,
                                 score: cosineSimilarity(queryEmbed, embed)
                             }))
-                            .filter(s => s.score > 0.3)
+                            .filter(s => s.score > 0.25)
                             .sort((a, b) => b.score - a.score)
-                            .slice(0, 50)
+                            .slice(0, 100)
                             .map(s => s.index);
                     }
                 } catch (e) {
@@ -1246,7 +1399,7 @@ function espandiQueryConSinonimi(queryOriginale) {
         try {
             updateProgress(30, "Ricerca ibrida...");
             
-            let contextRecords = await hybridSearch(userText, 50);
+            let contextRecords = await hybridSearch(userText, 100);
             
             const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
             if (geoQuery) {
@@ -1266,7 +1419,7 @@ function espandiQueryConSinonimi(queryOriginale) {
             
             const nomiPartigiani = contextRecords.slice(0, 50).map(d => d.nominativo).join(', ');
             
-            const context = contextRecords.slice(0, 50).map(d => {
+            const context = contextRecords.map(d => {
                 const miniBio = d.scheda ? d.scheda.substring(0, 400) : "N/D";
                 return `[${d.nominativo} | ${d.regione} | ${d.città_nascita} | ${miniBio}]`;
             }).join("\n");
@@ -1278,66 +1431,77 @@ function espandiQueryConSinonimi(queryOriginale) {
                 estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n[---]\n\n');
             }
             
-            const promptBase = `Sei un Archivista della Resistenza Italiana. Rispondi in modo DIRETTO e CONCISO.
+            const promptBase = `Sei un Archivista della Resistenza Italiana esperto e appassionato.
 
-🎯 REGOLA D'ORO: ZERO PREAMBOLI. Inizia subito con i nomi.
+🎯 PRINCIPIO BASE: Risposte dirette SENZA preamboli inutili.
 
 ═══════════════════════════════════════════════════════════════
-STRUTTURA RISPOSTA
+FORMATO RISPOSTA
 ═══════════════════════════════════════════════════════════════
 
-**RISPONDI SUBITO** (max 150 parole):
+**ELENCO PARTIGIANI**
 
-Nella prima frase scrivi SUBITO quanti partigiani hai trovato e inizia a elencarli:
+Prima frase: "Ho trovato N partigiani:" (dove N = ${contextRecords.length})
 
-"Ho trovato N partigiani: [[Nome1]], [[Nome2]], [[Nome3]]..."
+Poi elenca TUTTI i nomi in formato [[Nome Cognome]]:
+[[Nome1]], [[Nome2]], [[Nome3]], [[Nome4]], [[Nome5]]...
 
-Continua l'elenco con TUTTI i nomi (fino a 50) in formato [[Nome]].
-Puoi raggrupparli se necessario: "Deportati: [[Nome1]], [[Nome2]]... Caduti: [[Nome3]]..."
+Se sono molti (20+), puoi raggrupparli per tema:
+- Deportati: [[Nome1]], [[Nome2]], [[Nome3]]...
+- Caduti: [[Nome4]], [[Nome5]]...
+- Staffette: [[Nome6]], [[Nome7]]...
 
-NON scrivere "Ecco i risultati", "Ho analizzato", "Dai dati emerge" o simili.
-Vai DRITTO ai nomi.
+IMPORTANTE: Inserisci TUTTI i ${contextRecords.length} nomi trovati. NON limitarti a 10-15.
 
-${libroUsato ? `**📚 DAL LIBRO** (solo se PERTINENTE):
+${libroUsato ? `**📚 CONTESTO STORICO** (se il libro è pertinente alla domanda):
 
-Usa <libro-citazione> per citazioni dirette brevi (max 2-3 righe)
-Usa <libro-narrato> per contestualizzare eventi menzionati nelle biografie
+Usa questi tag per integrare il libro:
+- <libro-citazione>Testo citato direttamente dal libro</libro-citazione>
+- <libro-narrato>Spiegazione di eventi storici basata sul libro</libro-narrato>
 
-NON forzare il libro. Usalo SOLO se aggiunge valore reale alla risposta.
+Integra il libro SOLO se:
+- La domanda riguarda eventi storici (8 settembre, rastrellamenti, deportazioni)
+- Il libro fornisce contesto utile alle biografie dei partigiani trovati
+- Ci sono riferimenti a luoghi/eventi specifici menzionati nel libro
+
+Score rilevanza attuale: ${(libroResult.maxScore * 100).toFixed(0)}%
 ` : ''}
 
-**🔗 APPROFONDIMENTI** (solo se ci sono connessioni REALI):
+**🔗 APPROFONDIMENTI** (opzionale - solo se trovi pattern chiari):
 
-Scrivi questa sezione SOLO se trovi pattern significativi:
-- Migrazioni geografiche (es. 5+ nati al sud, combattuto al nord)
-- Formazioni comuni (es. 3+ nella stessa brigata)  
-- Eventi condivisi (es. deportati nello stesso lager)
-- Cronologie incrociate (es. tutti catturati dopo l'8 settembre)
+Se noti connessioni significative tra i partigiani, raccontale:
+- Migrazioni (es. "5 siciliani combatterono in Piemonte")
+- Formazioni comuni (es. "8 membri della Brigata Garibaldi")
+- Eventi condivisi (es. "12 deportati a Mauthausen")
+- Percorsi simili (es. "tutti catturati dopo l'8 settembre")
 
-Se NON ci sono connessioni chiare, OMETTI questa sezione.
-NON ripetere nomi già elencati sopra.
-Sii narrativo, non meccanico.
+NON ripetere i nomi già elencati sopra.
+Se NON ci sono pattern evidenti, OMETTI questa sezione.
 
 ═══════════════════════════════════════════════════════════════
-DATI
+DATI DISPONIBILI
 ═══════════════════════════════════════════════════════════════
 
-PARTIGIANI: ${contextRecords.length} testimonianze
+PARTIGIANI TROVATI: ${contextRecords.length}
 
 ${context}
 
-RELAZIONI:
-${relazioni.geografiche.length > 0 ? '- Geografiche: ' + relazioni.geografiche.map(r => `${r.conteggio} in ${r.valore}`).join(', ') : ''}
-${relazioni.migrazioni?.length > 0 ? '- Migrazioni: ' + relazioni.migrazioni.map(r => r.percorso).join(', ') : ''}
-${relazioni.tematiche.length > 0 ? '- Temi: ' + relazioni.tematiche.slice(0,5).map(r => `${r.tema} (${r.conteggio})`).join(', ') : ''}
+RELAZIONI IDENTIFICATE:
+${relazioni.geografiche.length > 0 ? '• Geografiche: ' + relazioni.geografiche.map(r => `${r.conteggio} in ${r.valore}`).join(', ') : ''}
+${relazioni.migrazioni?.length > 0 ? '• Migrazioni: ' + relazioni.migrazioni.map(r => r.percorso).join(', ') : ''}
+${relazioni.tematiche.length > 0 ? '• Temi: ' + relazioni.tematiche.slice(0,8).map(r => `${r.tema} (${r.conteggio})`).join(', ') : ''}
+${relazioni.organizzative.length > 0 ? '• Formazioni: ' + relazioni.organizzative.slice(0,5).map(r => `${r.formazione} (${r.conteggio})`).join(', ') : ''}
 
-${libroUsato ? `LIBRO (rilevanza: ${(libroResult.maxScore * 100).toFixed(0)}%):
-
+${libroUsato ? `ESTRATTI LIBRO:
 ${estrattiLibro}` : ''}
 
-DOMANDA: "${originalText}"
+═══════════════════════════════════════════════════════════════
+DOMANDA UTENTE
+═══════════════════════════════════════════════════════════════
 
-RISPONDI ORA (massimo 400 parole totali):`;
+"${originalText}"
+
+RISPONDI ORA:`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
@@ -1347,10 +1511,10 @@ RISPONDI ORA (massimo 400 parole totali):`;
                         parts: [{ text: promptBase }] 
                     }],
                     generationConfig: {
-                        temperature: 0.4,
-                        topP: 0.8,
-                        topK: 40,
-                        maxOutputTokens: 1500
+                        temperature: 0.5,
+                        topP: 0.9,
+                        topK: 50,
+                        maxOutputTokens: 4000
                     }
                 })
             });
@@ -1443,29 +1607,248 @@ RISPONDI ORA (massimo 400 parole totali):`;
         const btn = document.getElementById('embed-btn');
         if (!btn) return;
         
+        // Crea pannello di monitoraggio
+        const monitorPanel = document.createElement('div');
+        monitorPanel.id = 'embed-monitor';
+        monitorPanel.innerHTML = `
+            <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:white; border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,0.3); width:500px; max-width:90%;">
+                <h3 style="margin:0 0 20px 0; font-size:18px; color:#1a2a3a;">🔄 Pre-calcolo Embeddings</h3>
+                
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="font-size:12px; font-weight:700; color:#666;">CSV Partigiani</span>
+                        <span id="csv-count" style="font-size:12px; color:#3498db;">0/0</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#e0e0e0; border-radius:10px; overflow:hidden;">
+                        <div id="csv-progress" style="width:0%; height:100%; background:#3498db; transition:width 0.3s;"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="font-size:12px; font-weight:700; color:#666;">Libro Storico</span>
+                        <span id="libro-count" style="font-size:12px; color:#8b4513;">0/0</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#e0e0e0; border-radius:10px; overflow:hidden;">
+                        <div id="libro-progress" style="width:0%; height:100%; background:#8b4513; transition:width 0.3s;"></div>
+                    </div>
+                </div>
+                
+                <div id="embed-log" style="background:#f8f9fa; border-radius:10px; padding:15px; height:200px; overflow-y:auto; font-family:monospace; font-size:11px; line-height:1.6; margin-bottom:15px;">
+                    <div style="color:#666;">📊 Inizializzazione...</div>
+                </div>
+                
+                <div style="text-align:center;">
+                    <button id="close-monitor" style="background:#e74c3c; color:white; border:none; border-radius:10px; padding:8px 20px; cursor:pointer; font-weight:700; display:none;" onclick="document.getElementById('embed-monitor').remove()">Chiudi</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(monitorPanel);
+        
+        const log = document.getElementById('embed-log');
+        const csvProgress = document.getElementById('csv-progress');
+        const csvCount = document.getElementById('csv-count');
+        const libroProgress = document.getElementById('libro-progress');
+        const libroCount = document.getElementById('libro-count');
+        const closeBtn = document.getElementById('close-monitor');
+        
+        function addLog(msg, type = 'info') {
+            const colors = {
+                info: '#666',
+                success: '#27ae60',
+                warning: '#f39c12',
+                error: '#e74c3c',
+                api: '#3498db'
+            };
+            const timestamp = new Date().toLocaleTimeString('it-IT');
+            log.innerHTML += `<div style="color:${colors[type]};">[${timestamp}] ${msg}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
         btn.disabled = true;
-        btn.innerHTML = '⏳ Calcolo...';
+        btn.innerHTML = '⏳ In corso...';
         
         try {
-            await CACHE.initCSV();
-            
-            if (!CACHE.libroEmbeddings) {
-                await CACHE.initLibro();
+            const key = localStorage.getItem('gemini_key');
+            if (!key) {
+                addLog('❌ API Key mancante!', 'error');
+                throw new Error('API Key richiesta');
             }
+            addLog('✅ API Key trovata', 'success');
+            
+            // ═══════════════════════════════════════════════════════════════
+            // CSV EMBEDDINGS
+            // ═══════════════════════════════════════════════════════════════
+            if (CACHE.csvEmbeddings && CACHE.csvEmbeddings.length > 0) {
+                addLog('✅ CSV embeddings già in cache', 'success');
+                csvProgress.style.width = '100%';
+                csvCount.textContent = `${CACHE.csvEmbeddings.length}/${CACHE.csvEmbeddings.length}`;
+            } else {
+                addLog(`🔄 Inizio calcolo CSV (${database.length} partigiani)`, 'info');
+                csvCount.textContent = `0/${database.length}`;
+                
+                CACHE.csvEmbeddings = [];
+                let apiCalls = 0;
+                
+                for (let i = 0; i < database.length; i += 10) {
+                    const batch = database.slice(i, i + 10);
+                    const batchNum = Math.floor(i / 10) + 1;
+                    const totalBatches = Math.ceil(database.length / 10);
+                    
+                    addLog(`📦 Batch ${batchNum}/${totalBatches} (${batch.length} record)`, 'info');
+                    
+                    const embeddings = await Promise.all(batch.map(async (d, idx) => {
+                        try {
+                            const docText = `${d.nominativo} ${d.scheda?.substring(0, 500) || ''} ${d.regione} ${d.città_nascita}`;
+                            
+                            addLog(`🌐 API call per ${d.nominativo}`, 'api');
+                            apiCalls++;
+                            
+                            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    model: "models/text-embedding-004",
+                                    content: { parts: [{ text: docText }] }
+                                })
+                            });
+                            const data = await res.json();
+                            
+                            if (data.embedding) {
+                                addLog(`✅ Embedding ricevuto per ${d.nominativo} (${data.embedding.values.length} dim)`, 'success');
+                                return data.embedding.values;
+                            } else {
+                                addLog(`⚠️ Nessun embedding per ${d.nominativo}`, 'warning');
+                                return null;
+                            }
+                        } catch (e) {
+                            addLog(`❌ Errore per ${d.nominativo}: ${e.message}`, 'error');
+                            return null;
+                        }
+                    }));
+                    
+                    const validEmbeddings = embeddings.filter(e => e !== null);
+                    CACHE.csvEmbeddings.push(...validEmbeddings);
+                    
+                    const progress = ((i + batch.length) / database.length) * 100;
+                    csvProgress.style.width = progress + '%';
+                    csvCount.textContent = `${CACHE.csvEmbeddings.length}/${database.length}`;
+                    
+                    addLog(`📊 Progresso CSV: ${CACHE.csvEmbeddings.length}/${database.length} (${apiCalls} API calls)`, 'info');
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                try {
+                    localStorage.setItem('csv_embeddings_v2', JSON.stringify(CACHE.csvEmbeddings));
+                    addLog(`💾 CSV salvato in localStorage (${CACHE.csvEmbeddings.length} vettori)`, 'success');
+                } catch (e) {
+                    addLog(`⚠️ Storage pieno, CSV solo in RAM`, 'warning');
+                }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // LIBRO EMBEDDINGS
+            // ═══════════════════════════════════════════════════════════════
+            if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
+                addLog('⚠️ Libro non disponibile (testo_libro.js mancante)', 'warning');
+                libroProgress.style.width = '100%';
+                libroCount.textContent = 'N/A';
+            } else if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
+                addLog('✅ Libro embeddings già in cache', 'success');
+                libroProgress.style.width = '100%';
+                libroCount.textContent = `${CACHE.libroEmbeddings.length}/${CACHE.libroEmbeddings.length}`;
+            } else {
+                const maxChunks = Math.min(CACHE.libroChunks.length, 100);
+                addLog(`🔄 Inizio calcolo Libro (${maxChunks} chunks)`, 'info');
+                libroCount.textContent = `0/${maxChunks}`;
+                
+                CACHE.libroEmbeddings = [];
+                let apiCalls = 0;
+                
+                for (let i = 0; i < maxChunks; i += 5) {
+                    const batch = CACHE.libroChunks.slice(i, i + 5);
+                    const batchNum = Math.floor(i / 5) + 1;
+                    const totalBatches = Math.ceil(maxChunks / 5);
+                    
+                    addLog(`📦 Libro batch ${batchNum}/${totalBatches} (${batch.length} chunks)`, 'info');
+                    
+                    const embeddings = await Promise.all(batch.map(async (chunk, idx) => {
+                        try {
+                            const preview = chunk.substring(0, 50) + '...';
+                            addLog(`🌐 API call per chunk ${i + idx + 1}: "${preview}"`, 'api');
+                            apiCalls++;
+                            
+                            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    model: "models/text-embedding-004",
+                                    content: { parts: [{ text: chunk.substring(0, 2000) }] }
+                                })
+                            });
+                            const data = await res.json();
+                            
+                            if (data.embedding) {
+                                addLog(`✅ Embedding ricevuto per chunk ${i + idx + 1}`, 'success');
+                                return data.embedding.values;
+                            } else {
+                                addLog(`⚠️ Nessun embedding per chunk ${i + idx + 1}`, 'warning');
+                                return null;
+                            }
+                        } catch (e) {
+                            addLog(`❌ Errore chunk ${i + idx + 1}: ${e.message}`, 'error');
+                            return null;
+                        }
+                    }));
+                    
+                    const validEmbeddings = embeddings.filter(e => e !== null);
+                    CACHE.libroEmbeddings.push(...validEmbeddings);
+                    
+                    const progress = ((i + batch.length) / maxChunks) * 100;
+                    libroProgress.style.width = progress + '%';
+                    libroCount.textContent = `${CACHE.libroEmbeddings.length}/${maxChunks}`;
+                    
+                    addLog(`📊 Progresso Libro: ${CACHE.libroEmbeddings.length}/${maxChunks} (${apiCalls} API calls)`, 'info');
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                try {
+                    localStorage.setItem('libro_embeddings_v2', JSON.stringify(CACHE.libroEmbeddings));
+                    addLog(`💾 Libro salvato in localStorage (${CACHE.libroEmbeddings.length} vettori)`, 'success');
+                } catch (e) {
+                    addLog(`⚠️ Storage pieno, Libro solo in RAM`, 'warning');
+                }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // COMPLETAMENTO
+            // ═══════════════════════════════════════════════════════════════
+            addLog('', 'info');
+            addLog('═══════════════════════════════════════════', 'success');
+            addLog('✅ PRE-CALCOLO COMPLETATO!', 'success');
+            addLog('═══════════════════════════════════════════', 'success');
+            addLog(`📊 CSV: ${CACHE.csvEmbeddings?.length || 0} embeddings`, 'success');
+            addLog(`📚 Libro: ${CACHE.libroEmbeddings?.length || 0} embeddings`, 'success');
+            addLog(`💾 Salvati in localStorage per riutilizzo futuro`, 'success');
+            addLog(`⚡ Le ricerche AI saranno ora molto più veloci!`, 'success');
             
             btn.innerHTML = '✅ Completato!';
             btn.style.background = '#27ae60';
+            closeBtn.style.display = 'block';
             
             setTimeout(() => {
                 btn.style.display = 'none';
-            }, 2000);
+            }, 3000);
             
-            alert('✅ Embeddings calcolati!\n\nLe ricerche saranno molto più veloci.');
         } catch (e) {
+            addLog('', 'error');
+            addLog('❌ ERRORE CRITICO: ' + e.message, 'error');
             btn.innerHTML = '❌ Errore';
             btn.style.background = '#e74c3c';
             btn.disabled = false;
-            alert('Errore: ' + e.message);
+            closeBtn.style.display = 'block';
         }
     }
     
