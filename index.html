@@ -331,7 +331,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio A2.4</span>
+        <span>Assistente Archivio A2.5</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -430,8 +430,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     if (terminiAggiunti.length > 0) {
         const terminiUnici = [...new Set(terminiAggiunti)];
         queryEspansa = `${queryOriginale} ${terminiUnici.join(' ')}`;
-        console.log('🔍 Query originale:', queryOriginale);
-        console.log('📚 Query espansa:', queryEspansa);
+        console.log('🔍 Query espansa:', queryEspansa);
     }
     
     return queryEspansa;
@@ -448,11 +447,11 @@ function espandiQueryConSinonimi(queryOriginale) {
         
         async initLibro() {
             if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') {
-                console.log("📚 [CACHE] Libro non disponibile");
+                console.log("📚 Libro non disponibile");
                 return;
             }
             
-            console.log("🔄 [CACHE] Inizializzazione libro...");
+            console.log("🔄 Inizializzazione libro...");
             
             this.libroChunks = TESTO_LIBRO
                 .replace(/\n\s*\n/g, "###SPLIT###")
@@ -460,7 +459,7 @@ function espandiQueryConSinonimi(queryOriginale) {
                 .map(p => p.trim())
                 .filter(p => p.length > 100);
             
-            console.log(`✅ [CACHE] Libro pronto: ${this.libroChunks.length} chunks`);
+            console.log(`✅ Libro pronto: ${this.libroChunks.length} chunks`);
             await this.precomputeLibroEmbeddings();
         },
         
@@ -468,55 +467,49 @@ function espandiQueryConSinonimi(queryOriginale) {
             const key = localStorage.getItem('gemini_key');
             if (!key || !this.libroChunks) return;
             
-            const cached = localStorage.getItem('libro_embeddings_v1');
+            const cached = localStorage.getItem('libro_embeddings_v2');
             if (cached) {
                 try {
                     this.libroEmbeddings = JSON.parse(cached);
-                    console.log(`✅ [CACHE] Embeddings libro caricati da storage (${this.libroEmbeddings.length} vettori)`);
+                    console.log(`✅ Embeddings libro da cache (${this.libroEmbeddings.length})`);
                     return;
                 } catch (e) {
-                    console.log("⚠️ [CACHE] Cache corrotta, ricalcolo...");
+                    console.log("⚠️ Cache corrotta, ricalcolo...");
                 }
             }
             
-            console.log("🔄 [CACHE] Pre-calcolo embeddings libro...");
+            console.log("🔄 Pre-calcolo embeddings libro...");
             this.libroEmbeddings = [];
             
-            for (let i = 0; i < Math.min(this.libroChunks.length, 50); i += 5) {
+            for (let i = 0; i < Math.min(this.libroChunks.length, 100); i += 5) {
                 const batch = this.libroChunks.slice(i, i + 5);
                 
-                const embeddings = await Promise.all(batch.map(async (chunk, idx) => {
+                const embeddings = await Promise.all(batch.map(async (chunk) => {
                     try {
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 model: "models/text-embedding-004",
-                                content: { parts: [{ text: chunk.substring(0, 1000) }] }
+                                content: { parts: [{ text: chunk.substring(0, 2000) }] }
                             })
                         });
                         const data = await res.json();
                         return data.embedding ? data.embedding.values : null;
                     } catch (e) {
-                        console.error(`❌ Embedding chunk ${i + idx} fallito`);
                         return null;
                     }
                 }));
                 
                 this.libroEmbeddings.push(...embeddings.filter(e => e !== null));
-                
-                if ((i + 5) % 10 === 0) {
-                    console.log(`📊 [CACHE] Embeddings libro: ${this.libroEmbeddings.length}/${this.libroChunks.length}`);
-                }
-                
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
             
             try {
-                localStorage.setItem('libro_embeddings_v1', JSON.stringify(this.libroEmbeddings));
-                console.log(`✅ [CACHE] Embeddings libro salvati (${this.libroEmbeddings.length} vettori)`);
+                localStorage.setItem('libro_embeddings_v2', JSON.stringify(this.libroEmbeddings));
+                console.log(`✅ Embeddings salvati (${this.libroEmbeddings.length})`);
             } catch (e) {
-                console.log("⚠️ [CACHE] Storage pieno, embeddings solo in RAM");
+                console.log("⚠️ Storage pieno");
             }
         },
         
@@ -526,24 +519,24 @@ function espandiQueryConSinonimi(queryOriginale) {
             const key = localStorage.getItem('gemini_key');
             if (!key) return;
             
-            const cached = localStorage.getItem('csv_embeddings_v1');
+            const cached = localStorage.getItem('csv_embeddings_v2');
             if (cached) {
                 try {
                     this.csvEmbeddings = JSON.parse(cached);
-                    console.log(`✅ [CACHE] Embeddings CSV caricati da storage (${this.csvEmbeddings.length} vettori)`);
+                    console.log(`✅ Embeddings CSV da cache (${this.csvEmbeddings.length})`);
                     return;
                 } catch (e) {
-                    console.log("⚠️ [CACHE] Cache CSV corrotta, ricalcolo...");
+                    console.log("⚠️ Cache CSV corrotta");
                 }
             }
             
-            console.log("🔄 [CACHE] Pre-calcolo embeddings CSV...");
+            console.log("🔄 Pre-calcolo embeddings CSV...");
             this.csvEmbeddings = [];
             
             for (let i = 0; i < database.length; i += 10) {
                 const batch = database.slice(i, i + 10);
                 
-                const embeddings = await Promise.all(batch.map(async (d, idx) => {
+                const embeddings = await Promise.all(batch.map(async (d) => {
                     try {
                         const docText = `${d.nominativo} ${d.scheda?.substring(0, 500) || ''} ${d.regione} ${d.città_nascita}`;
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
@@ -557,25 +550,19 @@ function espandiQueryConSinonimi(queryOriginale) {
                         const data = await res.json();
                         return data.embedding ? data.embedding.values : null;
                     } catch (e) {
-                        console.error(`❌ Embedding CSV ${i + idx} fallito`);
                         return null;
                     }
                 }));
                 
                 this.csvEmbeddings.push(...embeddings.filter(e => e !== null));
-                
-                if ((i + 10) % 50 === 0) {
-                    console.log(`📊 [CACHE] Embeddings CSV: ${this.csvEmbeddings.length}/${database.length}`);
-                }
-                
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
             
             try {
-                localStorage.setItem('csv_embeddings_v1', JSON.stringify(this.csvEmbeddings));
-                console.log(`✅ [CACHE] Embeddings CSV salvati (${this.csvEmbeddings.length} vettori)`);
+                localStorage.setItem('csv_embeddings_v2', JSON.stringify(this.csvEmbeddings));
+                console.log(`✅ Embeddings CSV salvati (${this.csvEmbeddings.length})`);
             } catch (e) {
-                console.log("⚠️ [CACHE] Storage pieno, embeddings solo in RAM");
+                console.log("⚠️ Storage pieno");
             }
         },
         
@@ -615,8 +602,6 @@ function espandiQueryConSinonimi(queryOriginale) {
                 return clean;
             });
             caricaMarker();
-            
-            // ⭐ FIX: Inizializza BM25 dopo caricamento database
             initBM25();
             
             const urlParams = new URLSearchParams(window.location.search);
@@ -625,7 +610,6 @@ function espandiQueryConSinonimi(queryOriginale) {
         }
     });
 
-    // Inizializza cache all'avvio
     window.addEventListener('load', () => {
         setTimeout(() => {
             CACHE.initLibro();
@@ -633,7 +617,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // INTELLIGENZA GEOGRAFICA AVANZATA
+    // INTELLIGENZA GEOGRAFICA
     // ═══════════════════════════════════════════════════════════════
     const GEO_INTELLIGENCE = {
         NORD: ['piemonte', 'valle d\'aosta', 'lombardia', 'trentino', 'alto adige', 'veneto', 'friuli', 'liguria', 'emilia', 'romagna'],
@@ -678,15 +662,6 @@ function espandiQueryConSinonimi(queryOriginale) {
                 return {
                     nascita: 'sud',
                     operazione: 'nord'
-                };
-            }
-            
-            const pattern2 = /(\w+)(?:ani|esi|ini)\s+(?:in|al|nel|nella)\s+(\w+)/i;
-            const match2 = q.match(pattern2);
-            if (match2) {
-                return {
-                    nascita: match2[1],
-                    operazione: match2[2]
                 };
             }
             
@@ -873,15 +848,6 @@ function espandiQueryConSinonimi(queryOriginale) {
     // ═══════════════════════════════════════════════════════════════
     // FUNZIONI UTILITY
     // ═══════════════════════════════════════════════════════════════
-    function getDist(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
     function updateProgress(percent, message) {
         const pBar = document.getElementById('ai-progress-bar');
         const statusDiv = document.getElementById('ai-status-text');
@@ -898,7 +864,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // RICERCA IBRIDA: BM25 (KEYWORD) + EMBEDDINGS (SEMANTICA)
+    // BM25
     // ═══════════════════════════════════════════════════════════════
     class BM25 {
         constructor(documents, k1 = 1.5, b = 0.75) {
@@ -983,21 +949,18 @@ function espandiQueryConSinonimi(queryOriginale) {
     function initBM25() {
         if (bm25Index || database.length === 0) return;
         
-        console.log("🔄 [BM25] Inizializzazione indice...");
+        console.log("🔄 Inizializzazione BM25...");
         const documents = database.map(d => 
             `${d.nominativo} ${d.scheda || ''} ${d.regione} ${d.città_nascita}`.toLowerCase()
         );
         bm25Index = new BM25(documents);
-        console.log(`✅ [BM25] Indice pronto (${database.length} documenti)`);
+        console.log(`✅ BM25 pronto (${database.length} documenti)`);
     }
 
     async function hybridSearch(query, topK = 30) {
         initBM25();
         
-        console.log("🔍 [HYBRID] Avvio ricerca ibrida...");
-        
         const bm25Results = bm25Index.search(query, 50);
-        console.log(`📊 [BM25] Trovati ${bm25Results.length} risultati`);
         
         let semanticResults = [];
         if (CACHE.csvEmbeddings && CACHE.csvEmbeddings.length > 0) {
@@ -1026,11 +989,9 @@ function espandiQueryConSinonimi(queryOriginale) {
                             .sort((a, b) => b.score - a.score)
                             .slice(0, 50)
                             .map(s => s.index);
-                        
-                        console.log(`🧠 [SEMANTIC] Trovati ${semanticResults.length} risultati`);
                     }
                 } catch (e) {
-                    console.error("❌ [SEMANTIC] Errore:", e);
+                    console.error("Errore semantica:", e);
                 }
             }
         }
@@ -1052,12 +1013,12 @@ function espandiQueryConSinonimi(queryOriginale) {
             .slice(0, topK)
             .map(s => database[s.index]);
         
-        console.log(`✅ [HYBRID] Risultati finali: ${fusedResults.length}`);
+        console.log(`✅ Trovati ${fusedResults.length} risultati`);
         return fusedResults;
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // ANALIZZATORE DI RELAZIONI TRA PARTIGIANI
+    // ANALISI RELAZIONI
     // ═══════════════════════════════════════════════════════════════
     function analizzaRelazioni(partigiani) {
         const relazioni = {
@@ -1182,62 +1143,25 @@ function espandiQueryConSinonimi(queryOriginale) {
         return relazioni;
     }
 
-    function formattaRelazioniPerPrompt(relazioni) {
-        let output = "═══════════════════════════════════════════════════════════════\n";
-        output += "RELAZIONI VERIFICATE TRA I PARTIGIANI TROVATI\n";
-        output += "═══════════════════════════════════════════════════════════════\n\n";
-        
-        if (relazioni.geografiche.length > 0) {
-            output += "🗺️ RELAZIONI GEOGRAFICHE:\n";
-            relazioni.geografiche.forEach(r => {
-                output += `  • ${r.conteggio} partigiani in ${r.tipo} "${r.valore}": ${r.membri.join(', ')}\n`;
-            });
-            output += "\n";
-        }
-        
-        if (relazioni.migrazioni && relazioni.migrazioni.length > 0) {
-            output += "🔄 MIGRAZIONI (nascita → operazione):\n";
-            relazioni.migrazioni.forEach(r => {
-                output += `  • ${r.percorso}: ${r.membri.join(', ')} (${r.conteggio} persone)\n`;
-            });
-            output += "\n";
-        }
-        
-        if (relazioni.tematiche.length > 0) {
-            output += "🎯 TEMI RICORRENTI:\n";
-            relazioni.tematiche
-                .sort((a, b) => b.conteggio - a.conteggio)
-                .slice(0, 10)
-                .forEach(r => {
-                    output += `  • "${r.tema}": ${r.membri.join(', ')} (${r.conteggio} menzioni)\n`;
-                });
-            output += "\n";
-        }
-        
-        if (relazioni.organizzative.length > 0) {
-            output += "⚔️ FORMAZIONI COMUNI:\n";
-            relazioni.organizzative.forEach(r => {
-                output += `  • ${r.formazione}: ${r.membri.join(', ')} (${r.conteggio} membri)\n`;
-            });
-            output += "\n";
-        }
-        
-        return output;
-    }
-
-    async function searchLibroSemantico(query, topK = 5) {
+    // ═══════════════════════════════════════════════════════════════
+    // RICERCA LIBRO OTTIMIZZATA
+    // ═══════════════════════════════════════════════════════════════
+    async function searchLibroSemantico(query, topK = 3) {
         if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-            console.log("📚 [DEBUG] Cache libro non disponibile");
-            return { text: "", maxScore: 0 };
+            console.log("📚 Libro non disponibile");
+            return { chunks: [], maxScore: 0 };
         }
         
         const key = localStorage.getItem('gemini_key');
-        if (!key) return { text: "", maxScore: 0 };
+        if (!key) return { chunks: [], maxScore: 0 };
         
         try {
-            console.log(`📚 [DEBUG] Ricerca libro con ${CACHE.libroChunks.length} chunks`);
+            if (!CACHE.libroEmbeddings || CACHE.libroEmbeddings.length === 0) {
+                console.log("📚 Embeddings libro non disponibili");
+                return { chunks: [], maxScore: 0 };
+            }
             
-            const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1245,80 +1169,39 @@ function espandiQueryConSinonimi(queryOriginale) {
                     content: { parts: [{ text: query }] }
                 })
             });
-            const queryData = await queryEmbedRes.json();
-            if (!queryData.embedding) return { text: "", maxScore: 0 };
-            const queryEmbed = queryData.embedding.values;
+            const data = await res.json();
             
-            const batchSize = 10;
-            let scoredChunks = [];
+            if (!data.embedding) return { chunks: [], maxScore: 0 };
             
-            const chunksToProcess = CACHE.libroChunks.slice(0, 50);
+            const queryEmbed = data.embedding.values;
             
-            for (let i = 0; i < chunksToProcess.length; i += batchSize) {
-                const batch = chunksToProcess.slice(i, i + batchSize);
-                const batchScores = await Promise.all(batch.map(async (chunk) => {
-                    try {
-                        if (chunk.length < 50) return { chunk, score: 0 };
-                        
-                        const chunkEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: "models/text-embedding-004",
-                                content: { parts: [{ text: chunk.substring(0, 1000) }] }
-                            })
-                        });
-                        const chunkData = await chunkEmbedRes.json();
-                        if (!chunkData.embedding) return { chunk, score: 0 };
-                        const chunkEmbed = chunkData.embedding.values;
-                        
-                        const similarity = cosineSimilarity(queryEmbed, chunkEmbed);
-                        return { chunk, score: similarity };
-                    } catch (e) {
-                        return { chunk, score: 0 };
-                    }
-                }));
-                scoredChunks.push(...batchScores);
-            }
-            
-            const SOGLIA_PRIMARIA = 0.20;
-            const SOGLIA_FALLBACK = 0.15;
-            
-            let relevantChunks = scoredChunks
-                .filter(s => s.score >= SOGLIA_PRIMARIA)
+            const scoredChunks = CACHE.libroEmbeddings
+                .map((embed, i) => ({
+                    chunk: CACHE.libroChunks[i],
+                    score: cosineSimilarity(queryEmbed, embed)
+                }))
+                .filter(s => s.score >= 0.35)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, topK);
             
-            if (relevantChunks.length === 0) {
-                console.log(`📚 [DEBUG] Nessun chunk sopra ${SOGLIA_PRIMARIA}, attivo fallback (soglia: ${SOGLIA_FALLBACK})`);
-                relevantChunks = scoredChunks
-                    .filter(s => s.score >= SOGLIA_FALLBACK)
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, Math.min(3, topK));
+            const maxScore = scoredChunks.length > 0 ? scoredChunks[0].score : 0;
+            
+            if (scoredChunks.length === 0) {
+                console.log("📚 Nessun chunk rilevante (soglia: 0.35)");
+                return { chunks: [], maxScore: 0 };
             }
             
-            const maxScore = relevantChunks.length > 0 ? relevantChunks[0].score : 0;
-            
-            if (relevantChunks.length === 0) {
-                console.log(`📚 [DEBUG] Libro escluso (nessun chunk sopra ${SOGLIA_FALLBACK})`);
-                return { text: "", maxScore: 0 };
-            }
-            
-            const topChunks = relevantChunks
-                .map(s => s.chunk)
-                .join('\n\n[---]\n\n');
-            
-            console.log(`✅ [DEBUG] Trovati ${relevantChunks.length} chunk (max score: ${maxScore.toFixed(3)})`);
-            return { text: topChunks, maxScore };
+            console.log(`✅ Libro: ${scoredChunks.length} chunk (score: ${maxScore.toFixed(3)})`);
+            return { chunks: scoredChunks, maxScore };
             
         } catch (e) {
-            console.error("❌ Errore ricerca libro:", e);
-            return { text: "", maxScore: 0 };
+            console.error("❌ Errore libro:", e);
+            return { chunks: [], maxScore: 0 };
         }
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // AI CHAT - VERSIONE OTTIMIZZATA CON RISPOSTE APPROFONDITE
+    // AI CHAT - VERSIONE OTTIMIZZATA E INTELLIGENTE
     // ═══════════════════════════════════════════════════════════════
     async function sendAIMessage() {
         const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
@@ -1334,7 +1217,7 @@ function espandiQueryConSinonimi(queryOriginale) {
 
         const cached = CACHE.getCachedQuery(originalText);
         if (cached) {
-            console.log("⚡ [CACHE] Risposta dalla cache!");
+            console.log("⚡ Risposta dalla cache");
             box.innerHTML += `<div class="msg msg-user">${originalText}</div>`;
             box.innerHTML += `<div class="msg msg-ai finished">${cached.result}</div>`;
             input.value = "";
@@ -1353,7 +1236,7 @@ function espandiQueryConSinonimi(queryOriginale) {
         input.style.height = 'auto';
         
         const aiMsgId = "ai-" + Date.now();
-        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca in corso...</div>`;
+        box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Ricerca...</div>`;
         const aiMsgElement = document.getElementById(aiMsgId);
         box.scrollTop = box.scrollHeight;
 
@@ -1361,235 +1244,100 @@ function espandiQueryConSinonimi(queryOriginale) {
         updateProgress(10, "Inizializzazione...");
 
         try {
-            console.log(`🔍 [QUERY] "${originalText}"`);
-            
-            updateProgress(20, "Ricerca ibrida (keyword + semantica)...");
+            updateProgress(30, "Ricerca ibrida...");
             
             let contextRecords = await hybridSearch(userText, 50);
             
             const geoQuery = GEO_INTELLIGENCE.matchQueryGeografica(originalText);
             if (geoQuery) {
-                console.log(`🌍 [GEO] Applicazione filtro geografico:`, geoQuery);
                 const geoFiltered = GEO_INTELLIGENCE.filtraPerGeografia(contextRecords, geoQuery);
                 if (geoFiltered.length > 0) {
                     contextRecords = geoFiltered;
                 }
             }
             
-            console.log(`✅ [HYBRID] Trovati ${contextRecords.length} partigiani rilevanti`);
+            updateProgress(60, "Ricerca nel libro...");
             
-            updateProgress(40, "Analisi relazioni tra partigiani...");
+            const libroResult = await searchLibroSemantico(userText, 3);
+            const libroUsato = libroResult.chunks.length > 0;
             
-            const relazioni = analizzaRelazioni(contextRecords);
-            const relazioniPrompt = formattaRelazioniPerPrompt(relazioni);
-            
-            console.log("🔗 [RELAZIONI] Analisi completata:");
-            console.log(`  - Geografiche: ${relazioni.geografiche.length}`);
-            console.log(`  - Tematiche: ${relazioni.tematiche.length}`);
-            console.log(`  - Organizzative: ${relazioni.organizzative.length}`);
-            console.log(`  - Migrazioni: ${relazioni.migrazioni?.length || 0}`);
-            
-            updateProgress(60, "Ricerca nel libro storico...");
-            
-            let estrattiLibro = "";
-            let libroUsato = false;
-            let libroScore = 0;
-            
-            if (CACHE.libroEmbeddings && CACHE.libroEmbeddings.length > 0) {
-                console.log("📚 [LIBRO] Ricerca con embeddings cached...");
-                
-                try {
-                    const queryEmbedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: "models/text-embedding-004",
-                            content: { parts: [{ text: originalText }] }
-                        })
-                    });
-                    const queryData = await queryEmbedRes.json();
-                    
-                    if (queryData.embedding) {
-                        const queryEmbed = queryData.embedding.values;
-                        
-                        let scoredChunks = CACHE.libroEmbeddings
-                            .map((embed, i) => ({
-                                chunk: CACHE.libroChunks[i],
-                                score: cosineSimilarity(queryEmbed, embed)
-                            }))
-                            .filter(s => s.score >= 0.20)
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 5);
-                        
-                        if (scoredChunks.length === 0) {
-                            console.log("📚 [LIBRO] Attivo fallback (soglia: 0.15)");
-                            scoredChunks = CACHE.libroEmbeddings
-                                .map((embed, i) => ({
-                                    chunk: CACHE.libroChunks[i],
-                                    score: cosineSimilarity(queryEmbed, embed)
-                                }))
-                                .filter(s => s.score >= 0.15)
-                                .sort((a, b) => b.score - a.score)
-                                .slice(0, 3);
-                        }
-                        
-                        if (scoredChunks.length > 0) {
-                            libroUsato = true;
-                            libroScore = scoredChunks[0].score;
-                            estrattiLibro = scoredChunks.map(s => s.chunk).join('\n\n[---]\n\n');
-                            console.log(`✅ [LIBRO] ${scoredChunks.length} chunk (score: ${libroScore.toFixed(3)})`);
-                        } else {
-                            console.log("📚 [LIBRO] Nessun chunk rilevante trovato");
-                        }
-                    }
-                } catch (e) {
-                    console.error("❌ [LIBRO] Errore:", e);
-                }
-            } else {
-                const libroResult = await searchLibroSemantico(originalText, 5);
-                if (libroResult.maxScore >= 0.20) {
-                    estrattiLibro = libroResult.text;
-                    libroUsato = true;
-                    libroScore = libroResult.maxScore;
-                }
-            }
-            
-            updateProgress(70, "Formattazione dati...");
-            
-            const context = contextRecords.slice(0, 50).map(d => {
-                const miniBio = d.scheda ? d.scheda.substring(0, 500) : "N/D";
-                return `[NOME: ${d.nominativo} | REGIONE: ${d.regione} | CITTÀ_NASCITA: ${d.città_nascita} | BIOGRAFIA: ${miniBio}...]`;
-            }).join("\n");
-            
-            updateProgress(80, "Generazione risposta AI...");
+            updateProgress(80, "Generazione risposta...");
             pBar.classList.add('progress-active');
             
-            const promptBase = `Sei un Archivista Storico della Resistenza Italiana (1943-45) esperto e appassionato, con accesso a un database di testimonianze partigiane e a un libro storico sulla Resistenza.
+            const nomiPartigiani = contextRecords.slice(0, 50).map(d => d.nominativo).join(', ');
+            
+            const context = contextRecords.slice(0, 50).map(d => {
+                const miniBio = d.scheda ? d.scheda.substring(0, 400) : "N/D";
+                return `[${d.nominativo} | ${d.regione} | ${d.città_nascita} | ${miniBio}]`;
+            }).join("\n");
+            
+            const relazioni = analizzaRelazioni(contextRecords);
+            
+            let estrattiLibro = "";
+            if (libroUsato) {
+                estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n[---]\n\n');
+            }
+            
+            const promptBase = `Sei un Archivista della Resistenza Italiana. Rispondi in modo DIRETTO e CONCISO.
+
+🎯 REGOLA D'ORO: ZERO PREAMBOLI. Inizia subito con i nomi.
 
 ═══════════════════════════════════════════════════════════════
-PRINCIPI GUIDA
-═══════════════════════════════════════════════════════════════
-1. **Completezza**: Includi TUTTI i partigiani rilevanti trovati nei dati (fino a 50 persone)
-2. **Profondità**: Scrivi risposte brevi senza commenti personali o giri di paorole,  RISPONDI IMMEDIATAMENTE. NO PREAMBOLI, NO premesse NO tue conclusioni
-3. **Analisi**: Nella sezione "PERCORSI E RELAZIONI", vai oltre l'elenco - racconta storie, individua pattern, crea connessioni significative sempre e solo se strettamente inerenti con la domanda
-4. **Fonti**: Usa SOLO i dati forniti, ma arricchiscili con il libro quando pertinente
-5. **Onestà**: Se i dati sono insufficienti, ammettilo, ma fornisci comunque il massimo possibile
-
-═══════════════════════════════════════════════════════════════
-STRUTTURA DELLA RISPOSTA
+STRUTTURA RISPOSTA
 ═══════════════════════════════════════════════════════════════
 
-**🎯 FATTI ACCERTATI**
+**RISPONDI SUBITO** (max 150 parole):
 
-Questa sezione deve essere SOSTANZIOSA e BEN ARTICOLATA:
+Nella prima frase scrivi SUBITO quanti partigiani hai trovato e inizia a elencarli:
 
-1. **INIZIA SUBITO CON I NOMI trovati** (RISPONDI IMMEDIATAMENTE. NO PREAMBOLI):
-   - Quanti partigiani sono stati trovati
-   - Qual è il filo conduttore della domanda
-   - Eventuali pattern storici/geografici/temporali evidenti
+"Ho trovato N partigiani: [[Nome1]], [[Nome2]], [[Nome3]]..."
 
-2. **Elenco completo dei partigiani** (formato: [[Nome Cognome]]):
-   - Includi TUTTI i partigiani trovati (fino a 50)
-   - Per ognuno aggiungi 1-2 dettagli chiave dalle biografie
-   - Esempio: "[[Mario Rossi]] (Torino, deportato a Mauthausen nel 1944)"
-   - Raggruppa per temi se sono molti (es. "Deportati", "Caduti in combattimento", "Staffette")
+Continua l'elenco con TUTTI i nomi (fino a 50) in formato [[Nome]].
+Puoi raggrupparli se necessario: "Deportati: [[Nome1]], [[Nome2]]... Caduti: [[Nome3]]..."
 
-3. **Sintesi quantitativa**:
-   - Quanti in totale
-   - Suddivisione per regione se significativa
-   - Suddivisione per ruolo/esperienza se evidente
+NON scrivere "Ecco i risultati", "Ho analizzato", "Dai dati emerge" o simili.
+Vai DRITTO ai nomi.
 
-**🔗 PERCORSI E RELAZIONI**
+${libroUsato ? `**📚 DAL LIBRO** (solo se PERTINENTE):
 
-Questa è la sezione CHIAVE - richiede intelligenza analitica e capacità narrativa:
+Usa <libro-citazione> per citazioni dirette brevi (max 2-3 righe)
+Usa <libro-narrato> per contestualizzare eventi menzionati nelle biografie
 
-NON limitarti a elencare connessioni meccaniche. RACCONTA storie attraverso i dati:
-
-1. **Migrazioni geografiche** (se presenti):
-   - "La resistenza fu anche un fenomeno di migrazione: [[Nome1]], [[Nome2]], [[Nome3]] nacquero in Sicilia ma combatterono in Piemonte. Questo riflette..."
-   - Spiega il PERCHÉ storico (8 settembre, richiami, sbandamenti)
-
-2. **Reti locali**:
-   - "A Torino si concentrarono [[Nome1]], [[Nome2]], [[Nome3]]. Questa densità suggerisce reti clandestine urbane ben organizzate..."
-
-3. **Esperienze condivise**:
-   - "La deportazione accomuna [[Nome1]], [[Nome2]], [[Nome3]], tutti internati a Mauthausen. Le loro testimonianze..."
-   - Cita DETTAGLI dalle biografie (date, luoghi, eventi specifici)
-
-4. **Ruoli e formazioni**:
-   - "Le staffette furono fondamentali: [[Nome1]] e [[Nome2]] operarono come collegamento tra..."
-   - "La Brigata Garibaldi vide tra le sue file [[Nome1]], [[Nome2]]..."
-
-5. **Cronologie incrociate**:
-   - "L'8 settembre 1943 segnò un momento critico: [[Nome1]] fu catturato, [[Nome2]] si unì alla resistenza, [[Nome3]]..."
-
-6. **Pattern tematici**:
-   - "Il tema del tradimento ricorre: [[Nome1]] fu catturato a causa di una spiata, [[Nome2]] subì lo stesso destino..."
-
-IMPORTANTE:
-- Ogni connessione deve citare 3-6 nomi concreti con le doppie quadre [[]]
-- Ogni connessione deve spiegare il SIGNIFICATO STORICO
-- Usa frasi narrative, non elenchi puntati sterili
-- Attingi a DETTAGLI SPECIFICI dalle biografie fornite
-
-${libroUsato ? `
-**📚 CONTESTO STORICO DAL LIBRO**
-
-Hai accesso a estratti dal libro storico sulla Resistenza (rilevanza: ${(libroScore * 100).toFixed(0)}%).
-
-USA IL LIBRO PER:
-- Contestualizzare storicamente le testimonianze
-- Spiegare eventi menzionati nelle biografie (8 settembre, rastrellamenti, etc.)
-- Arricchire la narrazione con dettagli d'epoca
-- Collegare esperienze individuali a dinamiche più ampie
-
-FORMATO:
-- Per narrazioni: <libro-narrato>Il libro descrive come durante i rastrellamenti del 1944...</libro-narrato>
-- Per citazioni dirette: <libro-citazione>"I partigiani si rifugiavano nelle valli alpine..."</libro-citazione>
-
-NON forzare il libro se non è pertinente, ma usalo generosamente quando lo è.
+NON forzare il libro. Usalo SOLO se aggiunge valore reale alla risposta.
 ` : ''}
 
+**🔗 APPROFONDIMENTI** (solo se ci sono connessioni REALI):
+
+Scrivi questa sezione SOLO se trovi pattern significativi:
+- Migrazioni geografiche (es. 5+ nati al sud, combattuto al nord)
+- Formazioni comuni (es. 3+ nella stessa brigata)  
+- Eventi condivisi (es. deportati nello stesso lager)
+- Cronologie incrociate (es. tutti catturati dopo l'8 settembre)
+
+Se NON ci sono connessioni chiare, OMETTI questa sezione.
+NON ripetere nomi già elencati sopra.
+Sii narrativo, non meccanico.
+
 ═══════════════════════════════════════════════════════════════
-DATI DISPONIBILI
+DATI
 ═══════════════════════════════════════════════════════════════
 
-**PARTIGIANI TROVATI: ${contextRecords.length} testimonianze**
+PARTIGIANI: ${contextRecords.length} testimonianze
 
 ${context}
 
-═══════════════════════════════════════════════════════════════
-RELAZIONI GIÀ IDENTIFICATE (da integrare nella tua risposta)
-═══════════════════════════════════════════════════════════════
+RELAZIONI:
+${relazioni.geografiche.length > 0 ? '- Geografiche: ' + relazioni.geografiche.map(r => `${r.conteggio} in ${r.valore}`).join(', ') : ''}
+${relazioni.migrazioni?.length > 0 ? '- Migrazioni: ' + relazioni.migrazioni.map(r => r.percorso).join(', ') : ''}
+${relazioni.tematiche.length > 0 ? '- Temi: ' + relazioni.tematiche.slice(0,5).map(r => `${r.tema} (${r.conteggio})`).join(', ') : ''}
 
-${relazioniPrompt}
+${libroUsato ? `LIBRO (rilevanza: ${(libroResult.maxScore * 100).toFixed(0)}%):
 
-${libroUsato ? `═══════════════════════════════════════════════════════════════
-ESTRATTI DAL LIBRO STORICO (Score rilevanza: ${(libroScore * 100).toFixed(0)}%)
-═══════════════════════════════════════════════════════════════
+${estrattiLibro}` : ''}
 
-${estrattiLibro}
-` : ''}
+DOMANDA: "${originalText}"
 
-═══════════════════════════════════════════════════════════════
-DOMANDA UTENTE
-═══════════════════════════════════════════════════════════════
-
-"${originalText}"
-
-═══════════════════════════════════════════════════════════════
-ISTRUZIONI FINALI
-═══════════════════════════════════════════════════════════════
-
-Scrivi una risposta RICCA, APPROFONDITA e BEN STRUTTURATA.
-
-LUNGHEZZA MINIMA:
-- Sezione "FATTI ACCERTATI": almeno 300 parole
-- Sezione "PERCORSI E RELAZIONI": almeno 400 parole
-
-NON essere sintetico. Espandi, racconta, contestualizza.
-
-RISPONDI ORA:`;
+RISPONDI ORA (massimo 400 parole totali):`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
@@ -1599,15 +1347,15 @@ RISPONDI ORA:`;
                         parts: [{ text: promptBase }] 
                     }],
                     generationConfig: {
-                        temperature: 0.7,
-                        topP: 0.9,
-                        topK: 50,
-                        maxOutputTokens: 4096
+                        temperature: 0.4,
+                        topP: 0.8,
+                        topK: 40,
+                        maxOutputTokens: 1500
                     }
                 })
             });
 
-            updateProgress(95, "Formattazione risposta...");
+            updateProgress(95, "Formattazione...");
             const data = await response.json();
 
             if (data.error) {
@@ -1658,7 +1406,7 @@ RISPONDI ORA:`;
             });
 
             if (libroUsato && (formattedText.includes('<libro-narrato>') || formattedText.includes('<libro-citazione>'))) {
-                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro Storico</span>`;
+                formattedText += `<br><br><span class="libro-badge">📚 Fonte: Libro</span>`;
             }
 
             aiMsgElement.innerHTML = formattedText;
@@ -1678,10 +1426,10 @@ RISPONDI ORA:`;
             box.scrollTop = box.scrollHeight;
 
         } catch (e) { 
-            console.error("❌ [ERROR]", e);
+            console.error("❌ Errore:", e);
             pContainer.style.display = 'none';
             document.getElementById('ai-status-text').style.display = 'none';
-            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}<br><br><small>Verifica la tua API Key e riprova.</small>`; 
+            aiMsgElement.innerHTML = `<b style="color:#e74c3c;">❌ Errore:</b> ${e.message}`; 
             aiMsgElement.classList.add('finished');
         }
     }
@@ -1691,13 +1439,12 @@ RISPONDI ORA:`;
         document.getElementById('results-dropdown').style.display = 'none'; 
     });
     
-    // ⭐ PULSANTE PRE-CALCOLO EMBEDDINGS
     async function precomputeAllEmbeddings() {
         const btn = document.getElementById('embed-btn');
         if (!btn) return;
         
         btn.disabled = true;
-        btn.innerHTML = '⏳ Calcolo in corso...';
+        btn.innerHTML = '⏳ Calcolo...';
         
         try {
             await CACHE.initCSV();
@@ -1713,16 +1460,15 @@ RISPONDI ORA:`;
                 btn.style.display = 'none';
             }, 2000);
             
-            alert('✅ Embeddings pre-calcolati!\n\nOra le ricerche saranno molto più veloci.');
+            alert('✅ Embeddings calcolati!\n\nLe ricerche saranno molto più veloci.');
         } catch (e) {
             btn.innerHTML = '❌ Errore';
             btn.style.background = '#e74c3c';
             btn.disabled = false;
-            alert('Errore durante il pre-calcolo: ' + e.message);
+            alert('Errore: ' + e.message);
         }
     }
     
-    // Crea pulsante dopo caricamento pagina
     window.addEventListener('load', () => {
         const btnHTML = `
             <div id="embed-precompute-btn" style="position:fixed; top:80px; right:25px; z-index:6000;">
@@ -1737,9 +1483,3 @@ RISPONDI ORA:`;
 </script>
 </body>
 </html>
-
-
-
-
-
-
