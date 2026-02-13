@@ -375,7 +375,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio zx2.1</span>
+        <span>Assistente Archivio zx3.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -1656,7 +1656,7 @@ function espandiQueryConSinonimi(queryOriginale) {
     }
 
 // ═══════════════════════════════════════════════════════════════
-// AI CHAT - VERSIONE ANALITICA (NO FLUFF, NO INTRO, SOLO FATTI)
+// AI CHAT - VERSIONE ANALITICA NARRATIVA (Senza Fluff, ma Discorsiva)
 // ═══════════════════════════════════════════════════════════════
 async function sendAIMessage() {
     const key = localStorage.getItem('gemini_key') || prompt("Inserisci la tua API Key Gemini:");
@@ -1677,7 +1677,7 @@ async function sendAIMessage() {
     input.style.height = 'auto';
     
     const aiMsgId = "ai-" + Date.now();
-    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Elaborazione dati...</div>`;
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai">⏳ Analisi in corso...</div>`;
     const aiMsgElement = document.getElementById(aiMsgId);
     box.scrollTop = box.scrollHeight;
 
@@ -1686,43 +1686,38 @@ async function sendAIMessage() {
     pContainer.style.display = 'block';
 
     try {
-        updateProgress(30, "Analisi database...");
-        let contextRecords = await hybridSearch(userText, 50);
+        updateProgress(30, "Consultazione database...");
+        let contextRecords = await hybridSearch(userText, 60);
 
-        updateProgress(60, "Cross-referencing libro...");
-        const focusPunti = contextRecords.slice(0, 5).map(d => `${d.regione} ${d.nominativo}`).join(" ");
-        const libroResult = await searchLibroSemantico(focusPunti + " " + userText, 3);
+        updateProgress(60, "Ricerca inerenze nel libro...");
+        // Query più ricca per il libro: nomi + luoghi + tema
+        const focusPunti = contextRecords.slice(0, 8).map(d => `${d.nominativo} ${d.regione}`).join(" ");
+        const libroResult = await searchLibroSemantico(focusPunti + " " + userText, 4);
         
         let estrattiLibro = "";
-        if (libroResult.maxScore > 0.45) { 
+        // Soglia più permissiva (0.35) per far entrare il libro più spesso
+        if (libroResult.maxScore > 0.35) { 
             estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n');
         }
 
         const percorsi = analizzaPercorsiComplessi(contextRecords);
         const percorsiTesto = generaTestoPercorsi(percorsi);
 
-        updateProgress(85, "Sintesi dei fatti...");
+        updateProgress(85, "Sintesi storiografica...");
 
-        // Chiamata streaming a Gemini 2.0 Flash
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Agisci come un Sistema di Analisi Storica. Rispondi esclusivamente con dati ed evidenze. 
+                        text: `Agisci come un Archivista Storico Analitico. Esponi i fatti senza preamboli, introduzioni o saluti.
 
-REGOLE ASSOLUTE:
-- ZERO introduzioni (es: "Certamente", "Ecco i risultati").
-- ZERO conclusioni (es: "Queste storie mostrano", "In sintesi").
-- ZERO giudizi di valore o commenti emotivi.
-- Inizia IMMEDIATAMENTE con la sezione **FATTI ACCERTATI**.
-
-DATI ARCHIVIO:
+DATI ARCHIVIO (Usa SOLO questi per i nomi):
 ${contextRecords.map(d => `[[${d.nominativo}]] | ${d.regione} | ${d.scheda}`).join('\n')}
 
-ESTRATTI LIBRO:
-${estrattiLibro || "N/A"}
+ESTRATTI LIBRO (Contesto storico):
+${estrattiLibro || "Nessun dato pertinente dal libro."}
 
 RELAZIONI RILEVATE:
 ${percorsiTesto}
@@ -1730,15 +1725,18 @@ ${percorsiTesto}
 STRUTTURA OBBLIGATORIA:
 
 1. **FATTI ACCERTATI**
-Elenco dei partigiani trovati (usando [[Nome Cognome]]) raggruppati per criteri oggettivi. Brevissima descrizione tecnica per ognuno.
+Presenta i partigiani trovati raggruppandoli per Brigata, zona o destino comune. Usa [[Nome Cognome]] per ogni link. Sii schematico ma preciso.
 
-2. **COLLEGAMENTI E ANALISI**
-Spiega le connessioni evidenziate nelle "RELAZIONI RILEVATE". Usa un linguaggio narrativo SOLO per descrivere movimenti geografici, contemporaneità di eventi o appartenenza alle stesse formazioni.
+2. **APPROFONDIMENTI E COLLEGAMENTI**
+In questa sezione Sii DISCORSIVO. Analizza i dati per connettere le vite dei partigiani. Spiega i movimenti geografici (es: migrazioni Sud-Nord), le formazioni condivise e le date comuni (es: rastrellamenti dell'inverno '44). Non inventare nulla, ma costruisci una narrazione fluida basata sui dati.
 
 3. **INTEGRAZIONE LIBRO**
-Usa <libro-narrato> per fatti storici contestuali e <libro-citazione> per estratti diretti. Inserisci questa sezione solo se i dati del libro sono direttamente collegabili ai partigiani in analisi.
+Se gli estratti del libro sono pertinenti, inseriscili qui usando i tag <libro-narrato> per la spiegazione e <libro-citazione> per le frasi del libro.
 
-DOMANDA: "${originalText}"`
+REGOLE:
+- Niente "Ecco i risultati" o "Spero sia utile".
+- Sezione Approfondimenti: connetti i dati in modo logico e scorrevole.
+- Ogni nome partigiano deve essere tra [[ ]].`
                     }]
                 }]
             })
@@ -1782,7 +1780,7 @@ DOMANDA: "${originalText}"`
 
 function formattaRispostaStreaming(text, records) {
     let html = text
-        .replace(/\*\?(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:20px; margin-bottom:10px; padding-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #3498db; font-weight:700;">$1</b>')
+        .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:20px; margin-bottom:10px; padding-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #3498db; font-weight:700;">$1</b>')
         .replace(/\n/g, '<br>');
 
     records.forEach(r => {
@@ -1795,47 +1793,55 @@ function formattaRispostaStreaming(text, records) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FUNZIONI DI PRE-CALCOLO EMBEDDING (RIPRISTINATE)
+// FUNZIONE PRE-CALCOLO EMBEDDING (Corretta per database vuoto)
 // ═══════════════════════════════════════════════════════════════
 async function precomputeAllEmbeddings() {
+    if (!database || database.length === 0) {
+        alert("Il database non è ancora caricato. Attendi qualche secondo e riprova.");
+        return;
+    }
+
     const key = localStorage.getItem('gemini_key') || prompt("Inserisci API Key Gemini:");
     if (!key) return;
     localStorage.setItem('gemini_key', key);
 
     const btn = document.getElementById('embed-btn');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Elaborazione in corso...';
+    btn.innerHTML = '⏳ Sincronizzazione...';
 
     const monitor = document.createElement('div');
     monitor.id = 'embed-monitor';
     monitor.innerHTML = `<div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:white; border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,0.3); width:400px; font-family:sans-serif;">
         <h3 style="margin-top:0;">🔄 Sincronizzazione AI</h3>
-        <p id="csv-stat">Elaborazione Archivio...</p>
+        <p id="csv-stat">Elaborazione Archivio (${database.length} profili)...</p>
         <p id="libro-stat">Elaborazione Libro...</p>
-        <button onclick="this.parentElement.parentElement.remove()" style="display:none; width:100%; padding:10px; border-radius:10px; border:none; background:#1a2a3a; color:white; cursor:pointer;" id="close-monitor">Chiudi e Inizia</button>
+        <button onclick="this.parentElement.parentElement.remove()" style="display:none; width:100%; padding:10px; border-radius:10px; border:none; background:#1a2a3a; color:white; cursor:pointer;" id="close-monitor">Chiudi</button>
     </div>`;
     document.body.appendChild(monitor);
 
     try {
-        CACHE.csvEmbeddings = [];
+        // 1. Calcolo CSV
+        let tempCSV = [];
         for (let i = 0; i < database.length; i += 10) {
             const batch = database.slice(i, i + 10);
             const embs = await Promise.all(batch.map(async (d) => {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: `${d.nominativo} ${d.scheda}` }] } })
+                    body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text: `${d.nominativo} ${d.scheda} ${d.regione}` }] } })
                 });
                 const data = await res.json();
                 return data.embedding ? data.embedding.values : null;
             }));
-            CACHE.csvEmbeddings.push(...embs.filter(e => e !== null));
-            document.getElementById('csv-stat').innerText = `✅ Archivio: ${CACHE.csvEmbeddings.length} profili pronti`;
+            tempCSV.push(...embs.filter(e => e !== null));
+            document.getElementById('csv-stat').innerText = `✅ Archivio: ${tempCSV.length} profili pronti`;
         }
-        localStorage.setItem('csv_embeddings_v2', JSON.stringify(CACHE.csvEmbeddings));
+        CACHE.csvEmbeddings = tempCSV;
+        localStorage.setItem('csv_embeddings_v2', JSON.stringify(tempCSV));
 
+        // 2. Calcolo Libro
         if (CACHE.libroChunks) {
-            CACHE.libroEmbeddings = [];
-            const max = Math.min(CACHE.libroChunks.length, 100);
+            let tempLibro = [];
+            const max = Math.min(CACHE.libroChunks.length, 120);
             for (let i = 0; i < max; i += 5) {
                 const batch = CACHE.libroChunks.slice(i, i + 5);
                 const embs = await Promise.all(batch.map(async (chunk) => {
@@ -1846,15 +1852,17 @@ async function precomputeAllEmbeddings() {
                     const data = await res.json();
                     return data.embedding ? data.embedding.values : null;
                 }));
-                CACHE.libroEmbeddings.push(...embs.filter(e => e !== null));
-                document.getElementById('libro-stat').innerText = `✅ Libro: ${CACHE.libroEmbeddings.length} sezioni pronte`;
+                tempLibro.push(...embs.filter(e => e !== null));
+                document.getElementById('libro-stat').innerText = `✅ Libro: ${tempLibro.length} sezioni pronte`;
             }
-            localStorage.setItem('libro_embeddings_v2', JSON.stringify(CACHE.libroEmbeddings));
+            CACHE.libroEmbeddings = tempLibro;
+            localStorage.setItem('libro_embeddings_v2', JSON.stringify(tempLibro));
         }
+
         document.getElementById('close-monitor').style.display = 'block';
         btn.innerHTML = '✅ AI Sincronizzata';
     } catch (e) {
-        alert("Errore: " + e.message);
+        alert("Errore calcolo: " + e.message);
         btn.disabled = false;
         btn.innerHTML = '🚀 Riprova Calcolo';
     }
