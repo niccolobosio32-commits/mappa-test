@@ -11,111 +11,33 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
    <style>
-/* ═══════════════════════════════════════════════════════════════
-   TAG CUSTOM PER IL LIBRO
-   ═══════════════════════════════════════════════════════════════ */
-
-libro-narrato {
+     libro-narrato {
     display: block;
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-left: 5px solid #1976d2;
-    padding: 20px 20px 20px 55px;
-    margin: 20px 0;
-    font-size: 15px;
-    border-radius: 0 15px 15px 0;
-    line-height: 1.7;
-    position: relative;
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
-    font-family: 'Lora', serif;
-    color: #0d47a1;
-}
-
-libro-narrato::before {
-    content: '📖';
-    position: absolute;
-    left: 15px;
-    top: 20px;
-    font-size: 28px;
-    opacity: 0.8;
-}
-
-libro-narrato::after {
-    content: 'Dal Libro Storico';
-    position: absolute;
-    top: 8px;
-    right: 15px;
-    background: #1976d2;
-    color: white;
-    padding: 3px 10px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    font-family: 'Inter', sans-serif;
+    background: rgba(52, 152, 219, 0.08);
+    border-left: 3px solid var(--blue);
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 14px;
+    border-radius: 0 8px 8px 0;
+    line-height: 1.5;
 }
 
 libro-citazione {
     display: block;
     font-family: 'Lora', serif;
     font-style: italic;
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    border-left: 5px double #f57c00;
-    padding: 25px 25px 25px 60px;
-    margin: 20px 0;
-    color: #e65100;
-    line-height: 1.8;
-    border-radius: 0 15px 15px 0;
-    position: relative;
-    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.2);
-    font-size: 15px;
+    background: rgba(0, 0, 0, 0.04);
+    border-left: 3px double #1a2a3a;
+    padding: 14px;
+    margin: 12px 0;
+    color: #333;
+    line-height: 1.6;
 }
-
-libro-citazione::before {
-    content: '"';
-    position: absolute;
-    left: 20px;
-    top: 15px;
-    font-size: 50px;
-    opacity: 0.3;
-    font-family: Georgia, serif;
-    color: #f57c00;
-    line-height: 1;
-}
-
-libro-citazione::after {
-    content: 'Citazione Libro';
-    position: absolute;
-    top: 8px;
-    right: 15px;
-    background: #f57c00;
-    color: white;
-    padding: 3px 10px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    font-family: 'Inter', sans-serif;
-    font-style: normal;
-}
-
-.libro-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 8px;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 5px rgba(139, 69, 19, 0.3);
-}
-
-#ai-progress-container {
+       #ai-progress-container {
     width: 100%;
     height: 4px;
     background: rgba(0,0,0,0.05);
-    display: none;
+    display: none; /* Nascosta di default */
     overflow: hidden;
 }
 
@@ -126,14 +48,7 @@ libro-citazione::after {
     transition: width 0.3s ease;
 }
 
-#ai-status-text {
-    font-size: 11px;
-    color: #666;
-    padding: 5px 10px;
-    text-align: center;
-    display: none;
-}
-
+/* Animazione pulsante per la barra mentre carica */
 .progress-active {
     animation: pulse-progress 2s infinite ease-in-out;
 }
@@ -143,94 +58,101 @@ libro-citazione::after {
     50% { opacity: 1; }
     100% { opacity: 0.6; }
 }
+    :root { 
+        --navy: #1a2a3a; 
+        --blue: #3498db; 
+        --glass: rgba(255, 255, 255, 0.4); 
+        --red: #e21118; 
+        --yellow: #ffcc00; 
+    }
 
-:root { 
-    --navy: #1a2a3a; 
-    --blue: #3498db; 
-    --glass: rgba(255, 255, 255, 0.4); 
-    --red: #e21118; 
-    --yellow: #ffcc00; 
-}
+    /* Animazione AI */
+    .msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
+    .msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
+    .msg-ai.finished:after { content: ''; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-.msg-ai { background: #f0f0f0; align-self: flex-start; line-height: 1.4; white-space: pre-wrap; position: relative; }
-.msg-ai:after { content: '▋'; animation: blink 1s infinite; margin-left: 5px; color: var(--blue); font-size: 12px; vertical-align: middle; }
-.msg-ai.finished:after { content: ''; }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; position: fixed; }
 
-body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; position: fixed; }
+    /* FIX MAPPA MOBILE */
+    #map { 
+        width: 100%; 
+        height: 100%; 
+        position: fixed !important; 
+        top: 0; 
+        left: 0; 
+        bottom: 0;
+        right: 0;
+        z-index: 1; 
+        background: #f0f0f0; 
+    }
 
-#map { 
-    width: 100%; 
-    height: 100%; 
-    position: fixed !important; 
-    top: 0; 
-    left: 0; 
-    bottom: 0;
-    right: 0;
-    z-index: 1; 
-    background: #f0f0f0; 
-}
+    /* UI Superiore */
+    #ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
+    #filter-bar { 
+        background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+        display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
+    }
+    #filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
+    
+    #results-dropdown { 
+        background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
+        display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
+    }
+    .res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
+    .res-item:hover { background: var(--blue); color: white; }
 
-#ui-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5000; width: 95%; max-width: 1100px; }
-#filter-bar { 
-    background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    padding: 8px 15px; border-radius: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-    display: flex; gap: 8px; align-items: center; border: 1px solid rgba(255,255,255,0.4);
-}
-#filter-bar input, #filter-bar select { border: none; outline: none; flex: 1; font-size: 13px; background: transparent; font-weight: 700; color: #000; min-width: 60px; }
+    /* PANNELLO DETTAGLI */
+    #details-panel { 
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
+        width: 94%; max-width: 1100px; z-index: 4000; 
+        background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
+        transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
+        border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
+        display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
+        max-height: 85vh;
+    }
+    #details-panel.open { transform: translate(-50%, -50%); }
+    #details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    #details-content { display: flex; overflow: hidden; flex: 1; }
+    .main-col { flex: 1; overflow-y: auto; }
+    .video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+    .bio-box { padding: 15px 25px; line-height: 1.4; }
+    #text-bio { 
+        font-family: 'Lora', serif; 
+        font-size: 16px; 
+        color: #1a1a1a; 
+        text-align: justify;
+        hyphens: auto;
+    }
+    /* Effetto Cool: La prima lettera della biografia diventa elegante */
+    #text-bio::first-letter {
+        float: left;
+        font-size: 3.5em;
+        line-height: 0.7;
+        padding-top: 4px;
+        padding-right: 8px;
+        color: var(--navy);
+        font-weight: 700;
+    }
 
-#results-dropdown { 
-    background: rgba(255, 255, 255, 0.98); border-radius: 20px; margin-top: 5px; max-height: 300px; overflow-y: auto; 
-    display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
-}
-.res-item { padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; font-weight: 600; display: flex; justify-content: space-between; }
-.res-item:hover { background: var(--blue); color: white; }
+    .side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
+    .rel-item { padding: 6px 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 11px; margin-bottom: 4px; cursor: pointer; font-weight: 600; }
 
-#details-panel { 
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, 150%); 
-    width: 94%; max-width: 1100px; z-index: 4000; 
-    background: var(--glass); backdrop-filter: blur(35px) saturate(160%); -webkit-backdrop-filter: blur(35px) saturate(160%);
-    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
-    border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
-    display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.5);
-    max-height: 85vh;
-}
-#details-panel.open { transform: translate(-50%, -50%); }
-#details-header { background: rgba(26, 42, 58, 0.85); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-#details-content { display: flex; overflow: hidden; flex: 1; }
-.main-col { flex: 1; overflow-y: auto; }
-.video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
-.bio-box { padding: 15px 25px; line-height: 1.4; }
-#text-bio { 
-    font-family: 'Lora', serif; 
-    font-size: 16px; 
-    color: #1a1a1a; 
-    text-align: justify;
-    hyphens: auto;
-}
-#text-bio::first-letter {
-    float: left;
-    font-size: 3.5em;
-    line-height: 0.7;
-    padding-top: 4px;
-    padding-right: 8px;
-    color: var(--navy);
-    font-weight: 700;
-}
+    .social-box { display: flex; justify-content: center; gap: 15px; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
+    .social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
+    .social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
 
-.side-rel { width: 250px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
-.rel-item { padding: 6px 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 11px; margin-bottom: 4px; cursor: pointer; font-weight: 600; }
+    /* AI CHAT */
+    #ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
+    /* --- NUOVA GRAFICA AI COLLABORATIVA --- */
 
-.social-box { display: flex; justify-content: center; gap: 15px; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); }
-.social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.3); text-decoration: none; border: 1px solid rgba(255,255,255,0.4); }
-.social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
-
-#ai-chat-toggle { position: absolute; bottom: 25px; right: 25px; z-index: 6000; width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid white; }
-
+/* Finestra Chat Elegante */
 #ai-chat-window { 
     position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
     width: 400px; height: 550px; 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Fondo sfumato elegante */
     border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
     box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
 }
@@ -240,6 +162,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     display: flex; flex-direction: column; gap: 12px;
 }
 
+/* Bolle Messaggi con effetto Glassmorphism */
 .msg { 
     padding: 12px 16px; border-radius: 18px; max-width: 85%; 
     font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -251,31 +174,26 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 }
 
 .msg-ai { 
-    background: rgba(255, 255, 255, 0.9); 
-    color: #2c3e50; 
-    align-self: flex-start; 
-    border-bottom-left-radius: 2px; 
-    border: 1px solid rgba(0,0,0,0.05);
+    background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
+    border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
     backdrop-filter: blur(5px);
-    line-height: 1.7;
-    white-space: normal;
 }
 
+/* Titoli delle sezioni dentro la risposta AI (Fatti vs Percorsi) */
 .msg-ai b[style*="color:var(--navy)"] {
     display: block;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    font-size: 12px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     color: #1a2a3a !important;
-    border-bottom: 2px solid #3498db;
-    font-weight: 700;
+    border-bottom: 1px solid #eee;
 }
 
+/* Link ai Partigiani */
 .link-partigiano {
-    color: #d35400;
+    color: #d35400; /* Un colore ruggine/storico invece del blu standard */
     text-decoration: none;
     font-weight: 700;
     cursor: pointer;
@@ -287,42 +205,51 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     background: rgba(211, 84, 0, 0.05);
 }
 
-@media screen and (max-width: 768px) {
-    #details-panel { 
-        width: 100% !important; 
-        height: 85vh !important; 
-        position: fixed !important; 
-        bottom: -100% !important; 
-        top: auto !important; 
-        left: 0 !important; 
-        transform: none !important; 
-        border-radius: 25px 25px 0 0 !important; 
-        transition: bottom 0.5s ease !important; 
-        z-index: 9999; 
-    }
-    #details-panel.open { bottom: 0 !important; }
-    #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
-    .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
-    .main-col { overflow-y: visible !important; }
-    .bio-box { padding: 15px 25px; line-height: 1.4; }
+/* Area Input */
+#ai-chat-input-area { padding: 10px; background: #f4f4f4; border-top: 1px solid #ddd; display: flex; }
+#ai-chat-input { 
+    flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 8px 12px; 
+    font-size: 14px; outline: none; 
+}
+
+    /* 📱 OTTIMIZZAZIONE MOBILE */
+    @media screen and (max-width: 768px) {
+        #details-panel { 
+            width: 100% !important; 
+            height: 85vh !important; 
+            position: fixed !important; 
+            bottom: -100% !important; 
+            top: auto !important; 
+            left: 0 !important; 
+            transform: none !important; 
+            border-radius: 25px 25px 0 0 !important; 
+            transition: bottom 0.5s ease !important; 
+            z-index: 9999; 
+        }
+        #details-panel.open { bottom: 0 !important; }
+        #details-content { flex-direction: column !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
+        .video-box { position: sticky; top: 0; z-index: 10; min-height: 200px; }
+        .main-col { overflow-y: visible !important; }
+        .bio-box { padding: 15px 25px; line-height: 1.4; }
     #text-bio { 
         font-family: 'Lora', serif; 
         font-size: 16px; 
         color: #1a1a1a; 
         text-align: justify;
     }
+    /* La prima lettera elegante */
     #text-bio::first-letter {
         float: left;
         font-size: 3.5em;
         line-height: 0.7;
         padding-top: 4px;
         padding-right: 8px;
-        color: #1a2a3a;
+        color: #1a2a3a; /* Navy */
         font-weight: 700;
     }
-    .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
-    #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
-}
+        .side-rel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(0,0,0,0.1); padding: 15px !important; padding-bottom: 80px !important; }
+        #ai-chat-window { width: 94% !important; left: 3% !important; right: 3% !important; bottom: 80px !important; height: 60vh !important; }
+    }
 </style>
 </head>
 <body>
@@ -375,7 +302,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio v0.1.1</span>
+        <span>Assistente Archivio 0.a</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -383,7 +310,6 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     <div id="ai-progress-container">
         <div id="ai-progress-bar"></div>
     </div>
-    <div id="ai-status-text"></div>
 
     <div style="padding:10px; background:#fff; border-top:1px solid #eee; display:flex; align-items: flex-end; gap: 8px;">
         <textarea id="ai-chat-input" placeholder="Chiedi all'AI..." rows="1" 
@@ -402,9 +328,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="testo_libro.js"></script> 
 <script>
-    // ═══════════════════════════════════════════════════════════════
-    // INIZIALIZZAZIONE MAPPA
-    // ═══════════════════════════════════════════════════════════════
+    // Inizializzazione Mappa con fix per Tap su Mobile
     let map = L.map('map', { 
         zoomControl: false,
         tap: false 
@@ -414,6 +338,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
+    // FIX DEFINITIVO PER MOBILE: Forza ricalcolo dimensioni
     function fixMapSize() {
         setTimeout(() => {
             map.invalidateSize();
@@ -432,364 +357,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
     map.addLayer(markers);
     let database = [];
     let searchTimeout;
-    
-// ═══════════════════════════════════════════════════════════════
-// DIZIONARIO SINONIMI PER ESPANSIONE QUERY AI
-// ═══════════════════════════════════════════════════════════════
-const DIZIONARIO_SINONIMI = {
-    "imi": "IMI internati militari italiani prigionia Germania lager Stammlager",
-    "cln": "CLN Comitato di Liberazione Nazionale resistenza antifascismo",
-    "gap": "GAP Gruppi di Azione Patriottica gappisti azioni urbane sabotaggio",
-    "sap": "SAP Squadre di Azione Patriottica staffette ausiliarie",
-    "rsi": "RSI Repubblica Sociale Italiana Salò fascismo repubblichini",
-    "lager": "lager campo di concentramento deportazione prigionia",
-    "mauthausen": "Mauthausen campo concentramento Austria deportati sterminio",
-    "partigiano": "partigiano partigiana resistente combattente patriota",
-    "staffetta": "staffetta staffettista collegamento messaggera portaordini",
-    "rastrellamento": "rastrellamento operazione polizia retata cattura arresto",
-    "rappresaglia": "rappresaglia ritorsione strage eccidio massacro",
-    "deportazione": "deportazione deportati trasferimento forzato tradotta",
-    "8 settembre": "8 settembre 1943 armistizio Badoglio sbandamento esercito",
-    "liberazione": "liberazione 25 aprile 1945 insurrezione fine guerra",
-    "caduto": "caduto morto deceduto ucciso vittima perito",
-    "brigata": "brigata divisione formazione partigiana banda gruppo armato"
-};
 
-// ═══════════════════════════════════════════════════════════════
-// MOTORE DI INFERENZA STORICA AVANZATO
-// ═══════════════════════════════════════════════════════════════
-const INFERENZA_STORICA = {
-    // Mappa lager → località geografiche
-    LAGER_GEOGRAFIA: {
-        "mauthausen": ["austria", "linz", "gusen"],
-        "dachau": ["germania", "monaco", "baviera"],
-        "auschwitz": ["polonia", "oswiecim"],
-        "buchenwald": ["germania", "weimar", "turingia"],
-        "flossenbürg": ["germania", "baviera"],
-        "sachsenhausen": ["germania", "berlino"],
-        "ravensbrück": ["germania", "berlino"],
-        "dora": ["germania", "nordhausen"]
-    },
-    
-    // Eventi storici → periodi temporali
-    EVENTI_CRONOLOGIA: {
-        "8 settembre": ["settembre 1943", "armistizio", "badoglio", "sbandamento"],
-        "25 aprile": ["aprile 1945", "liberazione", "insurrezione"],
-        "repubblica sociale": ["1943", "1944", "1945", "salò"],
-        "rastrellamenti": ["1944", "inverno 1944", "estate 1944"],
-        "deportazioni": ["1943", "1944", "tradotte"]
-    },
-    
-    // Ruoli → implicazioni operative
-    RUOLI_ATTIVITA: {
-        "staffetta": ["collegamento", "messaggi", "portaordini", "ausiliaria", "donna", "giovane"],
-        "gap": ["azioni urbane", "sabotaggio", "attentati", "città"],
-        "sap": ["difesa", "ausiliaria", "supporto", "logistica"],
-        "comandante": ["brigata", "divisione", "gruppo", "formazione"],
-        "commissario": ["politico", "cln", "comitato"]
-    },
-    
-    // Zone operative → regioni correlate
-    ZONE_OPERATIVE: {
-        "valli valdesi": ["piemonte", "torino", "pinerolo"],
-        "valsesia": ["piemonte", "vercelli", "novara"],
-        "ossola": ["piemonte", "verbano", "svizzera"],
-        "langhe": ["piemonte", "cuneo", "alba"],
-        "appenino tosco-emiliano": ["emilia", "toscana", "modena", "bologna"],
-        "carnia": ["friuli", "udine", "slovenia"],
-        "val di fiemme": ["trentino", "trento"]
-    },
-    
-    // Inferenze logiche: se query contiene X, aggiungi Y
-    INFERENZE: [
-        {
-            pattern: /deport.*austria/i,
-            aggiungi: ["mauthausen", "gusen", "linz", "deportati", "lager"],
-            motivo: "Austria → Mauthausen (principale lager)"
-        },
-        {
-            pattern: /deport.*germania/i,
-            aggiungi: ["dachau", "buchenwald", "flossenbürg", "deportati", "lager"],
-            motivo: "Germania → lager tedeschi"
-        },
-        {
-            pattern: /(donna|donne|femminil)/i,
-            aggiungi: ["staffetta", "staffettista", "ausiliaria", "partigiana"],
-            motivo: "Donne → ruoli tipici nella resistenza"
-        },
-        {
-            pattern: /città|urban/i,
-            aggiungi: ["gap", "azioni urbane", "sabotaggio", "attentati"],
-            motivo: "Contesto urbano → GAP"
-        },
-        {
-            pattern: /montagna|valli|alpini/i,
-            aggiungi: ["brigata", "formazione", "bande", "rastrellamenti"],
-            motivo: "Montagna → formazioni partigiane"
-        },
-        {
-            pattern: /settembre.*1943|armistizio/i,
-            aggiungi: ["8 settembre", "sbandamento", "scelta", "badoglio"],
-            motivo: "Armistizio → momento cruciale"
-        },
-        {
-            pattern: /imi|internati.*militari/i,
-            aggiungi: ["germania", "lager", "stammlager", "prigionia", "8 settembre"],
-            motivo: "IMI → deportazione post-armistizio"
-        },
-        {
-            pattern: /fucilat|uccis|cadut/i,
-            aggiungi: ["rappresaglia", "rastrellamento", "catturato", "arrestato"],
-            motivo: "Morte → contesto di cattura"
-        }
-    ],
-    
-    // Espande la query con inferenze storiche
-    espandiQuery(queryOriginale) {
-        let terminiAggiuntivi = [];
-        const queryLower = queryOriginale.toLowerCase();
-        
-        console.log("🧠 [INFERENZA] Analisi query:", queryOriginale);
-        
-        // 1. Applica inferenze logiche
-        this.INFERENZE.forEach(inferenza => {
-            if (inferenza.pattern.test(queryOriginale)) {
-                console.log(`  ✅ ${inferenza.motivo}`);
-                terminiAggiuntivi.push(...inferenza.aggiungi);
-            }
-        });
-        
-        // 2. Espandi lager → geografia
-        for (const [lager, luoghi] of Object.entries(this.LAGER_GEOGRAFIA)) {
-            if (queryLower.includes(lager)) {
-                console.log(`  📍 ${lager} → ${luoghi.join(', ')}`);
-                terminiAggiuntivi.push(...luoghi);
-            }
-        }
-        
-        // 3. Espandi eventi → cronologia
-        for (const [evento, periodi] of Object.entries(this.EVENTI_CRONOLOGIA)) {
-            if (queryLower.includes(evento)) {
-                console.log(`  📅 ${evento} → ${periodi.join(', ')}`);
-                terminiAggiuntivi.push(...periodi);
-            }
-        }
-        
-        // 4. Espandi ruoli → attività
-        for (const [ruolo, attivita] of Object.entries(this.RUOLI_ATTIVITA)) {
-            if (queryLower.includes(ruolo)) {
-                console.log(`  👤 ${ruolo} → ${attivita.join(', ')}`);
-                terminiAggiuntivi.push(...attivita);
-            }
-        }
-        
-        // 5. Espandi zone → regioni
-        for (const [zona, regioni] of Object.entries(this.ZONE_OPERATIVE)) {
-            if (queryLower.includes(zona)) {
-                console.log(`  🗺️ ${zona} → ${regioni.join(', ')}`);
-                terminiAggiuntivi.push(...regioni);
-            }
-        }
-        
-        // Rimuovi duplicati
-        terminiAggiuntivi = [...new Set(terminiAggiuntivi)];
-        
-        if (terminiAggiuntivi.length > 0) {
-            const queryEspansa = `${queryOriginale} ${terminiAggiuntivi.join(' ')}`;
-            console.log(`🔍 [INFERENZA] Query espansa con ${terminiAggiuntivi.length} termini`);
-            return queryEspansa;
-        }
-        
-        return queryOriginale;
-    }
-};
-
-function espandiQueryConSinonimi(queryOriginale) {
-    // Prima espandi con sinonimi
-    let queryEspansa = queryOriginale;
-    let terminiAggiunti = [];
-    const queryLower = queryOriginale.toLowerCase().trim();
-    
-    for (const [chiave, espansione] of Object.entries(DIZIONARIO_SINONIMI)) {
-        const regex = new RegExp(`\\b${chiave.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        
-        if (regex.test(queryLower)) {
-            const nuoviTermini = espansione.split(' ').filter(termine => 
-                !queryLower.includes(termine.toLowerCase())
-            );
-            terminiAggiunti.push(...nuoviTermini);
-        }
-    }
-    
-    if (terminiAggiunti.length > 0) {
-        const terminiUnici = [...new Set(terminiAggiunti)];
-        queryEspansa = `${queryOriginale} ${terminiUnici.join(' ')}`;
-        console.log('📚 [SINONIMI] Espansione:', terminiUnici.join(', '));
-    }
-    
-    // Poi applica inferenze storiche
-    queryEspansa = INFERENZA_STORICA.espandiQuery(queryEspansa);
-    
-    return queryEspansa;
-}
-
-    // ═══════════════════════════════════════════════════════════════
-    // SISTEMA DI CACHE PERSISTENTE AVANZATO
-    // ═══════════════════════════════════════════════════════════════
-    const CACHE = {
-        libroChunks: null,
-        csvEmbeddings: null,
-        libroEmbeddings: null,
-        queryCache: new Map(),
-        
-        async initLibro() {
-            if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') {
-                console.log("📚 Libro non disponibile");
-                return;
-            }
-            
-            console.log("🔄 Inizializzazione libro...");
-            
-            this.libroChunks = TESTO_LIBRO
-                .replace(/\n\s*\n/g, "###SPLIT###")
-                .split("###SPLIT###")
-                .map(p => p.trim())
-                .filter(p => p.length > 100);
-            
-            console.log(`✅ Libro pronto: ${this.libroChunks.length} chunks`);
-            await this.precomputeLibroEmbeddings();
-        },
-        
-        async precomputeLibroEmbeddings() {
-            const key = localStorage.getItem('gemini_key');
-            if (!key || !this.libroChunks) return;
-            
-            const cached = localStorage.getItem('libro_embeddings_v2');
-            if (cached) {
-                try {
-                    this.libroEmbeddings = JSON.parse(cached);
-                    console.log(`✅ Embeddings libro da cache (${this.libroEmbeddings.length})`);
-                    return;
-                } catch (e) {
-                    console.log("⚠️ Cache corrotta, ricalcolo...");
-                }
-            }
-            
-            console.log("🔄 Pre-calcolo embeddings libro...");
-            this.libroEmbeddings = [];
-            
-            for (let i = 0; i < Math.min(this.libroChunks.length, 100); i += 5) {
-                const batch = this.libroChunks.slice(i, i + 5);
-                
-                const embeddings = await Promise.all(batch.map(async (chunk) => {
-                    try {
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: "models/text-embedding-004",
-                                content: { parts: [{ text: chunk.substring(0, 2000) }] }
-                            })
-                        });
-                        const data = await res.json();
-                        return data.embedding ? data.embedding.values : null;
-                    } catch (e) {
-                        return null;
-                    }
-                }));
-                
-                this.libroEmbeddings.push(...embeddings.filter(e => e !== null));
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
-            try {
-                localStorage.setItem('libro_embeddings_v2', JSON.stringify(this.libroEmbeddings));
-                console.log(`✅ Embeddings salvati (${this.libroEmbeddings.length})`);
-            } catch (e) {
-                console.log("⚠️ Storage pieno");
-            }
-        },
-        
-        async initCSV() {
-            if (this.csvEmbeddings || database.length === 0) return;
-            
-            const key = localStorage.getItem('gemini_key');
-            if (!key) return;
-            
-            const cached = localStorage.getItem('csv_embeddings_v2');
-            if (cached) {
-                try {
-                    this.csvEmbeddings = JSON.parse(cached);
-                    console.log(`✅ Embeddings CSV da cache (${this.csvEmbeddings.length})`);
-                    return;
-                } catch (e) {
-                    console.log("⚠️ Cache CSV corrotta");
-                }
-            }
-            
-            console.log("🔄 Pre-calcolo embeddings CSV...");
-            this.csvEmbeddings = [];
-            
-            for (let i = 0; i < database.length; i += 10) {
-                const batch = database.slice(i, i + 10);
-                
-                const embeddings = await Promise.all(batch.map(async (d) => {
-                    try {
-                        const docText = `${d.nominativo} ${d.scheda?.substring(0, 500) || ''} ${d.regione} ${d.città_nascita}`;
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: "models/text-embedding-004",
-                                content: { parts: [{ text: docText }] }
-                            })
-                        });
-                        const data = await res.json();
-                        return data.embedding ? data.embedding.values : null;
-                    } catch (e) {
-                        return null;
-                    }
-                }));
-                
-                this.csvEmbeddings.push(...embeddings.filter(e => e !== null));
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
-            try {
-                localStorage.setItem('csv_embeddings_v2', JSON.stringify(this.csvEmbeddings));
-                console.log(`✅ Embeddings CSV salvati (${this.csvEmbeddings.length})`);
-            } catch (e) {
-                console.log("⚠️ Storage pieno");
-            }
-        },
-        
-        getCachedQuery(query) {
-            const normalized = query.toLowerCase().trim();
-            return this.queryCache.get(normalized);
-        },
-        
-        setCachedQuery(query, result, ttl = 3600000) {
-            const normalized = query.toLowerCase().trim();
-            this.queryCache.set(normalized, {
-                result,
-                timestamp: Date.now(),
-                ttl
-            });
-            
-            if (this.queryCache.size > 100) {
-                const now = Date.now();
-                for (const [key, value] of this.queryCache.entries()) {
-                    if (now - value.timestamp > value.ttl) {
-                        this.queryCache.delete(key);
-                    }
-                }
-            }
-        }
-    };
-
-    // ═══════════════════════════════════════════════════════════════
-    // CARICAMENTO DATABASE CSV
-    // ═══════════════════════════════════════════════════════════════
     Papa.parse("progetto_mappa.csv", {
         download: true, header: true, skipEmptyLines: true,
         complete: function(res) {
@@ -799,94 +367,12 @@ function espandiQueryConSinonimi(queryOriginale) {
                 return clean;
             });
             caricaMarker();
-            initBM25();
-            
             const urlParams = new URLSearchParams(window.location.search);
             const nomep = urlParams.get('p');
             if (nomep) setTimeout(() => apri(decodeURIComponent(nomep)), 1000);
         }
     });
 
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            CACHE.initLibro();
-        }, 2000);
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // INTELLIGENZA GEOGRAFICA
-    // ═══════════════════════════════════════════════════════════════
-    const GEO_INTELLIGENCE = {
-        NORD: ['piemonte', 'valle d\'aosta', 'lombardia', 'trentino', 'alto adige', 'veneto', 'friuli', 'liguria', 'emilia', 'romagna'],
-        CENTRO: ['toscana', 'umbria', 'marche', 'lazio', 'abruzzo', 'molise'],
-        SUD: ['campania', 'puglia', 'basilicata', 'calabria', 'sicilia', 'sardegna'],
-        
-        classificaRegione(regione) {
-            const r = regione.toLowerCase();
-            if (this.NORD.some(n => r.includes(n))) return 'nord';
-            if (this.CENTRO.some(c => r.includes(c))) return 'centro';
-            if (this.SUD.some(s => r.includes(s))) return 'sud';
-            return null;
-        },
-        
-        parseRegioneSlash(regioneField) {
-            if (regioneField.includes('/')) {
-                const parts = regioneField.split('/').map(p => p.trim());
-                return {
-                    nascita: parts[0],
-                    operazione: parts[1] || parts[0]
-                };
-            }
-            return {
-                nascita: regioneField,
-                operazione: regioneField
-            };
-        },
-        
-        matchQueryGeografica(query) {
-            const q = query.toLowerCase();
-            
-            const pattern1 = /nat[oi]\s+(?:al|in|nel|nella|nelle)\s+(nord|centro|sud).*(?:combat|operat|agit)[^\s]*\s+(?:al|in|nel|nella|nelle)\s+(nord|centro|sud)/i;
-            const match1 = q.match(pattern1);
-            if (match1) {
-                return {
-                    nascita: match1[1],
-                    operazione: match1[2]
-                };
-            }
-            
-            if (q.includes('meridional') && (q.includes('nord') || q.includes('settentrion'))) {
-                return {
-                    nascita: 'sud',
-                    operazione: 'nord'
-                };
-            }
-            
-            return null;
-        },
-        
-        filtraPerGeografia(records, geoQuery) {
-            return records.filter(d => {
-                const parsed = this.parseRegioneSlash(d.regione);
-                const nascitaClass = this.classificaRegione(parsed.nascita);
-                const operazioneClass = this.classificaRegione(parsed.operazione);
-                
-                if (geoQuery.nascita && geoQuery.operazione) {
-                    const nascitaMatch = nascitaClass === geoQuery.nascita.toLowerCase() || 
-                                        parsed.nascita.toLowerCase().includes(geoQuery.nascita.toLowerCase());
-                    const operazioneMatch = operazioneClass === geoQuery.operazione.toLowerCase() || 
-                                           parsed.operazione.toLowerCase().includes(geoQuery.operazione.toLowerCase());
-                    return nascitaMatch && operazioneMatch;
-                }
-                
-                return false;
-            });
-        }
-    };
-
-    // ═══════════════════════════════════════════════════════════════
-    // MOTORE FILTRI
-    // ═══════════════════════════════════════════════════════════════
     const MotoreFiltri = {
         RAGGIO_MAX: 50000, 
         esegui: function(tipo) {
@@ -961,9 +447,6 @@ function espandiQueryConSinonimi(queryOriginale) {
         map.flyTo(target, zoom, { duration: 3.5, easeLinearity: 0.1, noMoveStart: true }); 
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // GESTIONE MARKER
-    // ═══════════════════════════════════════════════════════════════
     function caricaMarker(filtroFn = null, fit = false) {
         markers.clearLayers();
         let bounds = L.latLngBounds();
@@ -975,12 +458,15 @@ function espandiQueryConSinonimi(queryOriginale) {
                     let m = L.marker([lat, lon], { icon: stellaIcon });
                     m.bindTooltip(`<b>${d.nominativo}</b>`, { direction: 'top', offset: [0, -10] });
                     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openDetails(d); });
-                    m.on('mouseover', function() {
-                        this.getElement().style.filter = "brightness(1.5) saturate(2)";
-                    });
-                    m.on('mouseout', function() {
-                        this.getElement().style.filter = "none";
-                    });
+                    // --- HOVER: ACCENSIONE ROSSO VIVO ---
+                m.on('mouseover', function() {
+                    // Aumenta la luminosità e satura il colore esistente
+                    this.getElement().style.filter = "brightness(1.5) saturate(2)";
+                });
+                m.on('mouseout', function() {
+                    this.getElement().style.filter = "none";
+                });
+                // -----------------------------
                     markers.addLayer(m);
                     bounds.extend([lat, lon]);
                     hasData = true;
@@ -990,22 +476,24 @@ function espandiQueryConSinonimi(queryOriginale) {
         if (hasData && fit) map.flyToBounds(bounds, {padding: [50, 50], duration: 2.5});
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PANNELLO DETTAGLI
-    // ═══════════════════════════════════════════════════════════════
     function openDetails(d) {
+        // 1. Pulizia: Se la bio inizia col nome, lo togliamo
         let bio = d.scheda || "Nessuna biografia disponibile.";
         if (bio.startsWith(d.nominativo)) {
             bio = bio.replace(d.nominativo, "").trim();
+            // Capitalizziamo la prima lettera rimasta (es: da "è nato" a "È nato")
             bio = bio.charAt(0).toUpperCase() + bio.slice(1);
         }
 
+        // 2. Formattazione: Va a capo dopo i punti (senza trattini o segni)
         let bioFormattata = bio.replace(/\. ?([A-Z])/g, '.<br><span style="display:block; margin-top:8px;"></span>$1');
 
+        // 3. Popolamento Header e Bio
         document.getElementById('h-nome').innerText = d.nominativo.toUpperCase();
         document.getElementById('h-reg').innerText = d.regione;
         document.getElementById('text-bio').innerHTML = bioFormattata;
         
+        // 4. Video e restanti funzioni
         document.getElementById('vimeo-player').src = d.id ? `https://player.vimeo.com/video/${d.id}?autoplay=0` : "";
         
         const rel = database.filter(x => x.regione === d.regione && x.nominativo !== d.nominativo).slice(0, 15);
@@ -1022,10 +510,7 @@ function espandiQueryConSinonimi(queryOriginale) {
         document.getElementById('details-panel').classList.add('open');
     }
 
-    function closeDetails() { 
-        document.getElementById('details-panel').classList.remove('open'); 
-        setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); 
-    }
+    function closeDetails() { document.getElementById('details-panel').classList.remove('open'); setTimeout(() => { document.getElementById('vimeo-player').src = ""; }, 500); }
 
     function apri(nome) {
         const d = database.find(x => x.nominativo.toLowerCase().includes(nome.toLowerCase().trim()));
@@ -1041,750 +526,123 @@ function espandiQueryConSinonimi(queryOriginale) {
         win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
         if(win.style.display === 'flex') document.getElementById('ai-chat-input').focus();
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // FUNZIONI UTILITY
-    // ═══════════════════════════════════════════════════════════════
-    function updateProgress(percent, message) {
-        const pBar = document.getElementById('ai-progress-bar');
-        const statusDiv = document.getElementById('ai-status-text');
-        pBar.style.width = percent + '%';
-        statusDiv.textContent = message;
-        statusDiv.style.display = 'block';
-    }
-
-    function cosineSimilarity(vecA, vecB) {
-        const dotProduct = vecA.reduce((sum, val, i) => sum + val * vecB[i], 0);
-        const normA = Math.sqrt(vecA.reduce((sum, val) => sum + val * val, 0));
-        const normB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
-        return dotProduct / (normA * normB);
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // BM25
-    // ═══════════════════════════════════════════════════════════════
-    class BM25 {
-        constructor(documents, k1 = 1.5, b = 0.75) {
-            this.k1 = k1;
-            this.b = b;
-            this.documents = documents;
-            this.docCount = documents.length;
-            this.avgDocLength = 0;
-            this.docLengths = [];
-            this.idf = {};
-            this.initialize();
-        }
-        
-        tokenize(text) {
-            return text.toLowerCase()
-                .replace(/[^\w\s]/g, ' ')
-                .split(/\s+/)
-                .filter(t => t.length > 2);
-        }
-        
-        initialize() {
-            const docFreq = {};
-            let totalLength = 0;
-            
-            this.documents.forEach((doc, i) => {
-                const tokens = this.tokenize(doc);
-                this.docLengths[i] = tokens.length;
-                totalLength += tokens.length;
-                
-                const uniqueTokens = new Set(tokens);
-                uniqueTokens.forEach(token => {
-                    docFreq[token] = (docFreq[token] || 0) + 1;
-                });
-            });
-            
-            this.avgDocLength = totalLength / this.docCount;
-            
-            for (const token in docFreq) {
-                this.idf[token] = Math.log((this.docCount - docFreq[token] + 0.5) / (docFreq[token] + 0.5) + 1);
-            }
-        }
-        
-        score(queryTokens, docIndex) {
-            const docTokens = this.tokenize(this.documents[docIndex]);
-            const docLength = this.docLengths[docIndex];
-            const tokenFreq = {};
-            
-            docTokens.forEach(token => {
-                tokenFreq[token] = (tokenFreq[token] || 0) + 1;
-            });
-            
-            let score = 0;
-            queryTokens.forEach(token => {
-                if (this.idf[token] && tokenFreq[token]) {
-                    const tf = tokenFreq[token];
-                    const idf = this.idf[token];
-                    const norm = this.k1 * (1 - this.b + this.b * (docLength / this.avgDocLength));
-                    score += idf * (tf * (this.k1 + 1)) / (tf + norm);
-                }
-            });
-            
-            return score;
-        }
-        
-        search(query, topK = 50) {
-            const queryTokens = this.tokenize(query);
-            const scores = this.documents.map((_, i) => ({
-                index: i,
-                score: this.score(queryTokens, i)
-            }));
-            
-            return scores
-                .filter(s => s.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, topK)
-                .map(s => s.index);
-        }
-    }
-
-    let bm25Index = null;
-
-    function initBM25() {
-        if (bm25Index || database.length === 0) return;
-        
-        console.log("🔄 Inizializzazione BM25...");
-        const documents = database.map(d => 
-            `${d.nominativo} ${d.scheda || ''} ${d.regione} ${d.città_nascita}`.toLowerCase()
-        );
-        bm25Index = new BM25(documents);
-        console.log(`✅ BM25 pronto (${database.length} documenti)`);
-    }
-
-    async function hybridSearch(query, topK = 30) {
-        initBM25();
-        
-        const bm25Results = bm25Index.search(query, 100);
-        
-        let semanticResults = [];
-        if (CACHE.csvEmbeddings && CACHE.csvEmbeddings.length > 0) {
-            const key = localStorage.getItem('gemini_key');
-            if (key) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: "models/text-embedding-004",
-                            content: { parts: [{ text: query }] }
-                        })
-                    });
-                    const data = await res.json();
-                    
-                    if (data.embedding) {
-                        const queryEmbed = data.embedding.values;
-                        
-                        semanticResults = CACHE.csvEmbeddings
-                            .map((embed, i) => ({
-                                index: i,
-                                score: cosineSimilarity(queryEmbed, embed)
-                            }))
-                            .filter(s => s.score > 0.25)
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 100)
-                            .map(s => s.index);
-                    }
-                } catch (e) {
-                    console.error("Errore semantica:", e);
-                }
-            }
-        }
-        
-        const k = 60;
-        const scores = {};
-        
-        bm25Results.forEach((idx, rank) => {
-            scores[idx] = (scores[idx] || 0) + 1 / (k + rank + 1);
-        });
-        
-        semanticResults.forEach((idx, rank) => {
-            scores[idx] = (scores[idx] || 0) + 1 / (k + rank + 1);
-        });
-        
-        const fusedResults = Object.entries(scores)
-            .map(([idx, score]) => ({ index: parseInt(idx), score }))
-            .sort((a, b) => b.score - a.score)
-            .slice(0, topK)
-            .map(s => database[s.index]);
-        
-        console.log(`✅ Trovati ${fusedResults.length} risultati`);
-        return fusedResults;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // ANALIZZATORE DI PERCORSI E COLLEGAMENTI AVANZATO
-    // ═══════════════════════════════════════════════════════════════
-    function analizzaPercorsiComplessi(partigiani) {
-        const percorsi = {
-            migrazioniGeografiche: [],
-            retiBrigate: [],
-            cronologieCondivise: [],
-            zoneOperative: [],
-            destiniComuni: []
-        };
-        
-        // 1. MIGRAZIONI GEOGRAFICHE (nascita → operazione)
-        const migrazioni = {};
-        partigiani.forEach(p => {
-            if (p.regione.includes('/')) {
-                const [nascita, operazione] = p.regione.split('/').map(r => r.trim());
-                if (nascita !== operazione) {
-                    const chiave = `${nascita}→${operazione}`;
-                    if (!migrazioni[chiave]) migrazioni[chiave] = [];
-                    migrazioni[chiave].push({
-                        nome: p.nominativo,
-                        citta: p.città_nascita,
-                        bio: p.scheda
-                    });
-                }
-            }
-        });
-        
-        for (const [percorso, membri] of Object.entries(migrazioni)) {
-            if (membri.length >= 2) {
-                // Analizza le formazioni comuni tra i migranti
-                const formazioniComuni = {};
-                membri.forEach(m => {
-                    const bioLower = (m.bio || '').toLowerCase();
-                    const matchBrigata = bioLower.match(/brigata\s+([a-z]+)/i);
-                    if (matchBrigata) {
-                        const brigata = matchBrigata[0];
-                        if (!formazioniComuni[brigata]) formazioniComuni[brigata] = [];
-                        formazioniComuni[brigata].push(m.nome);
-                    }
-                });
-                
-                percorsi.migrazioniGeografiche.push({
-                    percorso,
-                    conteggio: membri.length,
-                    membri: membri.map(m => m.nome),
-                    citta: [...new Set(membri.map(m => m.citta).filter(c => c))],
-                    formazioni: formazioniComuni
-                });
-            }
-        }
-        
-        // 2. RETI DI BRIGATE E FORMAZIONI
-        const brigate = {};
-        partigiani.forEach(p => {
-            const bio = p.scheda || '';
-            const matches = bio.match(/(?:brigata|divisione|battaglione)\s+([a-zA-Zàèéìòù\s]+?)(?:\.|,|;|\s+nel|\s+della)/gi);
-            if (matches) {
-                matches.forEach(match => {
-                    const brigata = match.trim();
-                    if (!brigate[brigata]) brigate[brigata] = [];
-                    brigate[brigata].push({
-                        nome: p.nominativo,
-                        regione: p.regione,
-                        bio: p.scheda
-                    });
-                });
-            }
-        });
-        
-        for (const [brigata, membri] of Object.entries(brigate)) {
-            if (membri.length >= 2) {
-                // Analizza eventi comuni nella brigata
-                const eventiComuni = [];
-                const bioUnita = membri.map(m => m.bio).join(' ').toLowerCase();
-                if (bioUnita.includes('rastrellamento')) eventiComuni.push('rastrellamento');
-                if (bioUnita.includes('8 settembre')) eventiComuni.push('8 settembre');
-                if (bioUnita.includes('cattura')) eventiComuni.push('cattura');
-                if (bioUnita.includes('fucilat')) eventiComuni.push('fucilazione');
-                
-                percorsi.retiBrigate.push({
-                    brigata,
-                    conteggio: membri.length,
-                    membri: membri.map(m => m.nome),
-                    regioni: [...new Set(membri.map(m => m.regione.split('/')[0]))],
-                    eventi: eventiComuni
-                });
-            }
-        }
-        
-        // 3. CRONOLOGIE CONDIVISE (eventi nello stesso periodo)
-        const eventi = {
-            '8 settembre': [],
-            'rastrellamento': [],
-            'deportazione': [],
-            'liberazione': [],
-            '1944': [],
-            '1945': []
-        };
-        
-        partigiani.forEach(p => {
-            const bio = (p.scheda || '').toLowerCase();
-            for (const [evento, lista] of Object.entries(eventi)) {
-                if (bio.includes(evento)) {
-                    lista.push({
-                        nome: p.nominativo,
-                        regione: p.regione,
-                        bio: p.scheda
-                    });
-                }
-            }
-        });
-        
-        for (const [evento, membri] of Object.entries(eventi)) {
-            if (membri.length >= 3) {
-                // Trova sotto-gruppi con dettagli specifici
-                const dettagli = {};
-                membri.forEach(m => {
-                    const bio = m.bio.toLowerCase();
-                    if (evento === 'rastrellamento') {
-                        const match = bio.match(/rastrellamento\s+(?:del|di|in)\s+([a-z\s]+?)(?:\.|,|nel)/i);
-                        if (match) {
-                            const luogo = match[1].trim();
-                            if (!dettagli[luogo]) dettagli[luogo] = [];
-                            dettagli[luogo].push(m.nome);
-                        }
-                    }
-                });
-                
-                percorsi.cronologieCondivise.push({
-                    evento,
-                    conteggio: membri.length,
-                    membri: membri.map(m => m.nome),
-                    dettagli
-                });
-            }
-        }
-        
-        // 4. ZONE OPERATIVE COMUNI
-        const zone = {};
-        const zoneKeywords = ['valsesia', 'val d\'ossola', 'langhe', 'carnia', 'appennino', 'prealpi', 'val di susa', 'val chisone'];
-        
-        partigiani.forEach(p => {
-            const bio = (p.scheda || '').toLowerCase();
-            zoneKeywords.forEach(zona => {
-                if (bio.includes(zona)) {
-                    if (!zone[zona]) zone[zona] = [];
-                    zone[zona].push({
-                        nome: p.nominativo,
-                        regione: p.regione
-                    });
-                }
-            });
-        });
-        
-        for (const [zona, membri] of Object.entries(zone)) {
-            if (membri.length >= 2) {
-                percorsi.zoneOperative.push({
-                    zona,
-                    conteggio: membri.length,
-                    membri: membri.map(m => m.nome)
-                });
-            }
-        }
-        
-        // 5. DESTINI COMUNI (deportazione, fucilazione, ecc.)
-        const destini = {
-            'mauthausen': [],
-            'dachau': [],
-            'buchenwald': [],
-            'fucilat': [],
-            'cadut': []
-        };
-        
-        partigiani.forEach(p => {
-            const bio = (p.scheda || '').toLowerCase();
-            for (const [destino, lista] of Object.entries(destini)) {
-                if (bio.includes(destino)) {
-                    lista.push({
-                        nome: p.nominativo,
-                        regione: p.regione,
-                        bio: p.scheda
-                    });
-                }
-            }
-        });
-        
-        for (const [destino, membri] of Object.entries(destini)) {
-            if (membri.length >= 2) {
-                percorsi.destiniComuni.push({
-                    destino,
-                    conteggio: membri.length,
-                    membri: membri.map(m => m.nome)
-                });
-            }
-        }
-        
-        return percorsi;
-    }
+// --- FUNZIONE DISTANZA GEO-RADIALE ---
+function getDist(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Raggio della Terra in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+    async function sendAIMessage() {
+    const key = localStorage.getItem('gemini_key') || prompt("API Key:");
+    if (!key) return; 
+    localStorage.setItem('gemini_key', key);
     
-    function generaTestoPercorsi(percorsi) {
-        let testo = "";
-        
-        if (percorsi.migrazioniGeografiche.length > 0) {
-            testo += "PERCORSI GEOGRAFICI:\n";
-            percorsi.migrazioniGeografiche.forEach(p => {
-                testo += `- ${p.percorso}: ${p.membri.slice(0, 8).join(', ')}${p.membri.length > 8 ? '...' : ''} (${p.conteggio} persone)\n`;
-                if (Object.keys(p.formazioni).length > 0) {
-                    for (const [formazione, nomi] of Object.entries(p.formazioni)) {
-                        testo += `  → Nella ${formazione}: ${nomi.join(', ')}\n`;
-                    }
-                }
-            });
-            testo += "\n";
-        }
-        
-        if (percorsi.retiBrigate.length > 0) {
-            testo += "FORMAZIONI COMUNI:\n";
-            percorsi.retiBrigate.forEach(p => {
-                testo += `- ${p.brigata}: ${p.membri.slice(0, 6).join(', ')}${p.membri.length > 6 ? '...' : ''} (${p.conteggio} membri)\n`;
-                if (p.eventi.length > 0) {
-                    testo += `  → Eventi: ${p.eventi.join(', ')}\n`;
-                }
-            });
-            testo += "\n";
-        }
-        
-        if (percorsi.zoneOperative.length > 0) {
-            testo += "ZONE OPERATIVE:\n";
-            percorsi.zoneOperative.forEach(p => {
-                testo += `- ${p.zona}: ${p.membri.slice(0, 6).join(', ')}${p.membri.length > 6 ? '...' : ''} (${p.conteggio} operativi)\n`;
-            });
-            testo += "\n";
-        }
-        
-        if (percorsi.cronologieCondivise.length > 0) {
-            testo += "EVENTI CONDIVISI:\n";
-            percorsi.cronologieCondivise.forEach(p => {
-                testo += `- ${p.evento}: ${p.conteggio} partigiani\n`;
-                if (Object.keys(p.dettagli).length > 0) {
-                    for (const [luogo, nomi] of Object.entries(p.dettagli)) {
-                        if (nomi.length >= 2) {
-                            testo += `  → ${luogo}: ${nomi.slice(0, 4).join(', ')}${nomi.length > 4 ? '...' : ''}\n`;
-                        }
-                    }
-                }
-            });
-            testo += "\n";
-        }
-        
-        if (percorsi.destiniComuni.length > 0) {
-            testo += "DESTINI COMUNI:\n";
-            percorsi.destiniComuni.forEach(p => {
-                testo += `- ${p.destino}: ${p.membri.slice(0, 8).join(', ')}${p.membri.length > 8 ? '...' : ''} (${p.conteggio} persone)\n`;
-            });
-        }
-        
-        return testo;
-    }
-    
-    function analizzaRelazioni(partigiani) {
-        const relazioni = {
-            geografiche: [],
-            temporali: [],
-            organizzative: [],
-            tematiche: []
-        };
-        
-        const gruppiRegione = {};
-        const gruppiCitta = {};
-        
-        partigiani.forEach(p => {
-            const regione = p.regione.split('/')[0].trim();
-            if (!gruppiRegione[regione]) gruppiRegione[regione] = [];
-            gruppiRegione[regione].push(p.nominativo);
-            
-            if (p.città_nascita) {
-                if (!gruppiCitta[p.città_nascita]) gruppiCitta[p.città_nascita] = [];
-                gruppiCitta[p.città_nascita].push(p.nominativo);
-            }
-        });
-        
-        for (const [regione, nomi] of Object.entries(gruppiRegione)) {
-            if (nomi.length >= 3) {
-                relazioni.geografiche.push({
-                    tipo: 'regione',
-                    valore: regione,
-                    membri: nomi,
-                    conteggio: nomi.length
-                });
-            }
-        }
-        
-        for (const [citta, nomi] of Object.entries(gruppiCitta)) {
-            if (nomi.length >= 2) {
-                relazioni.geografiche.push({
-                    tipo: 'città',
-                    valore: citta,
-                    membri: nomi,
-                    conteggio: nomi.length
-                });
-            }
-        }
-        
-        const temiComuni = {};
-        const keywords = [
-            'deportato', 'deportazione', 'lager', 'mauthausen', 'dachau',
-            'IMI', 'internato', 'militare',
-            'GAP', 'SAP', 'brigata', 'divisione', 'battaglione',
-            'staffetta', 'staffettista',
-            'CLN', 'comitato',
-            'fucilato', 'caduto', 'catturato', 'arrestato',
-            'rastrellamento', 'rappresaglia', 'strage',
-            '8 settembre', 'liberazione', '25 aprile',
-            'partigiano', 'partigiana', 'combattente'
-        ];
-        
-        partigiani.forEach(p => {
-            const bio = (p.scheda || '').toLowerCase();
-            keywords.forEach(kw => {
-                if (bio.includes(kw.toLowerCase())) {
-                    if (!temiComuni[kw]) temiComuni[kw] = [];
-                    temiComuni[kw].push(p.nominativo);
-                }
-            });
-        });
-        
-        for (const [tema, nomi] of Object.entries(temiComuni)) {
-            if (nomi.length >= 2) {
-                relazioni.tematiche.push({
-                    tema,
-                    membri: nomi,
-                    conteggio: nomi.length
-                });
-            }
-        }
-        
-        const formazioniRegex = /(?:brigata|divisione|battaglione|gruppo|banda)\s+([a-zA-ZàèéìòùÀÈÉÌÒÙ\s]+)/gi;
-        const formazioni = {};
-        
-        partigiani.forEach(p => {
-            const bio = p.scheda || '';
-            let match;
-            while ((match = formazioniRegex.exec(bio)) !== null) {
-                const nomeFormazione = match[0].trim();
-                if (!formazioni[nomeFormazione]) formazioni[nomeFormazione] = [];
-                formazioni[nomeFormazione].push(p.nominativo);
-            }
-        });
-        
-        for (const [formazione, nomi] of Object.entries(formazioni)) {
-            if (nomi.length >= 2) {
-                relazioni.organizzative.push({
-                    formazione,
-                    membri: nomi,
-                    conteggio: nomi.length
-                });
-            }
-        }
-        
-        const migrazioni = {};
-        partigiani.forEach(p => {
-            if (p.regione.includes('/')) {
-                const [nascita, operazione] = p.regione.split('/').map(r => r.trim());
-                if (nascita !== operazione) {
-                    const chiave = `${nascita} → ${operazione}`;
-                    if (!migrazioni[chiave]) migrazioni[chiave] = [];
-                    migrazioni[chiave].push(p.nominativo);
-                }
-            }
-        });
-        
-        relazioni.migrazioni = Object.entries(migrazioni)
-            .filter(([_, nomi]) => nomi.length >= 2)
-            .map(([percorso, nomi]) => ({
-                percorso,
-                membri: nomi,
-                conteggio: nomi.length
-            }));
-        
-        return relazioni;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // RICERCA LIBRO OTTIMIZZATA
-    // ═══════════════════════════════════════════════════════════════
-    async function searchLibroSemantico(query, topK = 3) {
-        if (!CACHE.libroChunks || CACHE.libroChunks.length === 0) {
-            console.log("📚 Libro non disponibile");
-            return { chunks: [], maxScore: 0 };
-        }
-        
-        const key = localStorage.getItem('gemini_key');
-        if (!key) return { chunks: [], maxScore: 0 };
-        
-        try {
-            if (!CACHE.libroEmbeddings || CACHE.libroEmbeddings.length === 0) {
-                console.log("📚 Embeddings libro non disponibili");
-                return { chunks: [], maxScore: 0 };
-            }
-            
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "models/text-embedding-004",
-                    content: { parts: [{ text: query }] }
-                })
-            });
-            const data = await res.json();
-            
-            if (!data.embedding) return { chunks: [], maxScore: 0 };
-            
-            const queryEmbed = data.embedding.values;
-            
-            const scoredChunks = CACHE.libroEmbeddings
-                .map((embed, i) => ({
-                    chunk: CACHE.libroChunks[i],
-                    score: cosineSimilarity(queryEmbed, embed)
-                }))
-                .filter(s => s.score >= 0.35)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, topK);
-            
-            const maxScore = scoredChunks.length > 0 ? scoredChunks[0].score : 0;
-            
-            if (scoredChunks.length === 0) {
-                console.log("📚 Nessun chunk rilevante (soglia: 0.35)");
-                return { chunks: [], maxScore: 0 };
-            }
-            
-            console.log(`✅ Libro: ${scoredChunks.length} chunk (score: ${maxScore.toFixed(3)})`);
-            return { chunks: scoredChunks, maxScore };
-            
-        } catch (e) {
-            console.error("❌ Errore libro:", e);
-            return { chunks: [], maxScore: 0 };
-        }
-    }
-
-// ═══════════════════════════════════════════════════════════════
-// AI CHAT - VERSIONE ANALITICA NARRATIVA (Senza Fluff, ma Discorsiva)
-// ═══════════════════════════════════════════════════════════════
-async function sendAIMessage() {
     const input = document.getElementById('ai-chat-input');
-    const userMsg = input.value.trim();
-    if (!userMsg) return;
+    const box = document.getElementById('ai-chat-messages');
+    let userText = input.value.trim();
+    if (!userText) return;
 
-    addChatMessage(userMsg, 'user');
-    input.value = '';
-    const aiMsgElement = addChatMessage('', 'ai');
-    
-    const pContainer = document.getElementById('ai-progress-container');
-    const pBar = document.getElementById('ai-progress-bar');
-    const sText = document.getElementById('ai-status-text');
+    box.innerHTML += `<div class="msg msg-user">${userText}</div>`;
+    input.value = "";
+    const aiMsgId = "ai-" + Date.now();
+    box.innerHTML += `<div id="${aiMsgId}" class="msg msg-ai"></div>`;
+    const aiMsgElement = document.getElementById(aiMsgId);
+    box.scrollTop = box.scrollHeight;
 
     try {
-        pContainer.style.display = 'block';
-        sText.innerText = "Consultando il libro...";
+        let q = userText.toLowerCase();
         
-        // RECUPERO CONTESTO (Importante per l'integrazione libro)
-        let bookContext = "";
-        if (typeof findRelevantBookChunks === "function") {
-            bookContext = await findRelevantBookChunks(userMsg);
+        // 1. FILTRO PERTINENZA (Max 80 record, Bio 250ch)
+        let matches = database.filter(d => {
+            const ricercaTesto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
+            return q.split(/\s+/).some(p => p.length > 3 && ricercaTesto.includes(p));
+        }).slice(0, 80);
+
+        const nomiDaLinkare = matches.map(d => d.nominativo).sort((a, b) => b.length - a.length);
+
+        let estrattiLibro = "";
+        if (typeof TESTO_LIBRO !== 'undefined') {
+            const parole = q.split(/\s+/).filter(p => p.length > 4);
+            const paragrafi = TESTO_LIBRO.split("\n\n");
+            estrattiLibro = paragrafi.filter(p => parole.some(w => p.toLowerCase().includes(w))).slice(0, 8).join("\n\n");
         }
 
-        const prompt = `DOMANDA: ${userMsg}\nCONTESTO LIBRO: ${bookContext}\nDATABASE: ${JSON.stringify(database.slice(0, 30))}`;
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                system_instruction: {
-                    parts: [{ text: "Sei l'Assistente Narratore. Bio max 250 car. Usa <libro-narrato> per i fatti storici. No gerarchie tra movimenti. Inizia subito a rispondere." }]
-                }
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ 
+                        text: `Agisci come Archivista Storico esperto 1943-45. 
+                        
+                        STRUTTURA OBBLIGATORIA:
+                        1. **FATTI ACCERTATI**: Introduzione brevissima (max 2 righe). Poi un ELENCO PUNTATO con i nomi [[Nome Cognome]] e una sintesi estrema dei dati (regione/fatti). Ogni nome deve stare su una nuova riga.
+                        2. **PERCORSI E RELAZIONI**: Approfondimento sui legami logici, geografici (valli, comuni) e brigate.
+                        3. **INTEGRAZIONE LIBRO**: Usa i tag <libro-narrato> e <libro-citazione>.
+                        
+                        REGOLE STORICHE: 
+                        - Pari dignità tra armata, civili e IMI.
+                        - Regione: 'Nascita / Operazione'. Usa cultura storica per valli.
+
+                        DATI:
+                        ${matches.map(d => `${d.nominativo} (${d.regione}): ${d.scheda?.substring(0,250)}`).join("\n")}
+                        LIBRO: ${estrattiLibro}
+                        DOMANDA: "${userText}"`
+                    }] 
+                }] 
             })
         });
 
-        let fullText = "";
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        const decoder = new TextDecoder("utf-8");
+        let fullText = "";
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             const chunk = decoder.decode(value);
             const lines = chunk.split("\n");
-            for (const line of lines) {
+            lines.forEach(line => {
                 if (line.startsWith("data: ")) {
                     try {
-                        const json = JSON.parse(line.replace("data: ", ""));
+                        const json = JSON.parse(line.substring(6));
                         fullText += json.candidates[0].content.parts[0].text;
-                        aiMsgElement.innerHTML = formatAIResponse(fullText);
+                        aiMsgElement.innerText = fullText;
+                        box.scrollTop = box.scrollHeight;
                     } catch (e) {}
                 }
-            }
+            });
         }
-        aiMsgElement.classList.add('finished');
-        pContainer.style.display = 'none';
-    } catch (e) {
-        aiMsgElement.innerText = "Errore: " + e.message;
-        pContainer.style.display = 'none';
-    }
-}
 
-map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
+        // 2. POST-PROCESSING (GRAFICA DI IERI + LINKER)
+        let html = fullText
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
+            .replace(/\n/g, '<br>')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; border-radius:4px; color:#333;"><b>📜 APPROFONDIMENTO DAL LIBRO:</b><br>')
+            .replace(/<\/libro-narrato>/g, '</div>')
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50;"><b>💬 CITAZIONE DAL VOLUME:</b><br>"')
+            .replace(/<\/libro-citazione>/g, '"</div>');
 
-window.addEventListener('load', () => {
-    const btnHTML = `<div style="position:fixed; top:80px; right:25px; z-index:6000;">
-        <button id="embed-btn" onclick="precomputeAllEmbeddings()" style="background:#2ecc71; color:white; border:none; border-radius:12px; padding:10px 15px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 4px 10px rgba(0,0,0,0.2);">🚀 Sincronizza AI (Embeddings)</button>
-    </div>`;
-    document.body.insertAdjacentHTML('beforeend', btnHTML);
-});
-// Funzione per trasformare i tag dell'AI in elementi grafici
-function formatAIResponse(text) {
-    if (!text) return "";
-
-    let html = text
-        // 1. Trasforma <libro-narrato> nei box azzurri con icona
-        .replace(/<libro-narrato>([\s\S]*?)<\/libro-narrato>/g, '<libro-narrato>$1</libro-narrato>')
-        
-        // 2. Trasforma <libro-citazione> nei box arancioni con virgolette
-        .replace(/<libro-citazione>([\s\S]*?)<\/libro-citazione>/g, '<libro-citazione>$1</libro-citazione>')
-        
-        // 3. Trasforma [[Nome Partigiano]] in link cliccabili che aprono la scheda
-        .replace(/\[\[(.*?)\]\]/g, (match, nome) => {
-            return `<span class="link-partigiano" onclick="cercaEAprimaPartigiano('${nome.trim()}')">${nome}</span>`;
+        // Linker Universale (Scansione finale per rendere cliccabile tutto)
+        nomiDaLinkare.forEach(nome => {
+            const n = nome.trim();
+            const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
+            html = html.replace(regex, (match) => {
+                if (match.includes('onclick')) return match;
+                return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
+            });
         });
 
-    return html;
+        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+
+    } catch (e) { aiMsgElement.innerText = "Errore: " + e.message; }
 }
 
-// Funzione di supporto per rendere i link dei partigiani funzionanti
-function cercaEAprimaPartigiano(nome) {
-    // Chiude la chat per vedere la mappa
-    toggleAIChat();
-    // Usa la funzione di ricerca già esistente nel tuo index.html
-    document.getElementById('search-name').value = nome;
-    filtra('name');
-    
-    // Se c'è un solo risultato, lo apre automaticamente dopo un breve delay
-    setTimeout(() => {
-        const items = document.querySelectorAll('.res-item');
-        if (items.length > 0) items[0].click();
-    }, 500);
-}
-// Aggiungi queste se mancano in fondo allo script
-async function getEmbedding(text) {
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: "models/text-embedding-004", content: { parts: [{ text }] } })
-        });
-        const data = await res.json();
-        return data.embedding ? data.embedding.values : null;
-    } catch (e) { return null; }
-}
-
-function cosineSimilarity(a, b) {
-    let dot = 0, mA = 0, mB = 0;
-    for(let i=0; i<a.length; i++) {
-        dot += a[i] * b[i];
-        mA += a[i] * a[i];
-        mB += b[i] * b[i];
-    }
-    return dot / (Math.sqrt(mA) * Math.sqrt(mB));
-}
-    
+    map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
