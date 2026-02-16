@@ -375,7 +375,7 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Int
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio zx3.1</span>
+        <span>Assistente Archivio XXX1.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -809,8 +809,30 @@ function espandiQueryConSinonimi(queryOriginale) {
 
     window.addEventListener('load', () => {
         setTimeout(() => {
-            CACHE.initLibro();
-        }, 2000);
+            CACHE.initLibro = async function() {
+    if (this.libroEmbeddings || typeof TESTO_LIBRO === 'undefined') return;
+
+    // Dividiamo il libro basandoci sui blocchi delle testimonianze.
+    // Nel tuo testo, ogni storia inizia spesso con il nome e "Nato a..."
+    // Usiamo una logica che raggruppa i paragrafi in blocchi più significativi (circa 2000 caratteri)
+    const righe = TESTO_LIBRO.split('\n');
+    let chunks = [];
+    let chunkAttuale = "";
+
+    for (let riga of righe) {
+        chunkAttuale += riga + "\n";
+        // Quando superiamo i 1500 caratteri e troviamo un punto, chiudiamo il chunk
+        if (chunkAttuale.length > 1500 && riga.trim().endsWith('.')) {
+            chunks.push(chunkAttuale.trim());
+            chunkAttuale = "";
+        }
+    }
+    if (chunkAttuale) chunks.push(chunkAttuale.trim());
+
+    this.libroChunks = chunks.filter(c => c.length > 100);
+    console.log(`✅ Libro pronto: ${this.libroChunks.length} sezioni.`);
+    await this.precomputeLibroEmbeddings();
+};
     });
 
     // ═══════════════════════════════════════════════════════════════
@@ -1711,32 +1733,35 @@ async function sendAIMessage() {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `Agisci come un Archivista Storico Analitico. Esponi i fatti senza preamboli, introduzioni o saluti.
+                        text: `Agisci come un Archivista Storico Analitico. Esponi i fatti senza preamboli, introduzioni o saluti. 
 
-DATI ARCHIVIO (Usa SOLO questi per i nomi):
+DATI ARCHIVIO (Usa SOLO questi per i nomi e i dati anagrafici):
 ${contextRecords.map(d => `[[${d.nominativo}]] | ${d.regione} | ${d.scheda}`).join('\n')}
 
-ESTRATTI LIBRO (Contesto storico):
-${estrattiLibro || "Nessun dato pertinente dal libro."}
+ESTRATTI LIBRO (Contesto narrativo e approfondimento):
+${estrattiLibro || "Nessun dato specifico nel libro per questa ricerca."}
 
 RELAZIONI RILEVATE:
 ${percorsiTesto}
 
-STRUTTURA OBBLIGATORIA:
+STRUTTURA OBBLIGATORIA DELLA RISPOSTA:
 
 1. **FATTI ACCERTATI**
-Presenta i partigiani trovati raggruppandoli per Brigata, zona o destino comune. Usa [[Nome Cognome]] per ogni link. Sii schematico ma preciso.
+Presenta i partigiani trovati raggruppandoli per Brigata, zona o destino comune. Usa sempre [[Nome Cognome]] per ogni link. Sii schematico e preciso.
 
 2. **APPROFONDIMENTI E COLLEGAMENTI**
-In questa sezione Sii DISCORSIVO. Analizza i dati per connettere le vite dei partigiani. Spiega i movimenti geografici (es: migrazioni Sud-Nord), le formazioni condivise e le date comuni (es: rastrellamenti dell'inverno '44). Non inventare nulla, ma costruisci una narrazione fluida basata sui dati.
+In questa sezione Sii DISCORSIVO. Connetti le vite dei partigiani. Spiega i movimenti geografici (es: migrazioni Sud-Nord), le formazioni condivise e le date comuni. Non inventare nulla.
 
-3. **INTEGRAZIONE LIBRO**
-Se gli estratti del libro sono pertinenti, inseriscili qui usando i tag <libro-narrato> per la spiegazione e <libro-citazione> per le frasi del libro.
+3. **INTEGRAZIONE DAL MEMORIALE (LIBRO)**
+IMPORTANTE: Se e solo se gli "ESTRATTI LIBRO" sopra citano persone o fatti che corrispondono ai partigiani del CSV:
+- Usa il tag <libro-narrato> per inserire i dettagli storici più ampi trovati nel libro.
+- Usa il tag <libro-citazione> per riportare tra virgolette una frase significativa o una testimonianza diretta presente nel libro.
+- Se il libro non aggiunge nulla di specifico, ometti questa sezione o dai un brevissimo contesto storiografico generale senza i tag.
 
-REGOLE:
-- Niente "Ecco i risultati" o "Spero sia utile".
-- Sezione Approfondimenti: connetti i dati in modo logico e scorrevole.
-- Ogni nome partigiano deve essere tra [[ ]].`
+REGOLE AGGIUNTIVE:
+- Niente "Ecco i risultati" o "Certamente".
+- Ogni nome partigiano deve essere tra [[ ]].
+- I tag <libro-narrato> e <libro-citazione> servono per dare profondità emotiva e storica rispetto alla scheda tecnica del CSV.`
                     }]
                 }]
             })
@@ -1780,14 +1805,15 @@ REGOLE:
 
 function formattaRispostaStreaming(text, records) {
     let html = text
-        .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:20px; margin-bottom:10px; padding-bottom:8px; font-size:12px; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #3498db; font-weight:700;">$1</b>')
+        // Gestione grassetti e titoli
+        .replace(/\*\*(.*?)\*\*/g, '<b class="ai-title">$1</b>')
+        // Gestione dei tuoi link speciali [[ ]]
+        .replace(/\[\[(.*?)\]\]/g, (match, nome) => {
+            return `<span class="link-partigiano" onclick="apri('${nome.replace(/'/g, "\\'")}')">${nome}</span>`;
+        })
+        // Lasciamo passare i tag <libro-narrato> e <libro-citazione> così come sono
+        // perché il tuo CSS li sta già formattando!
         .replace(/\n/g, '<br>');
-
-    records.forEach(r => {
-        const nomeReg = r.nominativo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`\\[\\[${nomeReg}\\]\\]`, 'gi');
-        html = html.replace(regex, `<span class="link-partigiano" onclick="apri('${r.nominativo.replace(/'/g, "\\'")}')">${r.nominativo}</span>`);
-    });
 
     return html;
 }
@@ -1866,6 +1892,20 @@ async function precomputeAllEmbeddings() {
         btn.disabled = false;
         btn.innerHTML = '🚀 Riprova Calcolo';
     }
+// --- DENTRO sendAIMessage ---
+updateProgress(30, "Consultazione database...");
+let contextRecords = await hybridSearch(userText, 60);
+
+updateProgress(60, "Ricerca inerenze nel libro...");
+// Prendiamo i primi 10 nomi dal CSV per cercare nel libro
+const nomiDalCSV = contextRecords.slice(0, 10).map(d => d.nominativo).join(" ");
+// Interroghiamo il libro usando: Domanda Utente + Nomi trovati nel CSV + Regioni
+const libroResult = await searchLibroSemantico(userText + " " + nomiDalCSV, 5);
+
+let estrattiLibro = "";
+// Usiamo una soglia che permetta al libro di entrare solo se c'è sostanza
+if (libroResult.maxScore > 0.32) { 
+    estrattiLibro = libroResult.chunks.map(s => s.chunk).join('\n\n');
 }
 
 map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
@@ -1879,5 +1919,6 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+
 
 
