@@ -452,9 +452,37 @@ DOMANDA: "${userText}"`;
         let m;
         while ((m = regexSug.exec(fullText)) !== null) if (m[1]) suggerimenti.push(m[1].trim());
 
-        // FIX libro-narrato / libro-citazione: ora usiamo classi CSS (.libro-narrato, .libro-citazione)
-        // invece di stili inline e tag non-standard
-        let html = fullText.replace(/^SUGGERIMENTO:.*$/gim, '')
+        // FIX NOMI DA LINKARE: estrae tutti i [[Nome Cognome]] che Gemini ha scritto
+        // nel testo grezzo e li aggiunge a nomiDaLinkare.
+        // Questo cattura sia i nomi presenti nel CSV ma non nei matches iniziali
+        // (es. Gastone Malaguti citato in una risposta su Irma Bandiera),
+        // sia figure storiche non nel CSV ma marcate dal modello (es. Irma Bandiera stessa).
+        // Se apri() non trova la scheda nel database, il click è semplicemente silenzioso.
+        const regexNomi = /\[\[([^\]]+)\]\]/g;
+        let nm;
+        while ((nm = regexNomi.exec(fullText)) !== null) {
+            const nomeGemini = nm[1].trim();
+            if (nomeGemini.length > 3 && !nomiDaLinkare.includes(nomeGemini)) {
+                nomiDaLinkare.push(nomeGemini);
+            }
+        }
+        // Ri-ordina per lunghezza discendente: i nomi più lunghi vanno matchati prima
+        // per evitare che "Mario Rossi" venga linkato prima di "Mario Rossi Junior"
+        nomiDaLinkare.sort((a, b) => b.length - a.length);
+
+        // FIX libro-narrato / libro-citazione:
+        // Gemini a volte inserisce i tag <libro-narrato> nel mezzo di frasi,
+        // preceduti da backtick o altra punteggiatura, rompendo l'HTML.
+        // Prima di tutto puliamo il testo grezzo: rimuoviamo backtick intorno ai tag
+        // e forziamo i tag su righe proprie così il <div> non si apre inline.
+        let testoGrezzo = fullText
+            .replace(/^SUGGERIMENTO:.*$/gim, '')
+            .replace(/`\s*<libro-narrato>/g, '\n<libro-narrato>')
+            .replace(/<\/libro-narrato>\s*`/g, '</libro-narrato>\n')
+            .replace(/`\s*<libro-citazione>/g, '\n<libro-citazione>')
+            .replace(/<\/libro-citazione>\s*`/g, '</libro-citazione>\n');
+
+        let html = testoGrezzo
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; border-bottom:1px solid #eee; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
             .replace(/<libro-narrato>/g, '<div class="libro-narrato"><b>📜 APPROFONDIMENTO:</b><br>')
@@ -462,7 +490,10 @@ DOMANDA: "${userText}"`;
             .replace(/<libro-citazione>/g, '<div class="libro-citazione"><b>💬 CITAZIONE:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // Linker Universale: rende cliccabile ogni nome trovato nel testo
+        // Linker Universale: rende cliccabile ogni nome trovato nel testo.
+        // Lo strip [[]] viene fatto QUI dentro il replace, non sull'innerHTML finale,
+        // così i nomi vengono prima linkati (con le quadre come ancora regex)
+        // e poi le quadre residue vengono rimosse contestualmente.
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -474,6 +505,9 @@ DOMANDA: "${userText}"`;
             });
         });
 
+        // Rimuove eventuali [[ ]] rimasti orfani (nomi citati da Gemini non in nomiDaLinkare)
+        html = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+
         // Chips suggerimenti
         if (suggerimenti.length > 0) {
             html += `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; border-top:1px dashed #ccc; padding-top:15px;">`;
@@ -484,7 +518,7 @@ DOMANDA: "${userText}"`;
             html += `</div>`;
         }
 
-        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+        aiMsgElement.innerHTML = html;
         aiMsgElement.classList.add('finished');
         box.scrollTop = box.scrollHeight;
 
