@@ -1,0 +1,393 @@
+/* ============================================
+   ARCHIVIO PARTIGIANI - Mappa AI
+   style.css
+   ============================================ */
+
+:root { 
+    --navy: #1a2a3a; 
+    --blue: #3498db; 
+    --glass: rgba(255, 255, 255, 0.4); 
+    --red: #e21118; 
+    --yellow: #ffcc00; 
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+body, html { 
+    margin: 0; padding: 0; height: 100%; width: 100%; 
+    font-family: 'Inter', sans-serif; overflow: hidden; 
+    background: #000; position: fixed; 
+}
+
+/* ============================================
+   MAPPA
+   ============================================ */
+#map { 
+    width: 100%; 
+    height: 100%; 
+    position: fixed !important; 
+    top: 0; 
+    left: 0; 
+    bottom: 0;
+    right: 0;
+    z-index: 1; 
+    background: #f0f0f0; 
+}
+
+/* ============================================
+   UI SUPERIORE - FILTRI
+   ============================================ */
+#ui-container { 
+    position: absolute; top: 15px; left: 50%; 
+    transform: translateX(-50%); z-index: 5000; 
+    width: 95%; max-width: 1100px; 
+}
+
+#filter-bar { 
+    background: rgba(255,255,255,0.85); 
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    padding: 8px 15px; border-radius: 50px; 
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+    display: flex; gap: 8px; align-items: center; 
+    border: 1px solid rgba(255,255,255,0.4);
+}
+
+#filter-bar input, #filter-bar select { 
+    border: none; outline: none; flex: 1; font-size: 13px; 
+    background: transparent; font-weight: 700; color: #000; min-width: 60px; 
+}
+
+#results-dropdown { 
+    background: rgba(255, 255, 255, 0.98); border-radius: 20px; 
+    margin-top: 5px; max-height: 300px; overflow-y: auto; 
+    display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+    z-index: 9999; border: 1px solid rgba(0,0,0,0.1);
+}
+
+.res-item { 
+    padding: 10px 20px; cursor: pointer; border-bottom: 1px solid #eee; 
+    font-size: 13px; color: #000; font-weight: 600; 
+    display: flex; justify-content: space-between; 
+}
+.res-item:hover { background: var(--blue); color: white; }
+
+/* ============================================
+   PANNELLO DETTAGLI
+   ============================================ */
+#details-panel { 
+    position: absolute; top: 50%; left: 50%; 
+    transform: translate(-50%, 150%); 
+    width: 94%; max-width: 1100px; z-index: 4000; 
+    background: var(--glass); 
+    backdrop-filter: blur(35px) saturate(160%); 
+    -webkit-backdrop-filter: blur(35px) saturate(160%);
+    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1); 
+    border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.5); 
+    display: flex; flex-direction: column; overflow: hidden; 
+    border: 1px solid rgba(255,255,255,0.5);
+    max-height: 85vh;
+}
+#details-panel.open { transform: translate(-50%, -50%); }
+
+#details-header { 
+    background: rgba(26, 42, 58, 0.85); color: white; 
+    padding: 10px 20px; display: flex; 
+    justify-content: space-between; align-items: center; 
+}
+
+#details-content { display: flex; overflow: hidden; flex: 1; }
+
+.main-col { flex: 1; overflow-y: auto; }
+
+.video-box { width: 100%; aspect-ratio: 16/9; background: #000; }
+
+.bio-box { padding: 15px 25px; line-height: 1.4; }
+
+#text-bio { 
+    font-family: 'Lora', serif; 
+    font-size: 16px; 
+    color: #1a1a1a; 
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Effetto: La prima lettera della biografia diventa elegante */
+#text-bio::first-letter {
+    float: left;
+    font-size: 3.5em;
+    line-height: 0.7;
+    padding-top: 4px;
+    padding-right: 8px;
+    color: var(--navy);
+    font-weight: 700;
+}
+
+.side-rel { 
+    width: 250px; background: rgba(255, 255, 255, 0.1); 
+    padding: 15px; border-left: 1px solid rgba(0,0,0,0.1); 
+    overflow-y: auto; display: flex; flex-direction: column; 
+}
+
+.rel-item { 
+    padding: 6px 10px; background: rgba(255,255,255,0.4); 
+    border-radius: 8px; font-size: 11px; margin-bottom: 4px; 
+    cursor: pointer; font-weight: 600; 
+}
+
+.social-box { 
+    display: flex; justify-content: center; gap: 15px; 
+    margin-top: auto; padding-top: 15px; 
+    border-top: 1px solid rgba(0,0,0,0.1); 
+}
+
+.social-btn { 
+    display: flex; align-items: center; justify-content: center; 
+    width: 34px; height: 34px; border-radius: 50%; 
+    background: rgba(255,255,255,0.3); text-decoration: none; 
+    border: 1px solid rgba(255,255,255,0.4); 
+}
+.social-btn svg { width: 16px; height: 16px; fill: #1a2a3a; }
+
+/* ============================================
+   AI CHAT - TOGGLE BUTTON
+   ============================================ */
+#ai-chat-toggle { 
+    position: absolute; bottom: 25px; right: 25px; z-index: 6000; 
+    width: 60px; height: 60px; background: #1a2a3a; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); 
+    border: 2px solid white; 
+}
+
+/* ============================================
+   AI CHAT - FINESTRA
+   ============================================ */
+#ai-chat-window { 
+    position: absolute; bottom: 95px; right: 25px; z-index: 6000; 
+    width: 400px; height: 550px; 
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 20px; display: none; flex-direction: column; overflow: hidden; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
+}
+
+#ai-chat-messages { 
+    flex: 1; padding: 15px; overflow-y: auto; 
+    display: flex; flex-direction: column; gap: 12px;
+}
+
+/* Bolle messaggi */
+.msg { 
+    padding: 12px 16px; border-radius: 18px; max-width: 85%; 
+    font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.msg-user { 
+    background: #1a2a3a; color: white; align-self: flex-end; 
+    border-bottom-right-radius: 2px;
+}
+
+.msg-ai { 
+    background: rgba(255, 255, 255, 0.9); color: #2c3e50; align-self: flex-start; 
+    border-bottom-left-radius: 2px; border: 1px solid rgba(0,0,0,0.05);
+    backdrop-filter: blur(5px);
+    /* RIMOSSO: white-space:pre-wrap — non serve con innerHTML formattato */
+    position: relative;
+    line-height: 1.4;
+}
+
+/* Cursore animato durante lo streaming */
+.msg-ai:after { 
+    content: '▋'; animation: blink 1s infinite; 
+    margin-left: 5px; color: var(--blue); 
+    font-size: 12px; vertical-align: middle; 
+}
+.msg-ai.finished:after { content: ''; }
+
+@keyframes blink { 
+    0%, 100% { opacity: 1; } 
+    50% { opacity: 0; } 
+}
+
+/* Titoli sezioni dentro la risposta AI */
+.msg-ai b[style*="color:var(--navy)"] {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #1a2a3a !important;
+    border-bottom: 1px solid #eee;
+}
+
+/* Link ai Partigiani nel testo AI */
+.link-partigiano {
+    color: #d35400;
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: 0.2s;
+}
+.link-partigiano:hover {
+    border-bottom: 1px solid #d35400;
+    background: rgba(211, 84, 0, 0.05);
+}
+
+/* ============================================
+   BARRA DI PROGRESSO AI
+   (FIX: ora viene mostrata/nascosta via JS durante lo streaming)
+   ============================================ */
+#ai-progress-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(0,0,0,0.05);
+    display: none;
+    overflow: hidden;
+}
+
+#ai-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--blue);
+    transition: width 0.3s ease;
+}
+
+.progress-active {
+    animation: pulse-progress 2s infinite ease-in-out;
+}
+
+@keyframes pulse-progress {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* ============================================
+   AREA INPUT CHAT
+   ============================================ */
+#ai-chat-input-area { 
+    padding: 10px; background: #fff; 
+    border-top: 1px solid #eee; 
+    display: flex; align-items: flex-end; gap: 8px; 
+}
+
+#ai-chat-input { 
+    flex: 1; border: 1px solid #ccc; border-radius: 10px; 
+    padding: 8px 12px; font-size: 14px; outline: none; 
+    resize: none; font-family: inherit;
+}
+
+/* ============================================
+   CHIPS / SUGGERIMENTI
+   ============================================ */
+.suggestions-container { 
+    display: flex; flex-wrap: wrap; gap: 8px; 
+    margin-top: 15px; padding-top: 12px; 
+    border-top: 1px dashed rgba(0,0,0,0.1); 
+}
+
+.suggestion-chip { 
+    background: rgba(52, 152, 219, 0.08); border: 1px solid var(--blue); 
+    color: var(--navy); padding: 6px 12px; border-radius: 15px; 
+    font-size: 12px; cursor: pointer; transition: 0.2s; font-weight: 600; 
+}
+.suggestion-chip:hover { 
+    background: var(--blue); color: white; transform: translateY(-1px);
+}
+
+/* ============================================
+   FIX: libro-narrato e libro-citazione
+   PRIMA erano elementi HTML non-standard senza selettore corretto.
+   ORA sono classi CSS applicate a <div> nel JS di formattazione.
+   ============================================ */
+.libro-narrato {
+    display: block;
+    background: #f8f9fa;
+    border-left: 5px solid #6c757d;
+    padding: 12px;
+    margin: 15px 0;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.libro-citazione {
+    display: block;
+    font-family: 'Lora', serif;
+    font-style: italic;
+    background: #fffcf0;
+    border-left: 5px solid #e67e22;
+    padding: 14px;
+    margin: 15px 0;
+    color: #333;
+    line-height: 1.6;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+
+/* ============================================
+   MOBILE
+   ============================================ */
+@media screen and (max-width: 768px) {
+    #details-panel { 
+        width: 100% !important; 
+        height: 85vh !important; 
+        position: fixed !important; 
+        bottom: -100% !important; 
+        top: auto !important; 
+        left: 0 !important; 
+        transform: none !important; 
+        border-radius: 25px 25px 0 0 !important; 
+        transition: bottom 0.5s ease !important; 
+        z-index: 9999; 
+    }
+    #details-panel.open { bottom: 0 !important; }
+
+    #details-content { 
+        flex-direction: column !important; 
+        overflow-y: auto !important; 
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    .video-box { 
+        position: sticky; top: 0; z-index: 10; min-height: 200px; 
+    }
+
+    .main-col { overflow-y: visible !important; }
+
+    .bio-box { padding: 15px 25px; line-height: 1.4; }
+
+    #text-bio { 
+        font-family: 'Lora', serif; 
+        font-size: 16px; 
+        color: #1a1a1a; 
+        text-align: justify;
+    }
+
+    #text-bio::first-letter {
+        float: left;
+        font-size: 3.5em;
+        line-height: 0.7;
+        padding-top: 4px;
+        padding-right: 8px;
+        color: #1a2a3a;
+        font-weight: 700;
+    }
+
+    .side-rel { 
+        width: 100% !important; border-left: none !important; 
+        border-top: 1px solid rgba(0,0,0,0.1); 
+        padding: 15px !important; padding-bottom: 80px !important; 
+    }
+
+    #ai-chat-window { 
+        width: 94% !important; left: 3% !important; 
+        right: 3% !important; bottom: 80px !important; 
+        height: 60vh !important; 
+    }
+}
