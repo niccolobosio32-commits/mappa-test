@@ -337,22 +337,9 @@ function toggleAIChat() {
             chatOpenedOnce = true;
             const box = document.getElementById('ai-chat-messages');
 
-            // Pesca 3 chip casuali da ciascuna categoria
-            const shufflePick = (arr, n) => [...arr].sort(() => Math.random() - 0.5).slice(0, n);
-            const tematici = shufflePick(PERCORSI_TEMATICI, 3);
-            const geo = shufflePick(PERCORSI_GEO, 3);
-
-            const renderChips = arr => arr.map(p =>
-                `<div class="suggestion-chip" onclick="usaSuggerimento('${p.query.replace(/'/g, "\'")}')">${p.emoji} ${p.label}</div>`
-            ).join('');
-
             box.innerHTML += `
                 <div class="msg msg-ai finished">
-                    <b>ARCHIVIO PRONTO</b><br>Fai una domanda libera o scegli un percorso:
-                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:10px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi tematici suggeriti dal nostro archivio</div>
-                    <div class="suggestions-container">${renderChips(tematici)}</div>
-                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:12px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi cronologico-geografici suggeriti dal nostro archivio</div>
-                    <div class="suggestions-container">${renderChips(geo)}</div>
+                    <b>ARCHIVIO PRONTO</b><br>Fai una domanda libera sull'archivio.
                 </div>`;
             box.scrollTop = box.scrollHeight;
         }
