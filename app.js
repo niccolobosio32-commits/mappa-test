@@ -268,19 +268,36 @@ let conversationHistory = [];
 
 let chatOpenedOnce = false;
 
+// Percorsi divisi in due categorie: tematici e cronologico-geografici.
+// Ad ogni apertura vengono pescati casualmente 3 chip per categoria.
 const PERCORSI_TEMATICI = [
-    { emoji: "📍", label: "Resistenza in Emilia", query: "Mostrami i partigiani che hanno operato in Emilia-Romagna" },
-    { emoji: "🚂", label: "Deportazioni nei Lager", query: "Quali partigiani sono stati deportati a Mauthausen o Dachau?" },
     { emoji: "🚲", label: "Donne nella Resistenza", query: "Fammi esempi di donne partigiane e staffette" },
-    { emoji: "🏔️", label: "Resistenza in montagna", query: "Partigiani che operavano in montagna e valli alpine" },
     { emoji: "⛓️", label: "IMI – Internati Militari", query: "Raccontami degli internati militari italiani nei lager tedeschi" },
+    { emoji: "🚂", label: "Deportazioni nei Lager", query: "Quali partigiani sono stati deportati a Mauthausen o Dachau?" },
     { emoji: "🔥", label: "Stragi nazifasciste", query: "Stragi e rappresaglie nazifasciste contro i civili" },
     { emoji: "✊", label: "Operai e scioperi", query: "Operai, scioperi nelle fabbriche e resistenza urbana 1944" },
     { emoji: "🤝", label: "Reti di salvataggio", query: "Reti di salvataggio di ebrei, prigionieri e alleati" },
-    { emoji: "🗺️", label: "Brigate per regione", query: "Raccontami l'organizzazione delle brigate partigiane per regione" },
-    { emoji: "⚔️", label: "Primi mesi della Resistenza", query: "Come è nata la resistenza armata dopo l'8 settembre 1943?" },
     { emoji: "🏘️", label: "Resistenza urbana", query: "Partigiani e reti clandestine nelle città italiane" },
-    { emoji: "📜", label: "Rappresaglie e eccidi", query: "Rappresaglie tedesche e fasciste contro la popolazione civile" }
+    { emoji: "📜", label: "Rappresaglie e eccidi", query: "Rappresaglie tedesche e fasciste contro la popolazione civile" },
+    { emoji: "🗺️", label: "Organizzazione delle brigate", query: "Raccontami l'organizzazione delle brigate partigiane per regione" },
+    { emoji: "🎯", label: "Azioni di sabotaggio", query: "Azioni di sabotaggio e attacchi partigiani a infrastrutture nemiche" },
+    { emoji: "📡", label: "Reti clandestine e spie", query: "Reti di informatori, spie e comunicazioni clandestine nella Resistenza" },
+    { emoji: "🏥", label: "Feriti e rifugiati", query: "Come venivano curati e nascosti i partigiani feriti o ricercati?" }
+];
+
+const PERCORSI_GEO = [
+    { emoji: "🏔️", label: "Alpi e valli alpine", query: "Partigiani che operavano sulle Alpi e nelle valli alpine" },
+    { emoji: "📍", label: "Resistenza in Emilia", query: "Partigiani che hanno operato in Emilia-Romagna" },
+    { emoji: "⚔️", label: "8 settembre 1943", query: "Come è nata la resistenza armata dopo l'8 settembre 1943?" },
+    { emoji: "🌊", label: "Resistenza in Liguria", query: "Partigiani che combatterono in Liguria e sulla costa" },
+    { emoji: "🦁", label: "Resistenza in Toscana", query: "Partigiani e formazioni nella Resistenza toscana" },
+    { emoji: "🏛️", label: "Roma e il Lazio", query: "Resistenza clandestina a Roma e nel Lazio durante l'occupazione tedesca" },
+    { emoji: "❄️", label: "Inverno 1944–45", query: "Come sopravvissero le formazioni partigiane durante l'inverno 1944-45?" },
+    { emoji: "🌅", label: "Liberazione aprile 1945", query: "Come si svolse la liberazione nell'aprile 1945 nelle diverse città?" },
+    { emoji: "🚜", label: "Resistenza contadina", query: "Il ruolo dei contadini e delle campagne nel sostenere la Resistenza" },
+    { emoji: "🇬🇧", label: "Alleati e partigiani", query: "Come collaborarono i partigiani italiani con le forze alleate?" },
+    { emoji: "🏙️", label: "Torino e il Piemonte", query: "Partigiani e formazioni nella Resistenza piemontese e a Torino" },
+    { emoji: "🌿", label: "Chianti e Toscana centrale", query: "Partigiani che combatterono nel Chianti e nella Toscana centrale" }
 ];
 
 function toggleAIChat() {
@@ -293,14 +310,23 @@ function toggleAIChat() {
         if (!chatOpenedOnce) {
             chatOpenedOnce = true;
             const box = document.getElementById('ai-chat-messages');
-            const shuffled = [...PERCORSI_TEMATICI].sort(() => Math.random() - 0.5).slice(0, 4);
-            const chipsHtml = shuffled.map(p =>
-                `<div class="suggestion-chip" onclick="usaSuggerimento('${p.query.replace(/'/g, "\\'")}')">${p.emoji} ${p.label}</div>`
+
+            // Pesca 3 chip casuali da ciascuna categoria
+            const shufflePick = (arr, n) => [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+            const tematici = shufflePick(PERCORSI_TEMATICI, 3);
+            const geo = shufflePick(PERCORSI_GEO, 3);
+
+            const renderChips = arr => arr.map(p =>
+                `<div class="suggestion-chip" onclick="usaSuggerimento('${p.query.replace(/'/g, "\'")}')">${p.emoji} ${p.label}</div>`
             ).join('');
+
             box.innerHTML += `
                 <div class="msg msg-ai finished">
-                    <b>ARCHIVIO PRONTO</b><br>Fai una domanda libera o esplora uno di questi percorsi tematici:
-                    <div class="suggestions-container">${chipsHtml}</div>
+                    <b>ARCHIVIO PRONTO</b><br>Fai una domanda libera o scegli un percorso:
+                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:10px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi tematici</div>
+                    <div class="suggestions-container">${renderChips(tematici)}</div>
+                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:12px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi cronologico-geografici</div>
+                    <div class="suggestions-container">${renderChips(geo)}</div>
                 </div>`;
             box.scrollTop = box.scrollHeight;
         }
@@ -418,9 +444,10 @@ RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE.
 1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti.
 2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta e fattuale. ASSOLUTAMENTE VIETATE opinioni, considerazioni personali o retorica.
 ${istruzioneLibro}
-ALLA FINE scrivi sempre 2 domande di approfondimento così (devono essere domande SPECIFICHE e INASPETTATE che aprono prospettive storiche nuove, non semplici riformulazioni di quanto già detto):
+ALLA FINE scrivi sempre 3 domande brevi di esplorazione. Regole ferree: massimo 12 parole ciascuna, devono suggerire un nome di partigiano o un luogo o un evento specifico presente nei dati archivio, devono aprire percorsi diversi tra loro (non varianti della stessa domanda). Formato esatto:
 SUGGERIMENTO: [domanda 1]
 SUGGERIMENTO: [domanda 2]
+SUGGERIMENTO: [domanda 3]
 
 DATI ARCHIVIO (${matches.length} partigiani trovati):
 ${matches.map(d => `• ${d.nominativo} (${d.regione}${d.città_nascita ? ', ' + d.città_nascita : ''}): ${d.scheda?.substring(0, 250)}`).join("\n")}
