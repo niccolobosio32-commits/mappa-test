@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio w.1</span>
+        <span>Assistente Archivio w.2</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -729,16 +729,17 @@ DOMANDA: "${userText}"`;
                 .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50;"><b>💬 CITAZIONE DAL VOLUME:</b><br>"')
                 .replace(/<\/libro-citazione>/g, '"</div>');
 
-            // Linker Universale
-            nomiDaLinkare.forEach(nome => {
-                const n = nome.trim();
-                const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
-                html = html.replace(regex, (match) => {
-                    if (match.includes('onclick')) return match;
-                    return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
-                });
-            });
+           // Linker Universale Corretto
+nomiDaLinkare.forEach(nome => {
+    const n = nome.trim();
+    const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Corretto: ora cerca [[Nome]] o Nome con parentesi aperte e CHIUSE
+    const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
+    html = html.replace(regex, (match) => {
+        if (match.includes('onclick')) return match;
+        return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
+    });
+});
 
             // Aggiunge i bottoni dei suggerimenti in fondo al messaggio
             if (suggerimentiAggiuntivi.length > 0) {
@@ -760,5 +761,6 @@ DOMANDA: "${userText}"`;
 </script>
 </body>
 </html>
+
 
 
