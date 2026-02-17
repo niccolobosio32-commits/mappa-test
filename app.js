@@ -353,15 +353,45 @@ async function sendAIMessage() {
         let q = userText.toLowerCase();
         const paroleQ = q.split(/\s+/).filter(p => p.length > 2);
 
-        // FIX MATCHING: NON aggiungiamo più record casuali se i match sono pochi.
-        // Prima: se matches < 10, si aggiungevano record irrilevanti fino a 25,
-        // causando allucinazioni e token sprecati.
-        // Ora: passiamo solo i record realmente pertinenti alla query.
+        // MATCHING TESTUALE: cerca nei campi nominativo, scheda, regione, città
         let matches = database.filter(d => {
             const ricercaTesto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return paroleQ.some(p => ricercaTesto.includes(p));
         });
         matches = matches.slice(0, 25);
+
+        // MATCHING GEOGRAFICO: se il testo non produce risultati sufficienti,
+        // geocodifica la query con Nominatim e trova i partigiani per prossimità
+        // geografica nel raggio di 50km. Risolve query come "partigiani nel Chianti"
+        // dove non c'è match testuale ma i dati lat/lon ci sono.
+        if (matches.length < 3) {
+            try {
+                const geoRes = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userText)},Italy&limit=1`
+                );
+                const geoData = await geoRes.json();
+                if (geoData.length > 0) {
+                    const centro = L.latLng(parseFloat(geoData[0].lat), parseFloat(geoData[0].lon));
+                    const RAGGIO = 50000; // 50 km
+                    const vicini = database.filter(d => {
+                        const lat = parseFloat(d.lat?.replace(',','.'));
+                        const lon = parseFloat(d.lon?.replace(',','.'));
+                        return !isNaN(lat) && !isNaN(lon) && centro.distanceTo([lat, lon]) <= RAGGIO;
+                    });
+                    if (vicini.length > 0) {
+                        // Ordina per distanza e prende i 25 più vicini
+                        vicini.sort((a, b) => {
+                            const dA = centro.distanceTo([parseFloat(a.lat?.replace(',','.')), parseFloat(a.lon?.replace(',','.'))]);
+                            const dB = centro.distanceTo([parseFloat(b.lat?.replace(',','.')), parseFloat(b.lon?.replace(',','.'))]);
+                            return dA - dB;
+                        });
+                        matches = vicini.slice(0, 25);
+                    }
+                }
+            } catch (geoErr) {
+                // geocodifica fallita silenziosamente, si procede con i matches testuali
+            }
+        }
 
         const nomiDaLinkare = matches
             .map(d => d.nominativo)
@@ -375,20 +405,27 @@ async function sendAIMessage() {
             estrattiLibro = trovati.slice(0, 5).join("\n\n");
         }
 
-        // FIX PROMPT SUGGERIMENTI: domande più specifiche e inaspettate
+        // SEZIONE LIBRO NEL PROMPT:
+        // Se ci sono estratti pertinenti, chiediamo a Gemini di integrarli.
+        // Se non ci sono, la sezione libro viene soppressa del tutto dal prompt,
+        // così Gemini non la inventa e non mette testo generico sul libro.
+        const istruzioneLibro = estrattiLibro.trim().length > 0
+            ? `3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> per approfondimenti e <libro-citazione> per citazioni dirette. Usa SOLO gli estratti forniti qui sotto. Se un estratto non è direttamente pertinente alla domanda, OMETTILO completamente — non inserire mai testo generico sul libro o sulla sua prefazione.`
+            : `3. **INTEGRAZIONE LIBRO**: Nessun estratto pertinente disponibile. OMETTI completamente questa sezione. Non scrivere nulla sul libro, non spiegare la sua assenza, non citare la prefazione.`;
+
         const promptBase = `Agisci come Archivista Storico esperto 1943-45. 
 RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE.
 1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti.
 2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta e fattuale. ASSOLUTAMENTE VIETATE opinioni, considerazioni personali o retorica.
-3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> e <libro-citazione>.
+${istruzioneLibro}
 ALLA FINE scrivi sempre 2 domande di approfondimento così (devono essere domande SPECIFICHE e INASPETTATE che aprono prospettive storiche nuove, non semplici riformulazioni di quanto già detto):
 SUGGERIMENTO: [domanda 1]
 SUGGERIMENTO: [domanda 2]
 
-DATI ARCHIVIO:
-${matches.map(d => `• ${d.nominativo}: ${d.scheda?.substring(0, 250)}`).join("\n")}
+DATI ARCHIVIO (${matches.length} partigiani trovati):
+${matches.map(d => `• ${d.nominativo} (${d.regione}${d.città_nascita ? ', ' + d.città_nascita : ''}): ${d.scheda?.substring(0, 250)}`).join("\n")}
 
-ESTRATTI: ${estrattiLibro}
+${estrattiLibro.trim().length > 0 ? `ESTRATTI LIBRO:\n${estrattiLibro}` : ''}
 DOMANDA: "${userText}"`;
 
         // FIX MEMORIA CONVERSAZIONE: aggiungiamo il turno corrente alla history
