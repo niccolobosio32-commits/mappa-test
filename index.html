@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente_Archivio w.1.4</span>
+        <span>Assistente_Archivio w.1.5</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -632,7 +632,7 @@ async function sendAIMessage() {
         let q = userText.toLowerCase();
         const paroleQ = q.split(/\s+/).filter(p => p.length > 2);
 
-        // Cerchiamo i match (limitati a 25 per la massima velocità)
+        // 1. Trova i match per il contesto (limitati a 25 per velocità)
         let matches = database.filter(d => {
             const ricercaTesto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return paroleQ.some(p => ricercaTesto.includes(p));
@@ -644,6 +644,7 @@ async function sendAIMessage() {
         }
         matches = matches.slice(0, 25); 
         
+        // 2. Prepariamo i nomi da linkare (espandiamo la ricerca per sicurezza)
         const nomiDaLinkare = matches
             .map(d => d.nominativo)
             .filter(n => n && n.trim().length > 3) 
@@ -658,12 +659,10 @@ async function sendAIMessage() {
 
         const promptBase = `Agisci come Archivista Storico esperto 1943-45. 
 RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE.
-1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti.
-2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta e fattuale. ASSOLUTAMENTE VIETATE opinioni, considerazioni personali o retorica.
-3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> e <libro-citazione>.
-ALLA FINE scrivi sempre 2 domande di approfondimento così:
-SUGGERIMENTO: [domanda 1]
-SUGGERIMENTO: [domanda 2]
+1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti (max 250 car.).
+2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta. NO RETORICA.
+3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> e <libro-citazione>. NON ANNIDARE I TAG.
+ALLA FINE: 2 domande come SUGGERIMENTO: [testo]
 
 DATI ARCHIVIO:
 ${matches.map(d => `• ${d.nominativo}: ${d.scheda?.substring(0, 250)}`).join("\n")}
@@ -705,37 +704,49 @@ DOMANDA: "${userText}"`;
         while ((m = regexSug.exec(fullText)) !== null) if(m[1]) suggerimenti.push(m[1].trim());
 
         let html = fullText.replace(/^SUGGERIMENTO:.*$/gim, '')
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; border-bottom:1px solid #eee; font-variant:small-caps;">$1</b>')
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; width:100%; box-sizing:border-box; border-radius:4px;"><b>📜 APPROFONDIMENTO:</b><br>')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:10px 0; width:100%; box-sizing:border-box; border-radius:4px;"><b>📜 APPROFONDIMENTO:</b><br>')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; width:100%; box-sizing:border-box; border-radius:4px;"><b>💬 CITAZIONE:</b><br>')
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:10px 0; font-style:italic; width:100%; box-sizing:border-box; border-radius:4px;"><b>💬 CITAZIONE:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // Linker Universale: rende cliccabile ogni nome trovato nel testo
-        nomiDaLinkare.forEach(nome => {
-            const n = nome.trim();
-            const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const pattern = escaped.split(/\s+/).join('\\s+');
-            const regex = new RegExp(`(?![^<]*>)\\[{0,2}${pattern}\\]{0,2}`, 'gi');
+        // --- LINKER UNIVERSALE MIGLIORATO ---
+        nomiDaLinkare.forEach(nomeOriginale => {
+            const n = nomeOriginale.trim();
+            const parti = n.split(/\s+/);
             
-            html = html.replace(regex, (match) => {
-                if (match.includes('onclick')) return match;
-                return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
+            // Crea varianti: "Nome Cognome" e "Cognome Nome"
+            let varianti = [n];
+            if (parti.length === 2) varianti.push(`${parti[1]} ${parti[0]}`);
+            
+            varianti.forEach(variante => {
+                const escaped = variante.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pattern = escaped.split(/\\s+/).join('\\s+');
+                // Regex che cattura il nome anche se circondato da [[ ]]
+                const regex = new RegExp(`(?![^<]*>)\\[{0,2}${pattern}\\]{0,2}`, 'gi');
+                
+                html = html.replace(regex, (match) => {
+                    // Evita di linkare se è già un tag HTML
+                    if (match.includes('onclick')) return match;
+                    return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${match.replace(/[\[\]]/g, '')}</span>`;
+                });
             });
         });
 
-        // Aggiunta Chips Suggerimenti (Le "Domande" alla fine)
+        // Pulizia finale parentesi quadre residue
+        html = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+
         if (suggerimenti.length > 0) {
             html += `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; border-top:1px dashed #ccc; padding-top:15px;">`;
             suggerimenti.forEach(s => {
-                const sClean = s.replace(/[\[\]]/g, ''); // Pulisce eventuali quadre
+                const sClean = s.replace(/[\[\]]/g, '');
                 html += `<div class="suggestion-chip" style="background:#eee; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; border:1px solid #ddd;" onclick="usaSuggerimento('${sClean.replace(/'/g, "\\'")}')">${sClean}</div>`;
             });
             html += `</div>`;
         }
 
-        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
+        aiMsgElement.innerHTML = html;
         aiMsgElement.classList.add('finished');
         box.scrollTop = box.scrollHeight;
 
@@ -746,6 +757,7 @@ map.on('click', () => { closeDetails(); document.getElementById('results-dropdow
 </script>
 </body>
 </html>
+
 
 
 
