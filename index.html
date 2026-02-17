@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio 01.Q</span>
+        <span>Assistente Archivio w.1</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -546,7 +546,11 @@ libro-citazione {
         { emoji: "⛓️", label: "IMI – Internati Militari", query: "Raccontami degli internati militari italiani nei lager tedeschi" },
         { emoji: "🔥", label: "Stragi nazifasciste", query: "Stragi e rappresaglie nazifasciste contro i civili" },
         { emoji: "✊", label: "Operai e scioperi", query: "Operai, scioperi nelle fabbriche e resistenza urbana 1944" },
-        { emoji: "🤝", label: "Reti di salvataggio", query: "Reti di salvataggio di ebrei, prigionieri e alleati" }
+        { emoji: "🤝", label: "Reti di salvataggio", query: "Reti di salvataggio di ebrei, prigionieri e alleati" },
+        { emoji: "🗺️", label: "Brigate per regione", query: "Raccontami l'organizzazione delle brigate partigiane per regione" },
+        { emoji: "⚔️", label: "Primi mesi della Resistenza", query: "Come è nata la resistenza armata dopo l'8 settembre 1943?" },
+        { emoji: "🏘️", label: "Resistenza urbana", query: "Partigiani e reti clandestine nelle città italiane" },
+        { emoji: "📜", label: "Rappresaglie e eccidi", query: "Rappresaglie tedesche e fasciste contro la popolazione civile" }
     ];
 
     function toggleAIChat() {
@@ -559,7 +563,9 @@ libro-citazione {
             if(!chatOpenedOnce) {
                 chatOpenedOnce = true;
                 const box = document.getElementById('ai-chat-messages');
-                const chipsHtml = PERCORSI_TEMATICI.map(p =>
+                // Shuffle Fisher-Yates e mostra 4 percorsi casuali diversi ad ogni caricamento
+                const shuffled = [...PERCORSI_TEMATICI].sort(() => Math.random() - 0.5).slice(0, 4);
+                const chipsHtml = shuffled.map(p =>
                     `<div class="suggestion-chip" onclick="usaSuggerimento('${p.query.replace(/'/g, "\\'")}')">${p.emoji} ${p.label}</div>`
                 ).join('');
                 box.innerHTML += `
