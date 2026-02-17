@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente_Archivio w.1.5</span>
+        <span>Assistente Archivio w.1.5</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -632,7 +632,7 @@ async function sendAIMessage() {
         let q = userText.toLowerCase();
         const paroleQ = q.split(/\s+/).filter(p => p.length > 2);
 
-        // 1. Trova i match per il contesto (limitati a 25 per velocità)
+        // 1. Selezione dati (Limitata a 25 per velocità)
         let matches = database.filter(d => {
             const ricercaTesto = `${d.nominativo} ${d.scheda} ${d.regione} ${d.città_nascita}`.toLowerCase();
             return paroleQ.some(p => ricercaTesto.includes(p));
@@ -644,11 +644,8 @@ async function sendAIMessage() {
         }
         matches = matches.slice(0, 25); 
         
-        // 2. Prepariamo i nomi da linkare (espandiamo la ricerca per sicurezza)
-        const nomiDaLinkare = matches
-            .map(d => d.nominativo)
-            .filter(n => n && n.trim().length > 3) 
-            .sort((a, b) => b.length - a.length);
+        // Prepariamo la lista nomi per i link (inclusi quelli nel contesto)
+        const nomiPerLink = matches.map(d => d.nominativo).filter(n => n && n.length > 3);
 
         let estrattiLibro = "";
         if (typeof TESTO_LIBRO !== 'undefined') {
@@ -658,11 +655,13 @@ async function sendAIMessage() {
         }
 
         const promptBase = `Agisci come Archivista Storico esperto 1943-45. 
-RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE.
-1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti (max 250 car.).
-2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta. NO RETORICA.
-3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> e <libro-citazione>. NON ANNIDARE I TAG.
-ALLA FINE: 2 domande come SUGGERIMENTO: [testo]
+RISPONDI IMMEDIATAMENTE SENZA SALUTI.
+1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]].
+2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami. Solo logica asciutta. NO RETORICA.
+3. **INTEGRAZIONE LIBRO**: Usa <libro-narrato> e <libro-citazione>.
+ALLA FINE SCRIVI SEMPRE:
+SUGGERIMENTO: [domanda 1]
+SUGGERIMENTO: [domanda 2]
 
 DATI ARCHIVIO:
 ${matches.map(d => `• ${d.nominativo}: ${d.scheda?.substring(0, 250)}`).join("\n")}
@@ -690,6 +689,7 @@ DOMANDA: "${userText}"`;
                     try {
                         const json = JSON.parse(line.substring(6));
                         fullText += json.candidates[0].content.parts[0].text;
+                        // Durante lo streaming mostriamo il testo pulito dai tag dei suggerimenti
                         aiMsgElement.innerText = fullText.split(/SUGGERIMENTO:/i)[0];
                         box.scrollTop = box.scrollHeight;
                     } catch (e) {}
@@ -697,56 +697,58 @@ DOMANDA: "${userText}"`;
             });
         }
 
-        // --- FORMATTAZIONE FINALE ---
+        // --- ELABORAZIONE FINALE (POST-STREAMING) ---
+        
+        // 1. Estrazione Suggerimenti
         let suggerimenti = [];
-        const regexSug = /^SUGGERIMENTO:\s*(.*)$/gim;
-        let m;
-        while ((m = regexSug.exec(fullText)) !== null) if(m[1]) suggerimenti.push(m[1].trim());
+        const lines = fullText.split("\n");
+        lines.forEach(l => {
+            if (l.toUpperCase().startsWith("SUGGERIMENTO:")) {
+                let s = l.replace(/SUGGERIMENTO:/i, "").trim().replace(/[\[\]]/g, "");
+                if (s) suggerimenti.push(s);
+            }
+        });
 
-        let html = fullText.replace(/^SUGGERIMENTO:.*$/gim, '')
-            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:10px; border-bottom:1px solid #eee;">$1</b>')
+        // 2. Pulizia testo principale
+        let testoPulito = fullText.split(/SUGGERIMENTO:/i)[0];
+
+        // 3. Formattazione HTML (Grassetto e Box Libro)
+        let html = testoPulito
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:12px; border-bottom:1px solid #eee;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:10px 0; width:100%; box-sizing:border-box; border-radius:4px;"><b>📜 APPROFONDIMENTO:</b><br>')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; width:100%; box-sizing:border-box; border-radius:4px;"><b>📜 APPROFONDIMENTO:</b><br>')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:10px 0; font-style:italic; width:100%; box-sizing:border-box; border-radius:4px;"><b>💬 CITAZIONE:</b><br>')
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; width:100%; box-sizing:border-box; border-radius:4px;"><b>💬 CITAZIONE:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // --- LINKER UNIVERSALE MIGLIORATO ---
-        nomiDaLinkare.forEach(nomeOriginale => {
-            const n = nomeOriginale.trim();
+        // 4. Linker Universale (Gestisce Irma Bandiera -> Bandiera Irma)
+        nomiPerLink.forEach(nomeDB => {
+            const n = nomeDB.trim();
             const parti = n.split(/\s+/);
-            
-            // Crea varianti: "Nome Cognome" e "Cognome Nome"
-            let varianti = [n];
-            if (parti.length === 2) varianti.push(`${parti[1]} ${parti[0]}`);
-            
-            varianti.forEach(variante => {
-                const escaped = variante.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const pattern = escaped.split(/\\s+/).join('\\s+');
-                // Regex che cattura il nome anche se circondato da [[ ]]
-                const regex = new RegExp(`(?![^<]*>)\\[{0,2}${pattern}\\]{0,2}`, 'gi');
-                
+            let varianti = [n]; 
+            if (parti.length === 2) varianti.push(`${parti[1]} ${parti[0]}`); // Se DB è "Bandiera Irma", cerca anche "Irma Bandiera"
+
+            varianti.forEach(v => {
+                const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // Regex: cerca il nome anche se ha le quadre intorno [[Nome]]
+                const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped.split(/\\s+/).join('\\s+')}\\]{0,2}`, 'gi');
                 html = html.replace(regex, (match) => {
-                    // Evita di linkare se è già un tag HTML
-                    if (match.includes('onclick')) return match;
                     return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${match.replace(/[\[\]]/g, '')}</span>`;
                 });
             });
         });
 
-        // Pulizia finale parentesi quadre residue
-        html = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
-
+        // 5. Aggiunta Suggerimenti (Chips)
         if (suggerimenti.length > 0) {
             html += `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; border-top:1px dashed #ccc; padding-top:15px;">`;
             suggerimenti.forEach(s => {
-                const sClean = s.replace(/[\[\]]/g, '');
-                html += `<div class="suggestion-chip" style="background:#eee; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; border:1px solid #ddd;" onclick="usaSuggerimento('${sClean.replace(/'/g, "\\'")}')">${sClean}</div>`;
+                html += `<div class="suggestion-chip" style="background:#eee; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; border:1px solid #ddd;" onclick="usaSuggerimento('${s.replace(/'/g, "\\'")}')">${s}</div>`;
             });
             html += `</div>`;
         }
 
-        aiMsgElement.innerHTML = html;
+        // Rimozione finale quadre residue e output
+        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
         aiMsgElement.classList.add('finished');
         box.scrollTop = box.scrollHeight;
 
@@ -757,6 +759,7 @@ map.on('click', () => { closeDetails(); document.getElementById('results-dropdow
 </script>
 </body>
 </html>
+
 
 
 
