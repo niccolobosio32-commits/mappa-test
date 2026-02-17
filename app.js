@@ -269,7 +269,8 @@ let conversationHistory = [];
 let chatOpenedOnce = false;
 
 // Percorsi divisi in due categorie: tematici e cronologico-geografici.
-// Ad ogni apertura vengono pescati casualmente 3 chip per categoria.
+// Pool ampi (24 voci ciascuno): ad ogni apertura vengono pescati 3 a caso per categoria.
+// Più voci = più varietà e senso di scoperta ad ogni sessione.
 const PERCORSI_TEMATICI = [
     { emoji: "🚲", label: "Donne nella Resistenza", query: "Fammi esempi di donne partigiane e staffette" },
     { emoji: "⛓️", label: "IMI – Internati Militari", query: "Raccontami degli internati militari italiani nei lager tedeschi" },
@@ -282,8 +283,21 @@ const PERCORSI_TEMATICI = [
     { emoji: "🗺️", label: "Organizzazione delle brigate", query: "Raccontami l'organizzazione delle brigate partigiane per regione" },
     { emoji: "🎯", label: "Azioni di sabotaggio", query: "Azioni di sabotaggio e attacchi partigiani a infrastrutture nemiche" },
     { emoji: "📡", label: "Reti clandestine e spie", query: "Reti di informatori, spie e comunicazioni clandestine nella Resistenza" },
-    { emoji: "🏥", label: "Feriti e rifugiati", query: "Come venivano curati e nascosti i partigiani feriti o ricercati?" }
+    { emoji: "🏥", label: "Feriti e rifugiati", query: "Come venivano curati e nascosti i partigiani feriti o ricercati?" },
+    { emoji: "⚗️", label: "Armi e rifornimenti", query: "Come si procuravano armi e rifornimenti le formazioni partigiane?" },
+    { emoji: "🖨️", label: "Stampa clandestina", query: "Giornali, volantini e propaganda clandestina nella Resistenza italiana" },
+    { emoji: "✝️", label: "Clero e Resistenza", query: "Il ruolo di preti, suore e istituzioni religiose nel proteggere i partigiani" },
+    { emoji: "🎓", label: "Studenti e giovani", query: "Studenti e giovani che entrarono nella Resistenza dopo l'8 settembre" },
+    { emoji: "🚩", label: "Partiti e Comitati di Liberazione", query: "Come funzionavano i CLN e i partiti politici clandestini durante la Resistenza?" },
+    { emoji: "🔒", label: "Prigionieri e torture", query: "Testimonianze di partigiani catturati, torturati o incarcerati" },
+    { emoji: "🌍", label: "Stranieri nella Resistenza", query: "Stranieri — slavi, ebrei, alleati — che combatterono con i partigiani italiani" },
+    { emoji: "👴", label: "Partigiani anziani oggi", query: "Cosa raccontano oggi i partigiani ancora vivi della loro esperienza?" },
+    { emoji: "🏆", label: "Medaglie e riconoscimenti", query: "Partigiani insigniti di medaglia d'oro o d'argento al valor militare" },
+    { emoji: "💬", label: "Nomi di battaglia", query: "Nomi di battaglia più curiosi e la storia dietro la loro scelta" },
+    { emoji: "🧒", label: "Partigiani giovanissimi", query: "Ragazzi e ragazze che combatterono nella Resistenza a meno di vent'anni" },
+    { emoji: "🏚️", label: "Case rifugio e nascondigli", query: "Case, cascine e nascondigli usati dai partigiani e dalle reti di supporto" }
 ];
+
 
 const PERCORSI_GEO = [
     { emoji: "🏔️", label: "Alpi e valli alpine", query: "Partigiani che operavano sulle Alpi e nelle valli alpine" },
@@ -297,7 +311,19 @@ const PERCORSI_GEO = [
     { emoji: "🚜", label: "Resistenza contadina", query: "Il ruolo dei contadini e delle campagne nel sostenere la Resistenza" },
     { emoji: "🇬🇧", label: "Alleati e partigiani", query: "Come collaborarono i partigiani italiani con le forze alleate?" },
     { emoji: "🏙️", label: "Torino e il Piemonte", query: "Partigiani e formazioni nella Resistenza piemontese e a Torino" },
-    { emoji: "🌿", label: "Chianti e Toscana centrale", query: "Partigiani che combatterono nel Chianti e nella Toscana centrale" }
+    { emoji: "🌿", label: "Chianti e Toscana centrale", query: "Partigiani che combatterono nel Chianti e nella Toscana centrale" },
+    { emoji: "🌋", label: "Napoli e il Sud", query: "La Resistenza e le Quattro Giornate di Napoli nel settembre 1943" },
+    { emoji: "🏞️", label: "Appennino tosco-emiliano", query: "Partigiani che operavano sull'Appennino tosco-emiliano" },
+    { emoji: "🌁", label: "Milano e la Lombardia", query: "Resistenza clandestina a Milano e nelle città lombarde" },
+    { emoji: "🏖️", label: "Adriatico e Marche", query: "Partigiani e formazioni nelle Marche e lungo la costa adriatica" },
+    { emoji: "🗻", label: "Dolomiti e Friuli", query: "La Resistenza nelle Dolomiti e in Friuli Venezia Giulia" },
+    { emoji: "🌾", label: "Pianura Padana", query: "La Resistenza nella Pianura Padana: città, cascine e canali" },
+    { emoji: "🇾🇺", label: "Confine orientale", query: "Partigiani italiani e slavi sul confine orientale: collaborazioni e tensioni" },
+    { emoji: "🏘️", label: "Resistenza in Veneto", query: "Partigiani e formazioni nella Resistenza veneta" },
+    { emoji: "🌄", label: "Umbria e Marche centrali", query: "La Resistenza in Umbria e nelle Marche centrali" },
+    { emoji: "🛤️", label: "Linea Gotica", query: "Partigiani che operarono lungo la Linea Gotica e collaborarono con gli Alleati" },
+    { emoji: "🌉", label: "Genova e il porto", query: "La Resistenza operaia e portuale a Genova durante l'occupazione" },
+    { emoji: "🏝️", label: "Sardegna e isole", query: "La Resistenza e la liberazione in Sardegna e nelle isole italiane" }
 ];
 
 function toggleAIChat() {
@@ -323,9 +349,9 @@ function toggleAIChat() {
             box.innerHTML += `
                 <div class="msg msg-ai finished">
                     <b>ARCHIVIO PRONTO</b><br>Fai una domanda libera o scegli un percorso:
-                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:10px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi tematici</div>
+                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:10px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi tematici suggeriti dal nostro archivio</div>
                     <div class="suggestions-container">${renderChips(tematici)}</div>
-                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:12px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi cronologico-geografici</div>
+                    <div style="font-size:10px; font-weight:800; opacity:0.5; margin:12px 0 4px; letter-spacing:1px; text-transform:uppercase;">Percorsi cronologico-geografici suggeriti dal nostro archivio</div>
                     <div class="suggestions-container">${renderChips(geo)}</div>
                 </div>`;
             box.scrollTop = box.scrollHeight;
@@ -444,7 +470,7 @@ RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE.
 1. **FATTI ACCERTATI**: Elenco puntato con [[Nome Cognome]] — fatti salienti.
 2. **PERCORSI E RELAZIONI**: Analisi tecnica dei legami storiografici. Solo logica asciutta e fattuale. ASSOLUTAMENTE VIETATE opinioni, considerazioni personali o retorica.
 ${istruzioneLibro}
-ALLA FINE scrivi sempre 3 domande brevi di esplorazione. Regole ferree: massimo 12 parole ciascuna, devono suggerire un nome di partigiano o un luogo o un evento specifico presente nei dati archivio, devono aprire percorsi diversi tra loro (non varianti della stessa domanda). Formato esatto:
+ALLA FINE scrivi sempre 3 domande brevi di esplorazione. Regole ferree: (1) massimo 12 parole ciascuna, (2) almeno 2 su 3 devono collegarsi direttamente alla risposta appena data — a un nome, un luogo o un evento già citato — così da invitare ad approfondire quella storia specifica, (3) la terza può aprire un percorso laterale verso altri partigiani o aree del database, (4) le tre domande devono essere diverse tra loro. Formato esatto:
 SUGGERIMENTO: [domanda 1]
 SUGGERIMENTO: [domanda 2]
 SUGGERIMENTO: [domanda 3]
