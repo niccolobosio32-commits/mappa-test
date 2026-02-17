@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio w.1.1</span>
+        <span>Assistente Archivio w.1.2</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -646,10 +646,8 @@ async function sendAIMessage() {
             matches = [...matches, ...extra.slice(0, 60 - matches.length)];
         }
 
-        // VELOCITÀ: Ridotto a 45 record. Evita rallentamenti dell'AI.
         matches = matches.slice(0, 45);
         
-        // FIX CRASH STRING LENGTH: Filtra nomi vuoti o troppo corti che mandavano in loop la Regex
         const nomiDaLinkare = matches
             .map(d => d.nominativo)
             .filter(n => n && n.trim().length > 3) 
@@ -669,7 +667,7 @@ RISPONDI IMMEDIATAMENTE. VIETATO SALUTARE. VIETATO DIRE "CERTAMENTE".
 
 STRUTTURA OBBLIGATORIA:
 1. **FATTI ACCERTATI**: Inizia SUBITO con un elenco puntato. Per ogni persona usa [[Nome Cognome]] — regione, ruolo, fatti salienti (max 2 righe). Includi 5-8 persone.
-2. **PERCORSI E RELAZIONI**: Approfondimento narrativo sui legami geografici, brigate e contesti storici.
+2. **PERCORSI E RELAZIONI**: Analisi storiografica e rigorosa dei legami oggettivi (geografici, temporali, operative, di brigata). Collega i fatti in modo complesso e intelligente basandoti ESCLUSIVAMENTE sui dati. ASSOLUTAMENTE VIETATE considerazioni personali, opinioni, giudizi di valore o conclusioni retoriche. Solo logica asciutta e fattuale.
 3. **INTEGRAZIONE LIBRO**: Usa obbligatoriamente i tag <libro-narrato> e <libro-citazione> se trovi riferimenti pertinenti.
 
 REGOLE: Pari dignità tra partigiani, civili, IMI. Regione come 'Nascita / Operazione'.
@@ -726,16 +724,19 @@ DOMANDA: "${userText}"`;
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; border-bottom:1px solid #eee; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
             .replace(/<libro-narrato>/g, '<div class="libro-box" style="background:#f9f9f9; border-left:4px solid #3498db; padding:10px; margin:10px 0;">')
-            .replace(/<\/libro-narrato>/g, '</div>');
+            .replace(/<\/libro-narrato>/g, '</div>')
+            .replace(/<libro-citazione>/g, '<div class="libro-citazione" style="background:#fffcf0; border-left:4px solid #e67e22; padding:10px; margin:10px 0; font-style:italic;">')
+            .replace(/<\/libro-citazione>/g, '</div>');
 
-        // FIX CRASH: Algoritmo di Linker Sicuro, istantaneo e senza RegEx pesanti
+        // FIX CRASH & LINKER SICURO: Ora tollera gli spazi multipli e quelli interni alle parentesi quadre
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\[{0,2}${escaped}\\]{0,2}`, 'gi');
+            const patternRegex = escaped.split(/\s+/).join('\\s+'); // Tolleranza spazi interni al nome
+            const regex = new RegExp(`\\[{0,2}\\s*${patternRegex}\\s*\\]{0,2}`, 'gi'); // Tolleranza spazi dentro le quadre
             
             html = html.replace(regex, (match, offset, stringIntera) => {
-                // Controlla se siamo già dentro un tag HTML (es. dentro lo span generato prima)
+                // Evita di sostituire link già processati o tag HTML generati in precedenza
                 const textBefore = stringIntera.substring(0, offset);
                 if (textBefore.lastIndexOf('<') > textBefore.lastIndexOf('>')) return match; 
                 return `<span class="link-partigiano" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
@@ -750,7 +751,7 @@ DOMANDA: "${userText}"`;
             html += `</div>`;
         }
 
-        // Pulisce parentesi quadre residue generate dall'AI
+        // Pulisce parentesi quadre residue generate dall'AI (se la Regex non le avesse catturate per cause anomale)
         aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
         aiMsgElement.classList.add('finished');
 
@@ -759,11 +760,12 @@ DOMANDA: "${userText}"`;
         aiMsgElement.classList.add('finished'); 
     }
 }
-
+    
 map.on('click', () => { closeDetails(); document.getElementById('results-dropdown').style.display = 'none'; });
 </script>
 </body>
 </html>
+
 
 
 
