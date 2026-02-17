@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio w.1.3</span>
+        <span>Assistente Archivio w.1.4</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -669,10 +669,12 @@ STRUTTURA OBBLIGATORIA:
 1. **FATTI ACCERTATI**: Elenco puntato. Per ogni persona usa [[Nome Cognome]] — regione, ruolo, fatti salienti.
 2. **PERCORSI E RELAZIONI**: Analisi tecnica e rigorosa dei legami (geografici, operativi, brigate). 
    - REGOLE FERREE: Solo logica asciutta e fattuale. 
-   - DIVIETO ASSOLUTO di opinioni, considerazioni personali, aggettivi enfatici o retorica. 
-   - Collega i dati in modo intelligente ma puramente storiografico.
-3. **INTEGRAZIONE LIBRO**: Usa i tag <libro-narrato> e <libro-citazione>. 
-   - IMPORTANTE: Non annidare mai i tag uno dentro l'altro.
+   - DIVIETO ASSOLUTO di opinioni, considerazioni personali o retorica. 
+3. **INTEGRAZIONE LIBRO**: Usa i tag <libro-narrato> e <libro-citazione>. Non annidarli.
+
+ALLA FINE scrivi sempre 2 domande così:
+SUGGERIMENTO: [domanda 1]
+SUGGERIMENTO: [domanda 2]
 
 DATI ARCHIVIO:
 ${matches.map(d => `• ${d.nominativo} (${d.regione}): ${d.scheda?.substring(0, 250) || 'N/D'}`).join("\n")}
@@ -703,7 +705,8 @@ DOMANDA: "${userText}"`;
                     try {
                         const json = JSON.parse(line.substring(6));
                         fullText += json.candidates[0].content.parts[0].text;
-                        aiMsgElement.innerText = fullText.split("SUGGERIMENTO:")[0];
+                        // Durante lo streaming nasconde la parte tecnica dei suggerimenti
+                        aiMsgElement.innerText = fullText.split(/SUGGERIMENTO:/i)[0];
                         box.scrollTop = box.scrollHeight;
                     } catch (e) {}
                 }
@@ -712,47 +715,48 @@ DOMANDA: "${userText}"`;
 
         // --- FORMATTAZIONE FINALE ---
         let suggerimentiAggiuntivi = [];
-        const regexSuggerimenti = /SUGGERIMENTO:\s*(.*)/g;
+        // Regex migliorata: case-insensitive e multiline per catturare tutto
+        const regexSuggerimenti = /^SUGGERIMENTO:\s*(.*)$/gim;
         let matchSug;
         while ((matchSug = regexSuggerimenti.exec(fullText)) !== null) {
-            if(matchSug[1].trim()) suggerimentiAggiuntivi.push(matchSug[1].trim());
+            if(matchSug[1].trim()) suggerimentiAggiuntivi.push(matchSug[1].trim().replace(/[\[\]]/g, ''));
         }
         
-        // FIX BOX STRETTI: Aggiunto width: 100% e box-sizing per evitare il restringimento progressivo
-        let html = fullText.replace(/SUGGERIMENTO:\s*(.*)/g, '')
+        // Pulizia testo principale dai suggerimenti e formattazione box
+        let html = fullText.replace(/^SUGGERIMENTO:.*$/gim, '')
             .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; border-bottom:1px solid #eee; font-variant:small-caps;">$1</b>')
             .replace(/\n/g, '<br>')
-            .replace(/<libro-narrato>/g, '<div style="background:#f9f9f9; border-left:4px solid #3498db; padding:12px; margin:10px 0; width:100%; box-sizing:border-box;"><b>📜 APPROFONDIMENTO:</b><br>')
+            .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; border-radius:4px; color:#333; width:100%; box-sizing:border-box;"><b>📜 APPROFONDIMENTO:</b><br>')
             .replace(/<\/libro-narrato>/g, '</div>')
-            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:4px solid #e67e22; padding:12px; margin:10px 0; font-style:italic; width:100%; box-sizing:border-box;"><b>💬 DAL VOLUME:</b><br>')
+            .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50; width:100%; box-sizing:border-box;"><b>💬 CITAZIONE:</b><br>')
             .replace(/<\/libro-citazione>/g, '</div>');
 
-        // LINKER UNIVERSALE: Molto più preciso e tollerante
+        // Linker Universale: rende cliccabile ogni nome trovato nel testo
         nomiDaLinkare.forEach(nome => {
             const n = nome.trim();
             const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Pattern che trova il nome anche se l'AI mette spazi extra o parentesi
             const pattern = escaped.split(/\s+/).join('\\s+');
-            const regex = new RegExp(`\\[{0,2}${pattern}\\]{0,2}`, 'gi');
+            // Cerca il nome anche se ha le parentesi quadre [[ ]] messe dall'AI
+            const regex = new RegExp(`(?![^<]*>)\\[{0,2}${pattern}\\]{0,2}`, 'gi');
             
-            html = html.replace(regex, (match, offset, string) => {
-                // Non linkare se siamo già dentro un tag HTML (evita loop infiniti)
-                const prima = string.substring(0, offset);
-                if (prima.lastIndexOf('<') > prima.lastIndexOf('>')) return match;
+            html = html.replace(regex, (match) => {
+                if (match.includes('onclick')) return match;
                 return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
             });
         });
 
+        // Aggiunta Chips Suggerimenti
         if (suggerimentiAggiuntivi.length > 0) {
-            html += `<div class="suggestions-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">`;
+            html += `<div class="suggestions-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; padding-top:15px; border-top:1px dashed #ccc;">`;
             suggerimentiAggiuntivi.forEach(s => {
-                html += `<div class="suggestion-chip" onclick="usaSuggerimento('${s.replace(/'/g, "\\'")}')">${s}</div>`;
+                html += `<div class="suggestion-chip" style="background:#eee; padding:8px 12px; border-radius:20px; font-size:13px; cursor:pointer; border:1px solid #ddd;" onclick="usaSuggerimento('${s.replace(/'/g, "\\'")}')">${s}</div>`;
             });
             html += `</div>`;
         }
 
-        aiMsgElement.innerHTML = html;
+        aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
         aiMsgElement.classList.add('finished');
+        box.scrollTop = box.scrollHeight;
 
     } catch (e) { 
         aiMsgElement.innerText = "Errore: " + e.message; 
@@ -763,6 +767,7 @@ map.on('click', () => { closeDetails(); document.getElementById('results-dropdow
 </script>
 </body>
 </html>
+
 
 
 
