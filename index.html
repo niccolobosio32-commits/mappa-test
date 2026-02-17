@@ -317,7 +317,7 @@ libro-citazione {
 
 <div id="ai-chat-window">
     <div style="background:#1a2a3a; color:white; padding:12px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assistente Archivio w.2</span>
+        <span>Assistente Archivio w.3</span>
         <span onclick="toggleAIChat()" style="cursor:pointer; padding: 5px 15px; font-size: 24px;">&times;</span>
     </div>
     <div id="ai-chat-messages"></div>
@@ -687,69 +687,65 @@ DOMANDA: "${userText}"`;
             let fullText = "";
 
             while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                // Aggiunto {stream: true} per evitare che i JSON vengano tagliati a metà dal server
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split("\n");
-                lines.forEach(line => {
-                    if (line.startsWith("data: ")) {
-                        try {
-                            const json = JSON.parse(line.substring(6));
-                            fullText += json.candidates[0].content.parts[0].text;
-                            
-                            // Nascondi i tag "SUGGERIMENTO" in tempo reale durante lo stream
-                            let displayStream = fullText.replace(/SUGGERIMENTO:(.*)/g, '');
-                            aiMsgElement.innerText = displayStream;
-                            box.scrollTop = box.scrollHeight;
-                        } catch (e) {}
-                    }
-                });
-            }
-
-            // 2. POST-PROCESSING (Gestione Suggerimenti + Linker + Grafica)
-            let finalHtml = fullText;
-            let suggerimentiAggiuntivi = [];
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
             
-            // Estrae i suggerimenti dalla risposta
-            const regexSuggerimenti = /SUGGERIMENTO:\s*(.*)/g;
-            let matchSuggerimento;
-            while ((matchSuggerimento = regexSuggerimenti.exec(fullText)) !== null) {
-                if(matchSuggerimento[1].trim()) suggerimentiAggiuntivi.push(matchSuggerimento[1].trim());
-            }
-            
-            // Rimuove la dicitura testuale "SUGGERIMENTO:" per sostituirla con i bottoni
-            finalHtml = finalHtml.replace(/SUGGERIMENTO:\s*(.*)/g, '');
+            lines.forEach(line => {
+                if (line.startsWith("data: ")) {
+                    try {
+                        const json = JSON.parse(line.substring(6));
+                        const newText = json.candidates[0].content.parts[0].text;
+                        fullText += newText;
+                        
+                        // OTTIMIZZAZIONE: Mostra il testo grezzo durante lo streaming 
+                        // per evitare il ricalcolo continuo delle Regex pesanti
+                        aiMsgElement.innerText = fullText.split("SUGGERIMENTO:")[0];
+                        box.scrollTop = box.scrollHeight;
+                    } catch (e) {}
+                }
+            });
+        }
 
-            let html = finalHtml
-                .replace(/\*\*(.*?)\*\*/g, '<b style="color:#1a2a3a; display:block; margin-top:15px; border-bottom:1px solid #ddd; padding-bottom:3px; font-variant:small-caps;">$1</b>')
-                .replace(/\n/g, '<br>')
-                .replace(/<libro-narrato>/g, '<div style="background:#f8f9fa; border-left:5px solid #6c757d; padding:12px; margin:15px 0; border-radius:4px; color:#333;"><b>📜 APPROFONDIMENTO DAL LIBRO:</b><br>')
-                .replace(/<\/libro-narrato>/g, '</div>')
-                .replace(/<libro-citazione>/g, '<div style="background:#fffcf0; border-left:5px solid #e67e22; padding:12px; margin:15px 0; font-style:italic; border-radius:4px; color:#2c3e50;"><b>💬 CITAZIONE DAL VOLUME:</b><br>"')
-                .replace(/<\/libro-citazione>/g, '"</div>');
+        // --- SOLO ORA CHE IL TESTO È COMPLETO, APPLICHIAMO LA FORMATTAZIONE ---
+        let finalHtml = fullText;
+        let suggerimentiAggiuntivi = [];
+        
+        // Estrazione suggerimenti
+        const regexSuggerimenti = /SUGGERIMENTO:\s*(.*)/g;
+        let matchSug;
+        while ((matchSug = regexSuggerimenti.exec(fullText)) !== null) {
+            if(matchSug[1].trim()) suggerimentiAggiuntivi.push(matchSug[1].trim());
+        }
+        
+        // Formattazione (Eseguita UNA SOLA VOLTA alla fine)
+        let html = finalHtml.replace(/SUGGERIMENTO:\s*(.*)/g, '')
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--navy); display:block; margin-top:15px; border-bottom:1px solid #eee; font-variant:small-caps;">$1</b>')
+            .replace(/\n/g, '<br>')
+            .replace(/<libro-narrato>/g, '<div class="libro-box" style="background:#f9f9f9; border-left:4px solid #3498db; padding:10px; margin:10px 0;">')
+            .replace(/<\/libro-narrato>/g, '</div>');
 
-           // Linker Universale Corretto
-nomiDaLinkare.forEach(nome => {
-    const n = nome.trim();
-    const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Corretto: ora cerca [[Nome]] o Nome con parentesi aperte e CHIUSE
-    const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped.split(/\s+/).join('\\s+')}\\]{0,2}`, 'gi');
-    html = html.replace(regex, (match) => {
-        if (match.includes('onclick')) return match;
-        return `<span class="link-partigiano" style="color:#e67e22; font-weight:bold; cursor:pointer; text-decoration:underline;" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`;
-    });
-});
+        // Linker dei nomi (Fix Regex per evitare crash su stringhe lunghe)
+        nomiDaLinkare.forEach(nome => {
+            const n = nome.trim();
+            const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Regex migliorata per non essere ricorsiva
+            const regex = new RegExp(`(?![^<]*>)\\[{0,2}${escaped}\\]{0,2}`, 'gi');
+            html = html.replace(regex, `<span class="link-partigiano" onclick="apri('${n.replace(/'/g, "\\'")}')">${n}</span>`);
+        });
 
-            // Aggiunge i bottoni dei suggerimenti in fondo al messaggio
-            if (suggerimentiAggiuntivi.length > 0) {
-                html += `<div class="suggestions-container">`;
-                suggerimentiAggiuntivi.forEach(s => {
-                    const sSafe = s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    html += `<div class="suggestion-chip" onclick="usaSuggerimento('${sSafe}')">${s}</div>`;
-                });
-                html += `</div>`;
-            }
+        // Aggiunta Suggerimenti
+        if (suggerimentiAggiuntivi.length > 0) {
+            html += `<div class="suggestions-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">`;
+            suggerimentiAggiuntivi.forEach(s => {
+                html += `<div class="suggestion-chip" onclick="usaSuggerimento('${s.replace(/'/g, "\\'")}')">${s}</div>`;
+            });
+            html += `</div>`;
+        }
+
+        aiMsgElement.innerHTML = html;
+        aiMsgElement.classList.add('finished');
 
             aiMsgElement.innerHTML = html.replace(/\[\[/g, '').replace(/\]\]/g, '');
             aiMsgElement.classList.add('finished');
@@ -761,6 +757,7 @@ nomiDaLinkare.forEach(nome => {
 </script>
 </body>
 </html>
+
 
 
 
